@@ -2,7 +2,7 @@
 kind: Kustomization
 
 resources:
-  - version-configmap-dev.yaml
+  - version-configmap.yaml
   - https://github.com/pipelinedave/k3s-config.git/kustomize/choremane/overlays/dev
 
 replacements:
