@@ -46,7 +46,11 @@ jobs:
 
       - name: Prepare Version ConfigMap
         run: |
-          VERSION_TAG="choremane/prod/v${{ github.run_number }}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION_TAG="${GITHUB_REF#refs/tags/}"
+          else
+            VERSION_TAG="HEAD"
+          fi
           BACKEND_IMAGE="pipelinedave/choremane-api:${{ github.sha }}"
           FRONTEND_IMAGE="pipelinedave/choremane-frontend:${{ github.sha }}"
           cat <<EOF > version-configmap.yaml
