@@ -1,0 +1,26 @@
+﻿# Node modules
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# VS Code files
+.vscode/
+*.code-workspace
+.devcontainer/
+
+# Build files
+dist/
+out/
+build/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Git-specific
+*.log
+*.lock
+*.pid
+*.seed
+*.pid.lock
+*.gz
