@@ -70,9 +70,19 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add version-configmap.yaml
-          git commit -m "Add version-configmap for ${{ github.sha }}"
-          git push origin HEAD:main
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            git remote set-url origin "https://github.com/pipelinedave/k3s-config.git"
+            git checkout -b "${TAG}"
+            git add version-configmap.yaml
+            git commit -m "Add version-configmap for ${{ github.sha }} at tag ${TAG}"
+            git push origin "${TAG}"
+          else
+            git add version-configmap.yaml
+            git commit -m "Add version-configmap for ${{ github.sha }}"
+            git push origin HEAD:main
+          fi
 
   tag:
     runs-on: ubuntu-latest
