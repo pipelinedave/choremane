@@ -62,7 +62,7 @@ jobs:
           push: true
           tags: |
             pipelinedave/choremane-api:latest
-            pipelinedave/choremane-api:${{ github.sha }}
+            pipelinedave/choremane-api:${{ steps.build_backend.outputs.digest }}
 
       - name: 🏭 Build & Push Frontend
         id: build_frontend
@@ -74,12 +74,13 @@ jobs:
           push: true
           tags: |
             pipelinedave/choremane-frontend:latest
-            pipelinedave/choremane-frontend:${{ github.sha }}
+            pipelinedave/choremane-frontend:${{ steps.build_frontend.outputs.digest }}
 
       - name: 📜 Set Image Variables
         run: |
           echo "BACKEND_DIGEST=${{ steps.build_backend.outputs.digest }}" >> $GITHUB_ENV
           echo "FRONTEND_DIGEST=${{ steps.build_frontend.outputs.digest }}" >> $GITHUB_ENV
+          echo "BACKEND_DIGEST: ${{ steps.build_backend.outputs.digest }}
           echo "🔴 [GUESS]: BACKEND_DIGEST and FRONTEND_DIGEST set." # Just a debug line
 
   deploy:
