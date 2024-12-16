@@ -34,10 +34,10 @@ const versionTagLink = computed(() => {
   const tag = versionInfo.value.version_tag
   // If it starts with 'v', treat as a release tag, else link to main branch or similar
   if (tag.startsWith('v')) {
-    return `https://github.com/pipelinedave/choremane-api/releases/tag/${tag}`
+    return `https://github.com/pipelinedave/choremane/releases/tag/${tag}`
   } else {
     // Link to main branch if staging
-    return `https://github.com/pipelinedave/choremane-api/tree/${tag}`
+    return `https://github.com/pipelinedave/choremane/tree/${tag}`
   }
 })
 
