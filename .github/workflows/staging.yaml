@@ -156,5 +156,5 @@ jobs:
 
       - name: 🏷️ Tag in k3s-config Repo
         run: |
-          git tag "choremane/staging/${{ env.BACKEND_IMAGE }}"
+          git tag "choremane/staging/${{ github.run_attempt }}"
           git push origin "${{ env.VERSION_TAG }}"
