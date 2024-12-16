@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: pipelinedave/k3s-config
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.K3S_CONFIG_TOKEN }}
           ref: main
           fetch-depth: 0
 
@@ -98,6 +98,7 @@ jobs:
 
       - name: 💾 Commit & Push Changes
         run: |
+          git remote set-url origin "https://x-access-token:${{ secrets.K3S_CONFIG_TOKEN }}@github.com/pipelinedave/k3s-config.git"
           git add version-configmap.yaml || true
           git add kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml || true
           git add kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml || true
@@ -105,7 +106,7 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Update ConfigMap and ${ENV} deployments for ${VERSION_TAG} with images ${{ github.sha }}"
-            git push
+            git push origin HEAD:main
           fi
 
       - name: 🏷️ Tag in k3s-config Repo
