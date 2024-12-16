@@ -141,18 +141,12 @@ jobs:
           sed -i "s|image: pipelinedave/choremane-backend:.*|image: ${{ env.BACKEND_IMAGE }}|g" "kustomize/choremane/overlays/staging/backend-deployment-patch.yaml" || echo "🔴 No backend-deployment-patch.yaml found."
           sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${{ env.FRONTEND_IMAGE }}|g" "kustomize/choremane/overlays/staging/frontend-deployment-patch.yaml" || echo "🔴 No frontend-deployment-patch.yaml found."
 
-      - name: 🔧 Update ApplicationSet for Choremane
-        run: |
-          # We find the line after 'overlay: staging' and update 'tag:' line
-          sed -i "/overlay: staging/{n;n;s|tag: .*|tag: ${{ env.VERSION_TAG }}|}" apps/choremane.yaml
-
       - name: 💾 Commit & Push Changes
         run: |
           git remote set-url origin "https://x-access-token:${{ secrets.K3S_CONFIG_TOKEN }}@github.com/${{ env.K3S_REPO }}.git"
           git add kustomize/choremane/overlays/staging/version-configmap.yaml
           git add kustomize/choremane/overlays/staging/backend-deployment-patch.yaml || true
           git add kustomize/choremane/overlays/staging/frontend-deployment-patch.yaml || true
-          git add apps/choremane.yaml
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
@@ -162,5 +156,5 @@ jobs:
 
       - name: 🏷️ Tag in k3s-config Repo
         run: |
-          git tag "${{ env.VERSION_TAG }}"
+          git tag "choremane/staging/${{ env.BACKEND_IMAGE }}"
           git push origin "${{ env.VERSION_TAG }}"
