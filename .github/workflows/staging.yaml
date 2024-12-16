@@ -162,5 +162,5 @@ jobs:
 
       - name: 🏷️ Tag in k3s-config Repo
         run: |
-          git tag "${ { env.VERSION_TAG }}"
+          git tag "${{ env.VERSION_TAG }}"
           git push origin "${{ env.VERSION_TAG }}"
