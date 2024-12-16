@@ -59,6 +59,13 @@ jobs:
           repository: pipelinedave/k3s-config
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
+          fetch-depth: 0
+
+      - name: 🔧 Ensure Up-to-date Main
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git pull --rebase origin main
 
       - name: 🪄 Prepare Variables
         run: |
@@ -91,18 +98,17 @@ jobs:
 
       - name: 💾 Commit & Push Changes
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git pull --rebase origin main
-          git add version-configmap.yaml
+          git add version-configmap.yaml || true
           git add kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml || true
           git add kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml || true
-          git commit -m "Update ConfigMap and ${ENV} deployments for ${VERSION_TAG} with images ${{ github.sha }}"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update ConfigMap and ${ENV} deployments for ${VERSION_TAG} with images ${{ github.sha }}"
+            git push
+          fi
 
       - name: 🏷️ Tag in k3s-config Repo
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
           git tag "${VERSION_TAG}"
           git push origin "${VERSION_TAG}"
