@@ -11,44 +11,51 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    env:
+      PYTHON_VERSION: '3.11'
+      NODE_VERSION: '18'
+
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout Code (Choremane)
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: 🐍 Set up Python
+      # Cache & Install Python dependencies
+      - name: 🐍 Setup Python & Cache Deps
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
 
-      - name: 📦 Install Python deps
-        run: |
-          pip install -r backend/requirements.txt
+      - name: 📦 Install Python Deps
+        run: pip install -r backend/requirements.txt
 
-      - name: 🌐 Set up Node.js
+      # Cache & Install Node dependencies
+      - name: 🌐 Setup Node & Cache Deps
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 📦 Install Node deps
+      - name: 📦 Install Node Deps
         working-directory: ./frontend
         run: npm install
 
-      - name: 🔧 Set up Docker Buildx
+      - name: 🔧 Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: 🔑 Log in to DockerHub
+      - name: 🔑 Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 🏭 Build and Push Backend Image
+      # Build Backend Image, capture its digest
+      - name: 🏭 Build & Push Backend
+        id: build_backend
         uses: docker/build-push-action@v4
         with:
           context: ./backend
@@ -58,7 +65,9 @@ jobs:
             pipelinedave/choremane-api:latest
             pipelinedave/choremane-api:${{ github.sha }}
 
-      - name: 🏭 Build and Push Frontend Image
+      # Build Frontend Image, capture its digest
+      - name: 🏭 Build & Push Frontend
+        id: build_frontend
         uses: docker/build-push-action@v4
         with:
           context: ./frontend
@@ -68,17 +77,25 @@ jobs:
             pipelinedave/choremane-frontend:latest
             pipelinedave/choremane-frontend:${{ github.sha }}
 
+      - name: 📜 Set Image Variables
+        run: |
+          echo "BACKEND_DIGEST=${{ steps.build_backend.outputs.digest }}" >> $GITHUB_ENV
+          echo "FRONTEND_DIGEST=${{ steps.build_frontend.outputs.digest }}" >> $GITHUB_ENV
+
+
   deploy:
     runs-on: ubuntu-24.04
     needs: build
     if: startsWith(github.ref, 'refs/tags/choremane/')
     permissions:
       contents: write
+    env:
+      K3S_REPO: pipelinedave/k3s-config
     steps:
-      - name: 📥 Checkout k3s-config repo
+      - name: 📥 Checkout k3s-config Repo
         uses: actions/checkout@v3
         with:
-          repository: pipelinedave/k3s-config
+          repository: ${{ env.K3S_REPO }}
           token: ${{ secrets.K3S_CONFIG_TOKEN }}
           ref: main
           fetch-depth: 0
@@ -92,9 +109,10 @@ jobs:
       - name: 🪄 Prepare Variables
         run: |
           VERSION_TAG="${GITHUB_REF#refs/tags/}"
-          ENV="$(echo ${VERSION_TAG} | cut -d '/' -f 2)"
-          BACKEND_IMAGE="pipelinedave/choremane-api:${{ github.sha }}"
-          FRONTEND_IMAGE="pipelinedave/choremane-frontend:${{ github.sha }}"
+          ENV=$(echo "${VERSION_TAG}" | cut -d '/' -f 2)
+          # Using digests ensures uniqueness based on image content, not just commit.
+          BACKEND_IMAGE="pipelinedave/choremane-api@${BACKEND_DIGEST}"
+          FRONTEND_IMAGE="pipelinedave/choremane-frontend@${FRONTEND_DIGEST}"
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
           echo "ENV=$ENV" >> $GITHUB_ENV
           echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> $GITHUB_ENV
@@ -102,7 +120,7 @@ jobs:
 
       - name: 📝 Create Version ConfigMap
         run: |
-          cat <<EOF > version-configmap.yaml
+          cat <<EOF > kustomize/choremane/version-configmap.yaml
           apiVersion: v1
           kind: ConfigMap
           metadata:
@@ -115,13 +133,15 @@ jobs:
 
       - name: 🔧 Update Deployment Manifests
         run: |
-          sed -i "s|image: pipelinedave/choremane-api:.*|image: ${BACKEND_IMAGE}|g" "./kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml" || echo "🔴 [GUESS]: No api-deployment-patch.yaml found."
-          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${FRONTEND_IMAGE}|g" "./kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml" || echo "🔴 [GUESS]: No frontend-deployment-patch.yaml found."
+          # Substitute images in overlays for correct ENV.
+          # Use the digests, not just the commit SHA.
+          sed -i "s|image: pipelinedave/choremane-api:.*|image: ${BACKEND_IMAGE}|g" "kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml" || echo "🔴 [GUESS]: No api-deployment-patch.yaml found."
+          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${FRONTEND_IMAGE}|g" "kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml" || echo "🔴 [GUESS]: No frontend-deployment-patch.yaml found."
 
       - name: 💾 Commit & Push Changes
         run: |
-          git remote set-url origin "https://x-access-token:${{ secrets.K3S_CONFIG_TOKEN }}@github.com/pipelinedave/k3s-config.git"
-          git add version-configmap.yaml || true
+          git remote set-url origin "https://x-access-token:${{ secrets.K3S_CONFIG_TOKEN }}@github.com/${{ env.K3S_REPO }}.git"
+          git add kustomize/choremane/version-configmap.yaml
           git add kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml || true
           git add kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml || true
           if git diff --cached --quiet; then
