@@ -14,14 +14,13 @@ jobs:
     env:
       PYTHON_VERSION: '3.11'
       NODE_VERSION: '18'
-
     steps:
       - name: 📥 Checkout Code (Choremane)
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # Cache & Install Python dependencies
+      # 🐍 Python setup + cache
       - name: 🐍 Setup Python & Cache Deps
         uses: actions/setup-python@v4
         with:
@@ -32,7 +31,7 @@ jobs:
       - name: 📦 Install Python Deps
         run: pip install -r backend/requirements.txt
 
-      # Cache & Install Node dependencies
+      # 🌐 Node setup + cache
       - name: 🌐 Setup Node & Cache Deps
         uses: actions/setup-node@v3
         with:
@@ -53,7 +52,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Build Backend Image, capture its digest
       - name: 🏭 Build & Push Backend
         id: build_backend
         uses: docker/build-push-action@v4
@@ -61,11 +59,11 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           platforms: linux/amd64,linux/arm64
+          push: true
           tags: |
             pipelinedave/choremane-api:latest
             pipelinedave/choremane-api:${{ github.sha }}
 
-      # Build Frontend Image, capture its digest
       - name: 🏭 Build & Push Frontend
         id: build_frontend
         uses: docker/build-push-action@v4
@@ -73,6 +71,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           platforms: linux/amd64,linux/arm64
+          push: true
           tags: |
             pipelinedave/choremane-frontend:latest
             pipelinedave/choremane-frontend:${{ github.sha }}
@@ -81,7 +80,7 @@ jobs:
         run: |
           echo "BACKEND_DIGEST=${{ steps.build_backend.outputs.digest }}" >> $GITHUB_ENV
           echo "FRONTEND_DIGEST=${{ steps.build_frontend.outputs.digest }}" >> $GITHUB_ENV
-
+          echo "🔴 [GUESS]: BACKEND_DIGEST and FRONTEND_DIGEST set." # Just a debug line
 
   deploy:
     runs-on: ubuntu-24.04
@@ -110,7 +109,6 @@ jobs:
         run: |
           VERSION_TAG="${GITHUB_REF#refs/tags/}"
           ENV=$(echo "${VERSION_TAG}" | cut -d '/' -f 2)
-          # Using digests ensures uniqueness based on image content, not just commit.
           BACKEND_IMAGE="pipelinedave/choremane-api@${BACKEND_DIGEST}"
           FRONTEND_IMAGE="pipelinedave/choremane-frontend@${FRONTEND_DIGEST}"
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
@@ -133,10 +131,15 @@ jobs:
 
       - name: 🔧 Update Deployment Manifests
         run: |
-          # Substitute images in overlays for correct ENV.
-          # Use the digests, not just the commit SHA.
           sed -i "s|image: pipelinedave/choremane-api:.*|image: ${BACKEND_IMAGE}|g" "kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml" || echo "🔴 [GUESS]: No api-deployment-patch.yaml found."
           sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${FRONTEND_IMAGE}|g" "kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml" || echo "🔴 [GUESS]: No frontend-deployment-patch.yaml found."
+
+      # Update the ApplicationSet to use the new VERSION_TAG in the correct environment entry
+      - name: 🔧 Update ApplicationSet for Choremane
+        run: |
+          # We find the line after 'overlay: ${ENV}' and update 'tag:' line
+          # Assuming stable formatting in apps/choremane.yaml
+          sed -i "/overlay: ${ENV}/{n;n;s|tag: .*|tag: ${VERSION_TAG}|}" apps/choremane.yaml
 
       - name: 💾 Commit & Push Changes
         run: |
@@ -144,6 +147,7 @@ jobs:
           git add kustomize/choremane/version-configmap.yaml
           git add kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml || true
           git add kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml || true
+          git add apps/choremane.yaml
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
