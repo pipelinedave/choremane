@@ -1,0 +1,137 @@
+﻿name: ✨ Staging ✨
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  BACKEND_IMAGE: "${{ github.repository_owner }}/choremane-backend:${{ github.sha }}"
+  FRONTEND_IMAGE: "${{ github.repository_owner }}/choremane-frontend:${{ github.sha }}"
+
+jobs:
+  build-push_backend:
+    name: "Build and push the backend image"
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      PYTHON_VERSION: '3.11'
+    steps:
+      - name: 📥 Checkout Code (choremane)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 🐍 Python setup + cache
+      - name: 🐍 Setup Python & Cache Deps
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: 📦 Install Python Deps
+        run: pip install -r backend/requirements.txt
+
+      - name: 🔧 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: 🔑 Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏭 Build & Push Backend
+        id: build_backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ github.repository_owner }}/choremane-backend:latest
+            ${{ env.BACKEND_IMAGE }}
+
+  build-push_frontend:
+    name: "Build and push the frontend image"
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      NODE_VERSION: '18'
+    steps:
+      - name: 📥 Checkout Code (choremane)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 🌐 Node setup + cache
+      - name: 🌐 Setup Node & Cache Deps
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 📦 Install Node Deps
+        working-directory: ./frontend
+        run: npm install
+
+      - name: 🔧 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: 🔑 Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏭 Build & Push Frontend
+        id: build_frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ github.repository_owner }}/choremane-frontend:latest
+            ${{ env.FRONTEND_IMAGE }}
+
+  deploy:
+    runs-on: ubuntu-24.04
+    name: "Update staging deployment files in k3s-config repository"
+    needs: [build-push_backend, build-push_frontend]
+    env:
+      K3S_REPO: "pipelinedave/k3s-config"
+      VERSION_TAG: "${{ github.ref_name }}"
+
+    steps:
+      - name: 📥 Checkout k3s-config Repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.K3S_REPO }}
+          token: ${{ secrets.K3S_CONFIG_TOKEN }}
+          ref: main
+          fetch-depth: 0
+
+      - name: 🔧 Ensure Up-to-date Main
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git pull --rebase origin main
+
+      - name: 📝 Create Version ConfigMap
+        run: |
+          cat <<EOF > kustomize/choremane/overlays/staging/version-configmap.yaml
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: choremane-version
+          data:
+            VERSION_TAG: ${{ env.VERSION_TAG }}
+            BACKEND_IMAGE: "${{ env.BACKEND_IMAGE }}"
+            FRONTEND_IMAGE: "${{ env.FRONTEND_IMAGE }}"
+          EOF
