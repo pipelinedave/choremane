@@ -5,16 +5,16 @@ resources:
   - version-configmap.yaml
   - https://github.com/pipelinedave/k3s-config.git/kustomize/choremane/overlays/dev
 
-replacements:
-- source:
-    fieldPath: data.VERSION_TAG
-    kind: ConfigMap
-    name: choremane-version
-- source:
-    fieldPath: data.BACKEND_IMAGE
-    kind: ConfigMap
-    name: choremane-version
-- source:
-    fieldPath: data.FRONTEND_IMAGE
-    kind: ConfigMap
-    name: choremane-version
+# replacements:
+# - source:
+#     fieldPath: data.VERSION_TAG
+#     kind: ConfigMap
+#     name: choremane-version
+# - source:
+#     fieldPath: data.BACKEND_IMAGE
+#     kind: ConfigMap
+#     name: choremane-version
+# - source:
+#     fieldPath: data.FRONTEND_IMAGE
+#     kind: ConfigMap
+#     name: choremane-version
