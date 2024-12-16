@@ -63,9 +63,11 @@ jobs:
       - name: 🪄 Prepare Variables
         run: |
           VERSION_TAG="${GITHUB_REF#refs/tags/}"
+          ENV="$(echo ${VERSION_TAG} | cut -d '/' -f 2)"
           BACKEND_IMAGE="pipelinedave/choremane-api:${{ github.sha }}"
           FRONTEND_IMAGE="pipelinedave/choremane-frontend:${{ github.sha }}"
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "ENV=$ENV" >> $GITHUB_ENV
           echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> $GITHUB_ENV
           echo "FRONTEND_IMAGE=$FRONTEND_IMAGE" >> $GITHUB_ENV
 
@@ -84,17 +86,18 @@ jobs:
 
       - name: 🔧 Update Deployment Manifests
         run: |
-          sed -i "s|image: pipelinedave/choremane-api:.*|image: ${BACKEND_IMAGE}|g" ./deployments/backend-deployment.yaml || echo "🔴 [GUESS]: No backend-deployment.yaml found."
-          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${FRONTEND_IMAGE}|g" ./deployments/frontend-deployment.yaml || echo "🔴 [GUESS]: No frontend-deployment.yaml found."
+          sed -i "s|image: pipelinedave/choremane-api:.*|image: ${BACKEND_IMAGE}|g" "./kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml" || echo "🔴 [GUESS]: No api-deployment-patch.yaml found."
+          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${FRONTEND_IMAGE}|g" "./kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml" || echo "🔴 [GUESS]: No frontend-deployment-patch.yaml found."
 
       - name: 💾 Commit & Push Changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add version-configmap.yaml
-          git add deployments/
-          git commit -m "Update ConfigMap and deployments for ${{ env.VERSION_TAG }} with images ${{ github.sha }}"
           git pull --rebase origin main
+          git add version-configmap.yaml
+          git add kustomize/choremane/overlays/${ENV}/api-deployment-patch.yaml || true
+          git add kustomize/choremane/overlays/${ENV}/frontend-deployment-patch.yaml || true
+          git commit -m "Update ConfigMap and ${ENV} deployments for ${VERSION_TAG} with images ${{ github.sha }}"
           git push
 
       - name: 🏷️ Tag in k3s-config Repo
