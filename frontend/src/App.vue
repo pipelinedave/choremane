@@ -2,13 +2,13 @@
   <div id="app">
     <div class="version-banner" v-if="versionInfo">
       <!-- Version Tag: If it starts with 'v', assume it's a release tag; otherwise link to branch -->
-      <a :href="versionTagLink" target="_blank" rel="noopener noreferrer">{{ versionInfo.version_tag }}</a>
+      <a :href="versionTagLink" target="_blank" rel="noopener noreferrer">{{ versionInfo.version_tag }}>github ref</a>
       |
       <!-- Backend image link with Docker Hub tag filter -->
-      <a :href="backendImageLink" target="_blank" rel="noopener noreferrer">{{ versionInfo.backend_image }}</a>
+      <a :href="backendImageLink" target="_blank" rel="noopener noreferrer">{{ versionInfo.backend_image }}>backend image</a>
       |
       <!-- Frontend image link with Docker Hub tag filter -->
-      <a :href="frontendImageLink" target="_blank" rel="noopener noreferrer">{{ versionInfo.frontend_image }}</a>
+      <a :href="frontendImageLink" target="_blank" rel="noopener noreferrer">{{ versionInfo.frontend_image }}>frontend image</a>
     </div>
     <router-view></router-view>
   </div>
