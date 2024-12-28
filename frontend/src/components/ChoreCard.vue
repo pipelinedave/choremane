@@ -5,26 +5,44 @@
     :id="`chore-card-${chore.id}`"
     @dblclick="editMode = true"
   >
-    <transition name="fade">
+  <transition name="fade">
       <div v-if="editMode" class="chore-edit">
-        <input v-model="editableChore.name" class="edit-input" placeholder="Chore Name" />
-        <input v-model="editableChore.due_date" class="edit-input" type="date" />
-        <input v-model="editableChore.interval_days" class="edit-input" type="number" placeholder="Interval (days)" />
-        <div class="edit-actions">
-          <button @click="saveChore" class="save-btn">Save</button>
-          <button @click="archiveChore" class="archive-btn">Archive</button>
-          <button @click="cancelEditMode" class="cancel-btn">Cancel</button>
-        </div>
+        <form @submit.prevent="saveChore" class="edit-chore-form">
+          <div class="form-group">
+            <label for="chore-name">Name</label>
+            <input id="chore-name" v-model="editableChore.name" type="text" placeholder="Chore Name" required />
+          </div>
+
+          <div class="form-group">
+            <label for="chore-due-date">Due Date</label>
+            <input id="chore-due-date" v-model="editableChore.due_date" type="date" required />
+          </div>
+
+          <div class="form-group">
+            <label for="chore-interval">Interval (days)</label>
+            <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-btn">Save</button>
+            <button type="button" class="cancel-btn" @click="cancelEditMode">Cancel</button>
+            <button type="button" class="archive-btn" @click="archiveChore">Archive</button>
+          </div>
+        </form>
       </div>
       <div v-else class="chore-content">
         <span class="chore-title">{{ chore.name }}</span>
-        <span class="chore-interval">Every {{ chore.interval_days }} days</span>
-        <span
-          :class="{'chore-overdue': isOverdue(chore.due_date), 'chore-due': !isOverdue(chore.due_date)}"
-          class="chore-due"
-        >
-          {{ friendlyDueDate(chore.due_date) }}
-        </span>
+        <div class="chore-right">
+          <span
+            :class="{'chore-overdue': isOverdue(chore.due_date), 'chore-due': !isOverdue(chore.due_date)}"
+            class="chore-due"
+          >
+            {{ friendlyDueDate(chore.due_date) }}
+          </span>
+          <span class="chore-interval">
+            ⏳ {{ chore.interval_days }}
+          </span>
+        </div>
       </div>
     </transition>
   </div>
@@ -159,72 +177,102 @@ const friendlyDueDate = (due_date) => {
 .chore-title {
   font-weight: bold;
   font-size: clamp(0.9rem, 2vw, 1.2rem);
-  flex: 1;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.chore-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .chore-title,
-.chore-interval,
-.chore-due {
+.chore-due,
+.chore-interval {
   background: #ffffff80;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   font-size: 0.9rem;
-  margin-left: 0.5rem;
 }
 
-.chore-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  width: 100%;
-  background-color: #f9f9f9;
-  padding: 1rem;
-  border-radius: 8px;
+.chore-card.edit-mode {
+  height: auto;
 }
 
-.edit-input {
+.edit-chore-form {
+  background: #202020;
+  padding: 1.5rem;
+  border-radius: 10px;
+  color: #fff;
+  margin: 1.5rem auto; /* Ensures equal margin and padding on all sides */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background: #333;
+  color: #fff;
 }
 
-.edit-actions {
+.form-actions {
   display: flex;
   justify-content: space-between;
-  gap: 0.8rem;
 }
 
-.save-btn {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
+.submit-btn,
+.cancel-btn,
 .archive-btn {
-  background-color: #f44336;
-  color: white;
-  border: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 5px;
+  border: none;
   cursor: pointer;
+}
+
+.submit-btn {
+  background-color: #27ae60;
+  color: white;
+  font-weight: bold;
+}
+
+.submit-btn:hover {
+  background-color: #2ecc71;
 }
 
 .cancel-btn {
-  background-color: #9e9e9e;
+  background-color: #e74c3c;
   color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
+  font-weight: bold;
+}
+
+.cancel-btn:hover {
+  background-color: #ff6f61;
+}
+
+.archive-btn {
+  background-color: #f1c40f;
+  color: #333;
+  font-weight: bold;
+}
+
+.archive-btn:hover {
+  background-color: #f39c12;
 }
 
 /* Colors Adjusted for Granularity */
