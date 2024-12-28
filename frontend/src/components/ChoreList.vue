@@ -6,6 +6,7 @@
         <button @click="toggleAddMode" class="add-button">+</button>
         <!-- Undo button is hidden for now -->
         <!-- <button @click="undoLastAction" class="undo-button">↶</button> -->
+        <button @click="installPWA" class="install-button">Install App</button>
       </div>
     </header>
 
@@ -103,6 +104,26 @@ const updateChore = async (updatedChore) => {
     console.error('Failed to update chore:', error);
   }
 };
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+const installPWA = async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+    deferredPrompt = null;
+  }
+};
 </script>
 
 <style scoped>
@@ -139,6 +160,20 @@ const updateChore = async (updatedChore) => {
 
 .add-button:hover,
 .undo-button:hover {
+  background-color: #555555;
+}
+
+.install-button {
+  background-color: #333333;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.install-button:hover {
   background-color: #555555;
 }
 
