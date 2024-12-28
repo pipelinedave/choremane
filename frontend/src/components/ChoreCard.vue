@@ -1,29 +1,30 @@
 ﻿<template>
   <div
     class="chore-card"
-    :class="choreClass(chore)"
+    :class="[choreClass(chore), { 'edit-mode': editMode }]"
     :id="`chore-card-${chore.id}`"
     @dblclick="editMode = true"
   >
     <transition name="fade">
       <div v-if="editMode" class="chore-edit">
-        <input v-model="editableChore.name" placeholder="Name" />
-        <input v-model="editableChore.due_date" type="date" />
-        <input v-model="editableChore.interval_days" type="number" />
-        <button @click="saveChore" class="save-btn">Save</button>
-        <button @click="archiveChore" class="archive-btn">Archive</button>
-        <button @click="cancelEditMode" class="cancel-btn">Cancel</button>
-      </div>
-      <div v-else>
-        <div class="chore-header">{{ chore.name }}</div>
-        <div class="chore-body">
-          <div class="info-box left">
-            <span>📅</span> {{ friendlyDueDate(chore.due_date) }}
-          </div>
-          <div class="info-box right">
-            <span>⏳</span> {{ friendlyInterval(chore.interval_days) }}
-          </div>
+        <input v-model="editableChore.name" class="edit-input" placeholder="Chore Name" />
+        <input v-model="editableChore.due_date" class="edit-input" type="date" />
+        <input v-model="editableChore.interval_days" class="edit-input" type="number" placeholder="Interval (days)" />
+        <div class="edit-actions">
+          <button @click="saveChore" class="save-btn">Save</button>
+          <button @click="archiveChore" class="archive-btn">Archive</button>
+          <button @click="cancelEditMode" class="cancel-btn">Cancel</button>
         </div>
+      </div>
+      <div v-else class="chore-content">
+        <span class="chore-title">{{ chore.name }}</span>
+        <span class="chore-interval">Every {{ chore.interval_days }} days</span>
+        <span
+          :class="{'chore-overdue': isOverdue(chore.due_date), 'chore-due': !isOverdue(chore.due_date)}"
+          class="chore-due"
+        >
+          {{ friendlyDueDate(chore.due_date) }}
+        </span>
       </div>
     </transition>
   </div>
@@ -46,16 +47,14 @@ onMounted(() => {
   const card = document.getElementById(`chore-card-${props.chore.id}`);
   const hammer = new Hammer(card);
 
-  // Add swipe gesture handlers with animations
   hammer.on('swiperight', () => {
-    // Add swiping animation
     card.classList.add('swipe-right');
     setTimeout(() => {
       emit('markAsDone', props.chore.id);
-    }, 300); // Duration of the animation
+    }, 300);
   });
+
   hammer.on('swipeleft', () => {
-    // Optional: Add a subtle animation or visual feedback
     card.classList.add('enter-edit-mode');
     setTimeout(() => {
       editMode.value = true;
@@ -63,15 +62,12 @@ onMounted(() => {
     }, 300);
   });
 
-
-  // Cleanup on component unmount
   onBeforeUnmount(() => {
     hammer.destroy();
   });
 });
 
 const saveChore = async () => {
-  console.log('Saving chore:', editableChore.value);
   try {
     await choreStore.updateChore(editableChore.value);
     emit('updateChore', editableChore.value);
@@ -82,18 +78,16 @@ const saveChore = async () => {
 };
 
 const archiveChore = async () => {
-  console.log('Archiving chore:', props.chore.id);
   try {
     await choreStore.archiveChore(props.chore.id);
     emit('archiveChore', props.chore.id);
-    console.log('Chore archived successfully.');
   } catch (error) {
     console.error('Error archiving chore:', error);
   }
 };
 
 const cancelEditMode = () => {
-  editableChore.value = { ...props.chore }; // Reset fields
+  editableChore.value = { ...props.chore };
   editMode.value = false;
 };
 
@@ -106,8 +100,18 @@ const choreClass = (chore) => {
   if (diffDays < 0) return 'overdue';
   if (diffDays === 0) return 'due-today';
   if (diffDays === 1) return 'due-tomorrow';
-  if (diffDays <= 7) return 'due-week';
-  return 'due-month';
+  if (diffDays <= 2) return 'due-2-days';
+  if (diffDays <= 3) return 'due-3-days';
+  if (diffDays <= 7) return 'due-7-days';
+  if (diffDays <= 14) return 'due-14-days';
+  if (diffDays <= 30) return 'due-30-days';
+  return 'due-far-future';
+};
+
+const isOverdue = (due_date) => {
+  const today = new Date().setUTCHours(0, 0, 0, 0);
+  const dueDate = new Date(due_date).setUTCHours(0, 0, 0, 0);
+  return dueDate < today;
 };
 
 const friendlyDueDate = (due_date) => {
@@ -118,121 +122,145 @@ const friendlyDueDate = (due_date) => {
   if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
+  if (diffDays <= 2) return `In ${diffDays} days`;
   if (diffDays <= 7) return `In ${diffDays} days`;
+  if (diffDays <= 14) return `In ${diffDays} days`;
+  if (diffDays <= 30) return `In ${diffDays} days`;
   return `In ${diffDays} days`;
-};
-
-const friendlyInterval = (interval) => {
-  if (interval === 1) return 'Every day';
-  return `Every ${interval} days`;
 };
 </script>
 
 <style scoped>
 .chore-card {
-  background: #202020;
-  padding: 1rem;
-  border-radius: 10px;
-  margin-bottom: 1rem;
-  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.6rem;
+  color: #333333;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   position: relative;
-  overflow: hidden;
-  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  transition: height 0.3s ease;
 }
 
-/* Swiping Animations */
-.chore-card.swipe-right {
-  transform: translateX(100%);
-  opacity: 0;
+.chore-card.edit-mode {
+  height: auto;
 }
 
-.chore-card.swipe-left {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.chore-card.enter-edit-mode {
-  /* Example: Briefly change background color */
-  animation: highlight 0.3s forwards;
-}
-
-@keyframes highlight {
-  0% {
-    background-color: inherit;
-  }
-  50% {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-  100% {
-    background-color: inherit;
-  }
-}
-/* Chore Header Styling */
-.chore-header {
-  font-weight: bold;
-  font-size: 1.5rem;
-  background: rgba(100, 100, 100, 0.6);
-  padding: 0.5rem;
-  border-radius: 5px;
-  margin-bottom: 0.5rem;
-}
-
-/* Chore Body Styling */
-.chore-body {
+.chore-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
-/* Info Boxes Styling */
-.info-box {
-  background: rgba(100, 100, 100, 0.6);
-  padding: 0.3rem 0.5rem;
-  border-radius: 5px;
+.chore-title {
+  font-weight: bold;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chore-title,
+.chore-interval,
+.chore-due {
+  background: #ffffff80;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.chore-edit {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
 }
 
-/* Left and Right Alignment */
-.info-box.left {
-  justify-content: flex-start;
+.edit-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
 }
 
-.info-box.right {
-  justify-content: flex-end;
+.edit-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
 }
 
-/* Chore Card Color Classes */
+.save-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.archive-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background-color: #9e9e9e;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Colors Adjusted for Granularity */
 .chore-card.overdue {
-  background-color: #8e44ad; /* Purple for overdue */
+  background-color: #ff5252;
 }
 
 .chore-card.due-today {
-  background-color: #e74c3c; /* Red for due today */
+  background-color: #ff7043;
 }
 
 .chore-card.due-tomorrow {
-  background-color: #f1c40f; /* Yellow for due tomorrow */
+  background-color: #ffa726;
 }
 
-.chore-card.due-week {
-  background-color: #27ae60; /* Green for due within 7 days */
+.chore-card.due-2-days {
+  background-color: #ffee58;
 }
 
-.chore-card.due-month {
-  background-color: #2980b9; /* Blue for due within 30 days */
+.chore-card.due-3-days {
+  background-color: #aed581;
 }
 
-.chore-card.archived {
-  background-color: #7f8c8d; /* Gray for archived */
+.chore-card.due-7-days {
+  background-color: #81c784;
 }
 
-/* Fade Transition */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+.chore-card.due-14-days {
+  background-color: #4caf50;
 }
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+
+.chore-card.due-30-days {
+  background-color: #42a5f5;
+}
+
+.chore-card.due-far-future {
+  background-color: #7986cb;
 }
 </style>

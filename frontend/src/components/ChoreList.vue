@@ -1,7 +1,7 @@
 ﻿<template>
   <div class="chore-list">
     <header class="header">
-      <h1>CHOREMANE  :[]]</h1>
+      <h1>CHOREMANE</h1>
       <div class="header-buttons">
         <button @click="toggleAddMode" class="add-button">+</button>
         <!-- Undo button is hidden for now -->
