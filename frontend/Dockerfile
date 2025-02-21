@@ -1,14 +1,10 @@
-﻿# Stage 1: Base
-FROM node:18-alpine AS base
+FROM node:18-alpine
 
 WORKDIR /frontend
 
 COPY package*.json ./
 
 RUN npm install
-
-# Stage 2: Development
-FROM base AS development
 
 ENV NODE_ENV=development
 

@@ -13,17 +13,21 @@ import json
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Environment-based configuration
-# DB_HOST = os.getenv("POSTGRES_HOST", "postgres-service")
+DB_HOST = os.getenv("POSTGRES_HOST", "postgres-service")
 DB_NAME = os.getenv("POSTGRES_DB", "choresdb")
 DB_USER = os.getenv("POSTGRES_USER", "admin")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-ALLOW_ORIGINS = os.getenv("ALLOW_ORIGINS", "https://chores.stillon.top,https://chores-staging.stillon.top,http://localhost:8091,http://127.0.0.1:8091").split(",")
+ALLOW_ORIGINS = os.getenv(
+    "ALLOW_ORIGINS",
+    "https://chores.stillon.top,https://chores-staging.stillon.top,http://localhost:5000,http://127.0.0.1:5000"
+).split(",")
 
 app = FastAPI()
 
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOW_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +47,7 @@ def cors_test():
 # Database connection
 def get_db_connection():
     conn = psycopg2.connect(
-        host="postgres-service",
+        host=DB_HOST,
         database=DB_NAME,
         user=DB_USER,
         password=DB_PASSWORD

@@ -1,20 +1,11 @@
 ﻿import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
-// Set the base URL for all API calls from an environment variable
-const baseURL = (() => {
-  if (process.env.NODE_ENV === "development") {
-    // Adjust for local dev with port forwarding
-    return `http://localhost:8090/api`;
-  }
-  return "/api"; // Staging/Prod with Traefik reverse proxy
-})();
+const baseURL = process.env.NODE_ENV === "development" ? "http://localhost:8090/api" : "/api"
+console.log("baseURL: " + baseURL)
+console.log("process.env.NODE_ENV: " + process.env.NODE_ENV)
+const api = axios.create({ baseURL })
 
-console.log("baseURL:  " + baseURL);
-console.log("process.env.NODE_ENV: " + process.env.NODE_ENV);
-const api = axios.create({ baseURL });
-
-// Add a request interceptor to include the token if it’s available
 api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
@@ -23,22 +14,32 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
-// Test API call function
 async function testConnection() {
   try {
-    const response = await api.get('/status') // Replace '/status' with your actual test endpoint if different
+    const response = await api.get('/status')
     console.log('Connection successful:', response.data)
   } catch (error) {
     console.error('Error connecting to backend:', error)
+    const errorBanner = document.createElement('div')
+    errorBanner.textContent = 'The backend service is currently unavailable'
+    Object.assign(errorBanner.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      backgroundColor: 'red',
+      color: 'white',
+      textAlign: 'center',
+      padding: '1em',
+      zIndex: '9999'
+    })
+    document.body.appendChild(errorBanner)
   }
 }
 
-// Call the test function on load for verification purposes
 testConnection()
 
 export default api
