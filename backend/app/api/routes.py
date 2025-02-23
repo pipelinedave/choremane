@@ -1,39 +1,15 @@
-﻿import logging
+﻿import json
+import logging
 from datetime import datetime, timedelta, date
-import os
-from fastapi import FastAPI, HTTPException, APIRouter
+
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional
-import psycopg2
-import json
+from typing import List
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+from app.database import get_db_connection
+from app.models import Chore, UndoRequest
+from app.utils import log_action
 
-# Environment-based configuration
-DB_HOST = os.getenv("POSTGRES_HOST", "postgres-service")
-DB_NAME = os.getenv("POSTGRES_DB", "choresdb")
-DB_USER = os.getenv("POSTGRES_USER", "admin")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-ALLOW_ORIGINS = os.getenv(
-    "ALLOW_ORIGINS",
-    "https://chores.stillon.top,https://chores-staging.stillon.top,http://localhost:5000,http://127.0.0.1:5000"
-).split(",")
-
-app = FastAPI()
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Create an API router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
 @api_router.options("/{path:path}")
@@ -44,76 +20,15 @@ async def options_handler(path: str):
 def cors_test():
     return {"message": "CORS test successful"}
 
-# Database connection
-def get_db_connection():
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
-    return conn
-
-# Models
-class Chore(BaseModel):
-    id: Optional[int] = None
-    name: str
-    interval_days: int
-    due_date: str
-    done: bool = Field(default=False)
-    done_by: Optional[str] = Field(default=None)
-    archived: bool = Field(default=False)
-
-class UndoRequest(BaseModel):
-    log_id: int
-
-# Utility for logging actions
-def log_action(chore_id, done_by, action_type, action_details=None):
-    if isinstance(action_details, dict):
-        # Ensure dates in action_details are serializable
-        action_details = {
-            key: (value.isoformat() if isinstance(value, (datetime, date)) else value)
-            for key, value in action_details.items()
-        }
-
-    # Serialize action_details to JSON string
-    action_details_str = json.dumps(action_details) if action_details else "{}"
-    logging.info(f"Logging action for chore_id={chore_id}, action_type={action_type}, details={action_details_str}")
-
-    # Insert into database
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute(
-            """
-            INSERT INTO chore_logs (chore_id, done_by, action_type, action_details)
-            VALUES (%s, %s, %s, %s)
-            """,
-            (chore_id, done_by, action_type, action_details_str)
-        )
-        conn.commit()
-        logging.info(f"Action logged successfully for chore_id={chore_id}")
-    except Exception as e:
-        logging.error(f"Error logging action for chore_id={chore_id}: {e}")
-        conn.rollback()
-    finally:
-        cur.close()
-        conn.close()
-
-# Endpoints
 @api_router.get("/status")
 def status_check():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-
-        # Ensure database connectivity
         cur.execute("SELECT 1")
         cur.close()
         conn.close()
-
         return {"status": "OK", "message": "Backend is healthy and database is reachable"}
-
     except Exception as e:
         logging.error(f"Health check failed: {str(e)}")
         return {"status": "ERROR", "message": "Backend or database connectivity issue"}
@@ -132,11 +47,8 @@ def get_logs():
     if not logs:
         logging.info("No logs found")
         return []
-
     cur.close()
     conn.close()
-
-    # Deserialize action_details and ensure proper formatting
     return [
         {
             "id": row[0],
@@ -205,13 +117,10 @@ def undo_action(undo_request: UndoRequest):
         log_entry = cur.fetchone()
         if not log_entry:
             raise HTTPException(status_code=404, detail="Log entry not found")
-
         action_type, action_details = log_entry
         if isinstance(action_details, str):
             action_details = json.loads(action_details)
-
         logging.info(f"Undoing action: {action_type} with details: {action_details}")
-
         if action_type == "created":
             cur.execute("DELETE FROM chores WHERE id = %s", (action_details["id"],))
         elif action_type == "updated":
@@ -229,21 +138,14 @@ def undo_action(undo_request: UndoRequest):
         elif action_type == "archived":
             cur.execute("UPDATE chores SET archived = FALSE WHERE id = %s", (action_details["id"],))
         elif action_type == "marked_done":
-            # The previous code references variables done_by/new_due_date/chore_id not defined here,
-            # this is a bug in the original code. Assuming we had them, we’d revert done state.
-            # For now, we’ll assume we have to restore from action_details:
             original_chore_id = action_details["chore_id"]
-            original_due_date = action_details["previous_due_date"] if "previous_due_date" in action_details else None
-            original_done_by = None
-            if original_due_date is None:
-                original_due_date = date.today().isoformat()
+            original_due_date = action_details.get("previous_due_date", date.today().isoformat())
             cur.execute(
                 "UPDATE chores SET done = FALSE, done_by = %s, due_date = %s WHERE id = %s",
-                (original_done_by, original_due_date, original_chore_id)
+                (None, original_due_date, original_chore_id)
             )
         else:
             raise HTTPException(status_code=400, detail="Undo not supported for this action type")
-
         conn.commit()
         log_action(action_details["id"], None, "undo", action_details={"action_type": action_type, "undone": True})
         return {"message": f"Action {action_type} undone successfully"}
@@ -264,17 +166,14 @@ def update_chore(chore_id: int, updated_chore: Chore):
         previous_state = cur.fetchone()
         if not previous_state:
             raise HTTPException(status_code=404, detail="Chore not found")
-
         previous_state_dict = (
             dict(zip([desc[0] for desc in cur.description], previous_state))
             if cur.description and previous_state
             else {}
         )
-
         for key, value in previous_state_dict.items():
             if isinstance(value, (datetime, date)):
                 previous_state_dict[key] = value.isoformat()
-
         cur.execute(
             """
             UPDATE chores SET name = %s, interval_days = %s, due_date = %s
@@ -283,7 +182,6 @@ def update_chore(chore_id: int, updated_chore: Chore):
             (updated_chore.name, updated_chore.interval_days, updated_chore.due_date, chore_id)
         )
         conn.commit()
-
         log_action(chore_id, None, "updated", action_details={"previous_state": previous_state_dict})
         return {"message": f"Chore {chore_id} updated successfully"}
     except Exception as e:
@@ -299,9 +197,7 @@ def mark_chore_done(chore_id: int, payload: dict):
     done_by = payload.get("done_by")
     if not done_by:
         raise HTTPException(status_code=422, detail="done_by is required")
-
     logging.info(f"Marking chore {chore_id} as done by {done_by}")
-
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -309,25 +205,16 @@ def mark_chore_done(chore_id: int, payload: dict):
         result = cur.fetchone()
         if not result:
             raise HTTPException(status_code=404, detail="Chore not found or incomplete")
-
         interval_days, due_date = result
-
-        if isinstance(due_date, date):
-            due_date_str = due_date.isoformat()
-        else:
-            due_date_str = due_date
-
+        due_date_str = due_date.isoformat() if isinstance(due_date, date) else due_date
         new_due_date = (date.today() + timedelta(days=interval_days)).isoformat()
-
         cur.execute(
             "UPDATE chores SET done = TRUE, done_by = %s, due_date = %s WHERE id = %s",
             (done_by, new_due_date, chore_id)
         )
         conn.commit()
-
         log_action(chore_id, done_by, "marked_done", action_details={"chore_id": chore_id, "new_due_date": new_due_date, "previous_due_date": due_date_str})
         return {"message": f"Chore {chore_id} marked as done", "new_due_date": new_due_date}
-
     except Exception as e:
         conn.rollback()
         logging.error(f"Error marking chore as done: {e}")
@@ -357,15 +244,12 @@ def archive_chore(chore_id: int):
 
 @api_router.get("/version")
 def get_version_info():
+    import os
     version_tag = os.getenv("VERSION_TAG", "unknown")
     backend_image = os.getenv("BACKEND_IMAGE", "unknown")
     frontend_image = os.getenv("FRONTEND_IMAGE", "unknown")
-
     return {
         "version_tag": version_tag,
         "backend_image": backend_image,
         "frontend_image": frontend_image
     }
-
-# Include the API router in the FastAPI application
-app.include_router(api_router)

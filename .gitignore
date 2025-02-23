@@ -12,6 +12,7 @@ yarn-error.log
 dist/
 out/
 build/
+__pycache__/
 
 # OS-specific files
 .DS_Store
@@ -24,5 +25,3 @@ Thumbs.db
 *.seed
 *.pid.lock
 *.gz
-
-*/__pycache__
