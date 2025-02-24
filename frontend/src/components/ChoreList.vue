@@ -1,17 +1,5 @@
 ﻿<template>
   <div class="chore-list">
-    <header class="header">
-      <h1>CHOREMANE</h1>
-      <div class="header-buttons">
-        <button @click="toggleAddMode" class="add-button">+</button>
-        <!-- Undo button is hidden for now -->
-        <!-- <button @click="undoLastAction" class="undo-button">↶</button> -->
-        <button @click="installPWA" class="install-button">Install App</button>
-      </div>
-    </header>
-
-    <AddChoreForm v-if="addMode" @addChore="addChore" @cancel="toggleAddMode" />
-
     <!-- Animation for refreshing the list -->
     <transition-group name="list" tag="div" class="chore-cards">
       <ChoreCard
@@ -52,13 +40,6 @@ onMounted(() => {
   // No need to fetch logs if we're not displaying them
   // choreStore.fetchLogs();
 });
-
-const addMode = ref(false);
-
-const toggleAddMode = () => {
-  addMode.value = !addMode.value;
-  console.log('Toggled add mode:', addMode.value);
-};
 
 const sortedChores = computed(() => {
   console.log('Recomputing sorted chores...');
@@ -134,6 +115,8 @@ const installPWA = async () => {
   margin: 0 auto;
   color: #e0e0e0;
 }
+
+/* Remove header-related styles */
 
 .header {
   display: flex;
