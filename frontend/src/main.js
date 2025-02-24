@@ -12,13 +12,15 @@ app.mount('#app')
 
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(registration => {
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    })
-    .catch(error => {
-      console.log('ServiceWorker registration failed: ', error);
-    });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful')
+      })
+      .catch(error => {
+        console.error('ServiceWorker registration failed:', error)
+      })
+  })
 }
 
 let deferredPrompt;

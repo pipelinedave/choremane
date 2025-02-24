@@ -4,7 +4,13 @@
       <h1>CHOREMANE</h1>
       <div class="header-buttons">
         <button @click="toggleAddMode" class="add-button">+</button>
-        <button class="install-button">Install App</button>
+        <button
+          v-if="showInstallButton"
+          @click="installPWA"
+          class="install-button"
+        >
+          Install App
+        </button>
         <button @click="toggleBanner">About</button>
       </div>
     </div>
@@ -75,6 +81,32 @@ const emit = defineEmits(['addChore'])
 const handleAddChore = (newChore) => {
   emit('addChore', newChore)
   addMode.value = false
+}
+
+const deferredPrompt = ref(null)
+const showInstallButton = ref(false)
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  deferredPrompt.value = e
+  showInstallButton.value = true
+})
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt.value = null
+  showInstallButton.value = false
+})
+
+const installPWA = async () => {
+  if (!deferredPrompt.value) return
+
+  deferredPrompt.value.prompt()
+  const { outcome } = await deferredPrompt.value.userChoice
+
+  if (outcome === 'accepted') {
+    deferredPrompt.value = null
+    showInstallButton.value = false
+  }
 }
 </script>
 

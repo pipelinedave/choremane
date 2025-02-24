@@ -1,11 +1,11 @@
 ﻿{
   "name": "ChoreMane",
   "short_name": "ChoreMane",
-  "start_url": ".",
+  "description": "A simple chore management application",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#121212",
-  "description": "Manage your chores efficiently with ChoreMane.",
+  "background_color": "#ffffff",
+  "theme_color": "#333333",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
