@@ -1,12 +1,18 @@
-﻿# Stage 1: Base
-FROM node:18-alpine AS base
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
+﻿FROM node:18-alpine
 
-# Stage 3: Production
-FROM base AS production
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+ENV NODE_ENV=production
+
+COPY src/ src/
+COPY public/ public/
+
 RUN npm run build
+
 EXPOSE 5000
+
 CMD ["npx", "serve", "-s", "dist", "-l", "5000"]
