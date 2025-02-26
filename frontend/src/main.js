@@ -23,6 +23,12 @@ if ('serviceWorker' in navigator) {
   })
 }
 
+// Add meta theme-color for PWA (using CSS variable for consistency)
+const metaThemeColor = document.createElement('meta')
+metaThemeColor.name = 'theme-color'
+metaThemeColor.content = getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim() // dynamically use CSS variable
+document.head.appendChild(metaThemeColor)
+
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {

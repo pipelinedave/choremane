@@ -115,43 +115,47 @@ const installPWA = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* Add padding or margins as needed */
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
 }
 
-.header-buttons > button {
-  margin-left: 0.5rem;
+.header-buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.header-buttons button {
+  composes: btn from global;
+  min-width: 36px;
+  min-height: 36px;
+  padding: var(--space-xs);
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  border-radius: 50%;
+}
+
+.header-buttons button:hover {
+  background: var(--color-surface-lighter);
 }
 
 .version-banner {
-  background-color: #222;
-  color: #eee;
-  padding: 0.5rem;
-  margin-top: 1rem;
-  text-align: center;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-sm);
 }
 
 .version-banner a {
-  color: #9dd9ff;
-  margin: 0 0.5rem;
+  color: var(--color-primary);
+  margin: 0 var(--space-xs);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
+
 .version-banner a:hover {
-  text-decoration: underline;
-}
-
-.add-button,
-.install-button {
-  background-color: #333333;
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 50%;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.add-button:hover,
-.install-button:hover {
-  background-color: #555555;
+  color: var(--color-primary-hover);
 }
 </style>

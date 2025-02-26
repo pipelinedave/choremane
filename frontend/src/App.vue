@@ -58,23 +58,24 @@ const handleAddChore = async (newChore) => {
 
 <style scoped>
 #app {
-  font-family: Arial, sans-serif;
-  color: #333;
-  padding: 1rem;
+  font-family: 'Roboto', Arial, sans-serif;
+  color: var(--color-text);
+  padding: var(--spacing-md);
 }
 
 .version-banner {
-  background-color: #222;
-  color: #eee;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
   text-align: center;
+  border-radius: 4px;
+  box-shadow: var(--shadow-sm);
 }
 
 .version-banner a {
-  color: #9dd9ff;
-  margin: 0 0.5rem;
-  text-decoration: none;
+  color: var(--color-link);
+  margin: 0 var(--spacing-sm);
 }
 .version-banner a:hover {
   text-decoration: underline;

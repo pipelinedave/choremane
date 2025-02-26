@@ -1,9 +1,15 @@
 ﻿<template>
   <div
     class="chore-card"
-    :class="[choreClass(chore), { 'edit-mode': editMode }]"
+    :class="[
+      choreClass(chore),
+      {
+        'edit-mode': editMode,
+        'done-today': choreStore.isDoneToday(chore)
+      }
+    ]"
     :id="`chore-card-${chore.id}`"
-    @dblclick="editMode = true"
+    @dblclick="handleDblClick"
   >
   <transition name="fade">
       <div v-if="editMode" class="chore-edit">
@@ -61,11 +67,20 @@ const choreStore = useChoreStore();
 const editMode = ref(false);
 const editableChore = ref({ ...props.chore });
 
+const handleDblClick = () => {
+  if (choreStore.isDoneToday(props.chore)) return;
+  editMode.value = true;
+};
+
 onMounted(() => {
   const card = document.getElementById(`chore-card-${props.chore.id}`);
   const hammer = new Hammer(card);
 
   hammer.on('swiperight', () => {
+    if (choreStore.isDoneToday(props.chore)) {
+      console.log('Chore already done today');
+      return;
+    }
     card.classList.add('swipe-right');
     setTimeout(() => {
       emit('markAsDone', props.chore.id);
@@ -152,32 +167,28 @@ const friendlyDueDate = (due_date) => {
 .chore-card {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: stretch;
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 0.6rem;
-  color: #333333;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  position: relative;
-  transition: height 0.3s ease;
-}
-
-.chore-card.edit-mode {
-  height: auto;
+  padding: var(--space-xs) var(--space-md); /* Reduced vertical padding */
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xxs); /* Reduced from xs to xxs */
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  color: rgba(255, 255, 255, 0.95); /* Base text color for all cards */
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); /* Subtle text shadow for better contrast */
 }
 
 .chore-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  gap: var(--space-sm); /* Reduced gap between title and metadata */
+  min-height: 2.5rem; /* Ensure consistent height for cards */
 }
 
 .chore-title {
-  font-weight: bold;
-  font-size: clamp(0.9rem, 2vw, 1.2rem);
-  text-align: left;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 1.5vw, 1rem); /* Slightly smaller font */
+  letter-spacing: 0.02em;
+  flex: 1; /* Allow title to take available space */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -185,130 +196,100 @@ const friendlyDueDate = (due_date) => {
 
 .chore-right {
   display: flex;
-  justify-content: flex-end;
+  gap: var(--space-xs); /* Reduced gap between elements */
   align-items: center;
-  gap: 0.5rem;
+  flex-shrink: 0; /* Prevent metadata from shrinking */
+  font-weight: 500;
 }
 
-.chore-title,
-.chore-due,
+.chore-due {
+  font-size: 0.8rem; /* Smaller font size */
+  padding: 0.1em 0.4em; /* Reduced padding */
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  line-height: 1.4;
+}
+
 .chore-interval {
-  background: #ffffff80;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* Smaller font size */
+  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 0.1em 0.4em; /* Reduced padding */
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
 }
 
-.chore-card.edit-mode {
-  height: auto;
+.chore-overdue {
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255, 0, 0, 0.2);
 }
 
 .edit-chore-form {
-  background: #202020;
-  padding: 1.5rem;
-  border-radius: 10px;
-  color: #fff;
-  margin: 1.5rem auto; /* Ensures equal margin and padding on all sides */
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+  background: var(--color-surface);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin: var(--space-xs) 0;
+  box-shadow: var(--shadow-lg);
 }
 
 .form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-xs);
 }
 
 .form-group input {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 5px;
-  border: 1px solid #444;
-  background: #333;
-  color: #fff;
+  composes: form-control from global;
 }
 
 .form-actions {
   display: flex;
-  justify-content: space-between;
+  gap: var(--space-sm);
+  justify-content: flex-end;
 }
 
-.submit-btn,
-.cancel-btn,
-.archive-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
+.edit-chore-form label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.3em;
+  display: block;
 }
 
-.submit-btn {
-  background-color: #27ae60;
-  color: white;
-  font-weight: bold;
+/* Status Colors */
+.chore-card.overdue { background-color: var(--color-overdue); }
+.chore-card.due-today { background-color: var(--color-due-today); }
+.chore-card.due-tomorrow { background-color: var(--color-due-soon); }
+.chore-card.due-2-days { background-color: var(--color-due-2-days); }
+.chore-card.due-3-days { background-color: var(--color-due-3-days); }
+.chore-card.due-7-days { background-color: var(--color-due-7-days); }
+.chore-card.due-14-days { background-color: var(--color-due-14-days); }
+.chore-card.due-30-days { background-color: var(--color-due-30-days); }
+.chore-card.due-far-future { background-color: var(--color-due-far-future); }
+.chore-card.archived { background-color: var(--color-archived); }
+
+/* Add done today state */
+.chore-card.done-today {
+  position: relative;
+  opacity: 0.6;
+  filter: grayscale(40%);
+  pointer-events: none;
 }
 
-.submit-btn:hover {
-  background-color: #2ecc71;
+.chore-card.done-today .chore-content {
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
 }
 
-.cancel-btn {
-  background-color: #e74c3c;
-  color: white;
-  font-weight: bold;
-}
-
-.cancel-btn:hover {
-  background-color: #ff6f61;
-}
-
-.archive-btn {
-  background-color: #f1c40f;
-  color: #333;
-  font-weight: bold;
-}
-
-.archive-btn:hover {
-  background-color: #f39c12;
-}
-
-/* Colors Adjusted for Granularity */
-.chore-card.overdue {
-  background-color: #ff5252;
-}
-
-.chore-card.due-today {
-  background-color: #ff7043;
-}
-
-.chore-card.due-tomorrow {
-  background-color: #ffa726;
-}
-
-.chore-card.due-2-days {
-  background-color: #ffee58;
-}
-
-.chore-card.due-3-days {
-  background-color: #aed581;
-}
-
-.chore-card.due-7-days {
-  background-color: #81c784;
-}
-
-.chore-card.due-14-days {
-  background-color: #4caf50;
-}
-
-.chore-card.due-30-days {
-  background-color: #42a5f5;
-}
-
-.chore-card.due-far-future {
-  background-color: #7986cb;
+.chore-card.done-today::after {
+  content: "✓ Done today";
+  position: absolute;
+  top: 50%;
+  right: var(--space-md);
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2em 0.6em;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
 }
 </style>

@@ -29,135 +29,59 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
-import ChoreCard from '@/components/ChoreCard.vue';
-import AddChoreForm from '@/components/AddChoreForm.vue';
+import ChoreCard from './ChoreCard.vue';
 
 const choreStore = useChoreStore();
 
 onMounted(() => {
-  console.log('Fetching chores on mount...');
   choreStore.fetchChores();
-  // No need to fetch logs if we're not displaying them
-  // choreStore.fetchLogs();
 });
 
 const sortedChores = computed(() => {
-  console.log('Recomputing sorted chores...');
   return choreStore.sortedByUrgency;
 });
 
-const addChore = async (newChore) => {
-  console.log('Adding new chore:', newChore);
-  try {
-    await choreStore.addChore(newChore);
-    console.log('Successfully added chore.');
-  } catch (error) {
-    console.error('Failed to add chore:', error);
-  }
-};
-
 const markAsDone = async (choreId) => {
-  console.log(`Marking chore as done: ID ${choreId}`);
   try {
     await choreStore.markChoreDone(choreId);
-    console.log(`Successfully marked chore ${choreId} as done.`);
   } catch (error) {
     console.error(`Failed to mark chore ${choreId} as done:`, error);
   }
 };
 
 const archiveChore = async (choreId) => {
-  console.log(`Archiving chore: ID ${choreId}`);
   try {
     await choreStore.archiveChore(choreId);
-    console.log(`Successfully archived chore ${choreId}.`);
   } catch (error) {
     console.error(`Failed to archive chore ${choreId}:`, error);
   }
 };
 
 const updateChore = async (updatedChore) => {
-  console.log('Updating chore:', updatedChore);
   try {
     await choreStore.updateChore(updatedChore);
-    console.log('Successfully updated chore.');
   } catch (error) {
     console.error('Failed to update chore:', error);
-  }
-};
-
-let deferredPrompt;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-});
-
-const installPWA = async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-    deferredPrompt = null;
   }
 };
 </script>
 
 <style scoped>
 .chore-list {
-  padding: 1rem;
+  padding: var(--space-xs); /* Reduced padding */
   background-color: #121212;
   max-width: 1200px;
   margin: 0 auto;
-  color: #e0e0e0;
+  color: rgba(255, 255, 255, 0.95);
 }
 
-/* Remove header-related styles */
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Enhance text styling for headers */
+h2 {
+  font-size: 1.5rem;
   margin-bottom: 1rem;
-}
-
-.header-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.add-button,
-.undo-button {
-  background-color: #333333;
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 50%;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.add-button:hover,
-.undo-button:hover {
-  background-color: #555555;
-}
-
-.install-button {
-  background-color: #333333;
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 50%;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.install-button:hover {
-  background-color: #555555;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 .log-section {
@@ -178,8 +102,23 @@ const installPWA = async () => {
 }
 
 .log-section li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #444;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.log-section li strong {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin-right: 0.5em;
+}
+
+.chore-cards {
+  display: grid;
+  gap: var(--space-xxs); /* Reduced from xs to xxs */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  padding: var(--space-xxs); /* Add slight padding to container */
 }
 
 /* Transition Group Animations */

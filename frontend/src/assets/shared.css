@@ -1,17 +1,73 @@
-﻿/* General Typography */
+﻿:root {
+  /* Color System */
+  --color-background: #121212;
+  --color-surface: #1e1e1e;
+  --color-surface-light: #2d2d2d;
+  --color-surface-lighter: #363636;
+
+  /* Status Colors */
+  --color-overdue: #ff5252;
+  --color-due-today: #ff7043;
+  --color-due-soon: #ffa726;
+  --color-due-2-days: #ffb74d;
+  --color-due-3-days: #ffc107;
+  --color-due-7-days: #dce775;
+  --color-due-14-days: #aed581;
+  --color-due-30-days: #81c784;
+  --color-due-far-future: #4db6ac;
+  --color-archived: #757575;
+
+  /* Action Colors */
+  --color-primary: #2ecc71;
+  --color-primary-hover: #27ae60;
+  --color-danger: #e74c3c;
+  --color-danger-hover: #c0392b;
+  --color-warning: #f1c40f;
+  --color-warning-hover: #f39c12;
+
+  /* Text Colors */
+  --color-text: #e0e0e0;
+  --color-text-muted: #a0a0a0;
+  --color-text-dim: #808080;
+
+  /* Spacing Scale */
+  --space-xxs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  /* Elevation/Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+
+  /* Animation */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* Base Styles */
 body {
-  font-family: 'Roboto', Arial, sans-serif;
-  color: #e0e0e0;
-  background-color: #121212;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: 'Roboto', system-ui, sans-serif;
+  line-height: 1.6;
   margin: 0;
   padding: 0;
 }
 
-h1,
-h2,
-h3 {
+h1, h2, h3 {
   font-weight: bold;
   margin: 0;
+  line-height: 1.2;
 }
 
 h1 {
@@ -26,22 +82,23 @@ h3 {
   font-size: 1rem;
 }
 
-/* Card Styling */
+/* Utility Classes */
 .card {
-  background: #1a1a1a;
-  border-radius: 8px;
-  padding: 0.6rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  margin-bottom: 0.6rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-normal),
+              box-shadow var(--transition-normal);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-surface-light);
 }
 
 .card-header {
@@ -58,24 +115,24 @@ h3 {
 }
 
 .card-overdue {
-  color: #e74c3c;
+  color: var(--color-overdue);
   font-size: 0.85rem;
 }
 
 .card-interval {
-  color: #27ae60;
+  color: var(--color-due-later);
   font-size: 0.85rem;
 }
 
-/* Buttons */
+/* Button Styles */
 button {
   cursor: pointer;
-  font-weight: bold;
-  border-radius: 4px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
   border: none;
-  padding: 0.5rem 1rem;
+  padding: var(--space-xs) var(--space-md);
   font-size: 0.9rem;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: all var(--transition-fast);
 }
 
 button:hover {
@@ -83,28 +140,74 @@ button:hover {
 }
 
 .primary {
-  background-color: #2ecc71;
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .primary:hover {
-  background-color: #27ae60;
+  background-color: var(--color-primary-hover);
 }
 
-.secondary {
-  background-color: #e74c3c;
-  color: #fff;
+button.secondary {
+  background-color: var(--color-danger);
+  color: var(--color-text);
 }
 
-.secondary:hover {
-  background-color: #c0392b;
+button.secondary:hover {
+  background-color: var(--color-danger-hover);
 }
 
-.tertiary {
-  background-color: #333;
-  color: #fff;
+button.tertiary {
+  background-color: var(--color-warning);
+  color: var(--color-text);
 }
 
-.tertiary:hover {
-  background-color: #444;
+button.tertiary:hover {
+  background-color: var(--color-warning-hover);
+}
+
+/* Add consistent link styling */
+a {
+  color: var(--color-link);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Add consistent form styling */
+input, textarea, select {
+  background: var(--color-surface-light);
+  border: 1px solid var(--color-surface-lighter);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.9rem;
+  transition: border-color var(--transition-fast);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Animation Classes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Responsive Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
 }
