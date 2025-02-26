@@ -3,6 +3,7 @@
 WORKDIR /app
 
 COPY package*.json ./
+COPY serve.json ./
 
 RUN npm install
 
@@ -15,4 +16,4 @@ RUN npm run build
 
 EXPOSE 5000
 
-CMD ["npx", "serve", "-s", "dist", "-l", "5000"]
+CMD ["npx", "serve", "-s", "dist", "-l", "5000", "--config", "serve.json"]
