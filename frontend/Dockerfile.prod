@@ -3,7 +3,6 @@
 WORKDIR /app
 
 COPY package*.json ./
-COPY serve.json ./
 
 RUN npm install
 
@@ -13,6 +12,8 @@ COPY src/ src/
 COPY public/ public/
 
 RUN npm run build
+
+COPY serve.json dist/
 
 EXPOSE 5000
 
