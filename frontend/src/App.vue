@@ -1,6 +1,7 @@
 ﻿<template>
   <div id="app">
     <Header @addChore="handleAddChore" />
+    <!-- Removed duplicate ChoreList component -->
     <router-view></router-view>
   </div>
 </template>
@@ -9,6 +10,7 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from '@/plugins/axios'
 import Header from '@/components/Header.vue'
+import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
 
 const versionInfo = ref(null)

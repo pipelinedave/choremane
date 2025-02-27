@@ -14,6 +14,10 @@ const routes = [
   //   name: 'ChoreList',
   //   component: ChoreList,
   // },
+  {
+    path: '/:catchAll(.*)',
+    redirect: '/'
+  }
 ]
 
 const router = createRouter({
