@@ -54,7 +54,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.IMAGE_NAME }}:latest  # Optionally, tag as latest
+            ${{ env.IMAGE_NAME }}:latest
       - name: Re-tag existing image (if skipping build)
         if: ${{ inputs.skip_build == 'true' }}
         run: |
