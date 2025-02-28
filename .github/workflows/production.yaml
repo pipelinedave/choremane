@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-push:
-    uses: ./.github/workflows/build-and-push.yaml@main
+    uses: ./.github/workflows/build-and-push.yaml
     with:
       environment: 'staging'
     secrets:
