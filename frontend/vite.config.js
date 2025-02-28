@@ -15,6 +15,7 @@ export default defineConfig({
   },
   server: {
     port: 5000,
+    mimeTypes: { /* ensure proper MIME type mapping if overridden */ },
     proxy: {
       '/api': {
         target: 'http://localhost:8090',
