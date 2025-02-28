@@ -1,7 +1,8 @@
 ﻿name: Deploy to Staging
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
