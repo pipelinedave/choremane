@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: choremane-version
-data:
-  VERSION_TAG: "choremane/dev/1735423348"
-  BACKEND_IMAGE: "pipelinedave/choremane-backend:choremane/dev/1735423348"
-  FRONTEND_IMAGE: "pipelinedave/choremane-frontend:choremane/dev/1735423348"
