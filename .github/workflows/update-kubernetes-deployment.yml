@@ -23,7 +23,7 @@ on:
         required: true
 
 jobs:
-  deploy:
+  update-kubernetes-deployment:
     runs-on: ubuntu-24.04
     env:
       K3S_REPO: "pipelinedave/k3s-config"
