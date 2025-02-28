@@ -1,17 +1,63 @@
-﻿name: ✨ Staging ✨
-
+﻿# .github/workflows/deploy-staging.yml
+name: Deploy to Staging
 on:
   push:
-    tags:
-      - 'choremane/staging/v.*'
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  build-and-push:
+  build-backend:
     uses: ./.github/workflows/build-and-push.yml
     with:
-      environment: 'staging'
+      image_name: pipelinedave/choremane-backend
+      image_tag: ${{ github.sha }}
+      context: ./backend
+      dockerfile: ./backend/Dockerfile
+      skip_build: "false"
     secrets:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      K3S_CONFIG_TOKEN: ${{ secrets.K3S_CONFIG_TOKEN }}
+
+  build-frontend:
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      image_name: pipelinedave/choremane-frontend
+      image_tag: ${{ github.sha }}
+      context: ./frontend
+      dockerfile: ./frontend/Dockerfile.prod
+      skip_build: "false"
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    env:
+      IMAGE_BACKEND: pipelinedave/choremane-backend:${{ github.sha }}
+      IMAGE_FRONTEND: pipelinedave/choremane-frontend:${{ github.sha }}
+    steps:
+      - name: Checkout k3s-config Repo
+        uses: actions/checkout@v3
+        with:
+          repository: pipelinedave/k3s-config
+          token: ${{ secrets.K3S_CONFIG_TOKEN }}
+          ref: main
+          fetch-depth: 0
+          path: k3s-config
+      - name: Update Staging Overlays
+        run: |
+          cd k3s-config/overlays/staging
+          sed -i "s|image: pipelinedave/choremane-backend:.*|image: ${IMAGE_BACKEND}|" backend-deployment-patch.yaml || echo "No backend patch found."
+          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${IMAGE_FRONTEND}|" frontend-deployment-patch.yaml || echo "No frontend patch found."
+      - name: Commit & Push Changes
+        run: |
+          cd k3s-config
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Deploy staging images ${IMAGE_BACKEND} and ${IMAGE_FRONTEND}"
+            git push origin main
+          else
+            echo "No changes to commit."
