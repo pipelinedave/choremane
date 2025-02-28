@@ -6,10 +6,6 @@ on:
         description: 'Full Docker image name (e.g., pipelinedave/choremane-backend)'
         required: true
         type: string
-      image_tag:
-        description: 'Tag for the Docker image'
-        required: true
-        type: string
       context:
         description: 'Build context directory'
         required: true
@@ -34,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ inputs.image_name }}
-      IMAGE_TAG: ${{ inputs.image_tag }}
+      IMAGE_TAG: ${{ github.sha }}  # Using Git commit SHA as the tag
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -52,7 +48,9 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
           push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:latest  # Optionally, tag as latest
       - name: Re-tag existing image (if skipping build)
         if: ${{ inputs.skip_build == 'true' }}
         run: |
