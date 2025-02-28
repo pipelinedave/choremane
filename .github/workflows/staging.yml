@@ -30,6 +30,7 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
   deploy:
+    needs: [build-backend, build-frontend]
     uses: ./.github/workflows/update-kubernetes-deployment.yml
     with:
       overlay: "staging"

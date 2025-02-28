@@ -30,6 +30,7 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
   deploy:
+    needs: [tag-backend, tag-frontend]
     uses: ./.github/workflows/update-kubernetes-deployment.yml
     with:
       overlay: "production"
