@@ -80,4 +80,4 @@ jobs:
       - name: 🏷️ Tag in k3s-config Repo
         run: |
           git tag "choremane/${OVERLAY}/${{ github.run_attempt }}"
-          git push origin "${VERSION_TAG}"
+          git push origin "choremane/${OVERLAY}/${{ github.run_attempt }}"
