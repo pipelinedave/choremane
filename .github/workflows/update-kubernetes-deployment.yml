@@ -1,0 +1,83 @@
+﻿name: Update Kubernetes Deployment Manifests
+on:
+  workflow_call:
+    inputs:
+      overlay:
+        description: 'Overlay to update (staging or production)'
+        required: true
+        type: string
+      version_tag:
+        description: 'Version tag for the deployment'
+        required: true
+        type: string
+      backend_image:
+        description: 'Full image name for backend'
+        required: true
+        type: string
+      frontend_image:
+        description: 'Full image name for frontend'
+        required: true
+        type: string
+    secrets:
+      K3S_CONFIG_TOKEN:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    env:
+      K3S_REPO: "pipelinedave/k3s-config"
+      VERSION_TAG: ${{ inputs.version_tag }}
+      BACKEND_IMAGE: ${{ inputs.backend_image }}
+      FRONTEND_IMAGE: ${{ inputs.frontend_image }}
+      OVERLAY: ${{ inputs.overlay }}
+    steps:
+      - name: 📥 Checkout k3s-config Repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.K3S_REPO }}
+          token: ${{ secrets.K3S_CONFIG_TOKEN }}
+          ref: main
+          fetch-depth: 0
+
+      - name: 🔧 Ensure Up-to-date Main
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git pull --rebase origin main
+
+      - name: 📝 Create Version ConfigMap
+        run: |
+          cat <<EOF > kustomize/choremane/overlays/${OVERLAY}/version-configmap.yaml
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: choremane-version
+          data:
+            VERSION_TAG: ${VERSION_TAG}
+            BACKEND_IMAGE: "${BACKEND_IMAGE}"
+            FRONTEND_IMAGE: "${FRONTEND_IMAGE}"
+          EOF
+
+      - name: 🔧 Update Deployment Manifests
+        run: |
+          sed -i "s|image: pipelinedave/choremane-backend:.*|image: ${BACKEND_IMAGE}|g" "kustomize/choremane/overlays/${OVERLAY}/backend-deployment-patch.yaml" || echo "🔴 No backend patch found."
+          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${FRONTEND_IMAGE}|g" "kustomize/choremane/overlays/${OVERLAY}/frontend-deployment-patch.yaml" || echo "🔴 No frontend patch found."
+
+      - name: 💾 Commit & Push Changes
+        run: |
+          git remote set-url origin "https://x-access-token:${{ secrets.K3S_CONFIG_TOKEN }}@github.com/${K3S_REPO}.git"
+          git add kustomize/choremane/overlays/${OVERLAY}/version-configmap.yaml
+          git add kustomize/choremane/overlays/${OVERLAY}/backend-deployment-patch.yaml || true
+          git add kustomize/choremane/overlays/${OVERLAY}/frontend-deployment-patch.yaml || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update ConfigMap and ${OVERLAY} deployments for ${VERSION_TAG} with BACKEND: ${BACKEND_IMAGE} and FRONTEND: ${FRONTEND_IMAGE}"
+            git push origin HEAD:main
+          fi
+
+      - name: 🏷️ Tag in k3s-config Repo
+        run: |
+          git tag "choremane/${OVERLAY}/${{ github.run_attempt }}"
+          git push origin "${VERSION_TAG}"

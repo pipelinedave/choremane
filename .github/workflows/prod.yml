@@ -1,5 +1,4 @@
-﻿# .github/workflows/deploy-production.yml
-name: Deploy to Production
+﻿name: Deploy to Production
 on:
   push:
     tags:
@@ -31,33 +30,11 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
   deploy:
-    runs-on: ubuntu-latest
-    needs: [tag-backend, tag-frontend]
-    env:
-      IMAGE_BACKEND: pipelinedave/choremane-backend:${{ github.ref_name }}
-      IMAGE_FRONTEND: pipelinedave/choremane-frontend:${{ github.ref_name }}
-    steps:
-      - name: Checkout k3s-config Repo
-        uses: actions/checkout@v3
-        with:
-          repository: pipelinedave/k3s-config
-          token: ${{ secrets.K3S_CONFIG_TOKEN }}
-          ref: main
-          fetch-depth: 0
-          path: k3s-config
-      - name: Update Production Overlays
-        run: |
-          cd k3s-config/overlays/production
-          sed -i "s|image: pipelinedave/choremane-backend:.*|image: ${IMAGE_BACKEND}|" backend-deployment-patch.yaml || echo "No backend patch found."
-          sed -i "s|image: pipelinedave/choremane-frontend:.*|image: ${IMAGE_FRONTEND}|" frontend-deployment-patch.yaml || echo "No frontend patch found."
-      - name: Commit & Push Changes
-        run: |
-          cd k3s-config
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "Deploy production images ${IMAGE_BACKEND} and ${IMAGE_FRONTEND}"
-            git push origin main
-          else
-            echo "No changes to commit."
+    uses: ./.github/workflows/update-kubernetes-deployment.yml
+    with:
+      overlay: "production"
+      version_tag: ${{ github.ref_name }}
+      backend_image: pipelinedave/choremane-backend:${{ github.ref_name }}
+      frontend_image: pipelinedave/choremane-frontend:${{ github.ref_name }}
+    secrets:
+      K3S_CONFIG_TOKEN: ${{ secrets.K3S_CONFIG_TOKEN }}
