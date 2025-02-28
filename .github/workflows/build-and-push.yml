@@ -6,6 +6,10 @@ on:
         description: 'Full Docker image name (e.g., pipelinedave/choremane-backend)'
         required: true
         type: string
+      image_tag:
+        description: 'Docker image tag'
+        required: true
+        type: string
       context:
         description: 'Build context directory'
         required: true
