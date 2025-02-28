@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ inputs.image_name }}
-      IMAGE_TAG: ${{ github.sha }}  # Using Git commit SHA as the tag
+      IMAGE_TAG: ${{ inputs.image_tag }}  # Using Git commit SHA as the tag
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
