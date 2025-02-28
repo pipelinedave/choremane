@@ -2,7 +2,7 @@
 on:
   push:
     tags:
-      - "*prod*"
+      - "prod*"
 
 jobs:
   tag-backend:
@@ -33,7 +33,7 @@ jobs:
     needs: [tag-backend, tag-frontend]
     uses: ./.github/workflows/update-kubernetes-deployment.yml
     with:
-      overlay: "production"
+      overlay: "prod"
       version_tag: ${{ github.ref_name }}
       backend_image: pipelinedave/choremane-backend:${{ github.ref_name }}
       frontend_image: pipelinedave/choremane-frontend:${{ github.ref_name }}
