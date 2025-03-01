@@ -102,8 +102,15 @@ onMounted(() => {
 
 const saveChore = async () => {
   try {
-    await choreStore.updateChore(editableChore.value);
-    emit('updateChore', editableChore.value);
+    const choreData = {
+      ...props.chore,    // Preserve existing values
+      ...editableChore.value,  // Merge edited values
+      due_date: new Date(editableChore.value.due_date).toISOString(), // Ensure date format
+      interval_days: editableChore.value.interval_days // Ensure interval_days is updated
+    };
+    console.log("Saving Chore Data:", choreData);
+    await choreStore.updateChore(choreData);
+    emit('updateChore', choreData);
     editMode.value = false;
   } catch (error) {
     console.error('Error saving chore:', error);

@@ -7,8 +7,23 @@ export const useChoreStore = defineStore('chores', () => {
   const loading = ref(false);
   const error = ref(null);
 
+  const isChoreDisabledToday = (chore) => {
+    if (!chore?.due_date || !chore?.interval) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = new Date(chore.due_date);
+    dueDate.setHours(0, 0, 0, 0);
+
+    return today.getTime() === dueDate.getTime();
+  };
+
   const sortedByUrgency = computed(() => {
-    return [...chores.value].sort((a, b) => {
+    return [...chores.value].map(chore => ({
+      ...chore,
+      disabled: isChoreDisabledToday(chore)
+    })).sort((a, b) => {
       if (a.archived && !b.archived) return 1;
       if (!a.archived && b.archived) return -1;
 
@@ -20,9 +35,15 @@ export const useChoreStore = defineStore('chores', () => {
 
   const isDoneToday = (chore) => {
     if (!chore?.last_done) return false;
-    const today = new Date().setHours(0, 0, 0, 0);
-    const doneDate = new Date(chore.last_done).setHours(0, 0, 0, 0);
-    return today === doneDate;
+
+    // Convert both dates to local midnight for accurate comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const lastDone = new Date(chore.last_done);
+    lastDone.setHours(0, 0, 0, 0);
+
+    return today.getTime() === lastDone.getTime();
   };
 
   const fetchChores = async () => {
@@ -30,7 +51,10 @@ export const useChoreStore = defineStore('chores', () => {
     error.value = null;
     try {
       const response = await api.get('/chores');
-      chores.value = response.data;
+      chores.value = response.data.map(chore => ({
+        ...chore,
+        disabled: isChoreDisabledToday(chore)
+      }));
     } catch (err) {
       error.value = 'Failed to fetch chores. Please try again later.';
       console.error('Failed to fetch chores:', err);
@@ -89,9 +113,16 @@ export const useChoreStore = defineStore('chores', () => {
   const updateChore = async (updatedChore) => {
     try {
       const response = await api.put(`/chores/${updatedChore.id}`, updatedChore);
+      console.log("Updated Chore Response:", response.data);  // Log API response
       const index = chores.value.findIndex(c => c.id === updatedChore.id);
       if (index !== -1) {
-        chores.value[index] = response.data;
+        chores.value[index] = {
+          ...chores.value[index],  // Preserve existing values
+          ...response.data,        // Update only returned fields
+          interval_days: updatedChore.interval_days, // Ensure interval_days is updated
+          due_date: updatedChore.due_date // Ensure due_date is updated
+        };
+        chores.value = [...chores.value];  // Force reactivity update
       }
       return response.data;
     } catch (error) {
