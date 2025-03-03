@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 from datetime import datetime, timedelta, date
 
