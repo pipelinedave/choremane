@@ -116,9 +116,9 @@ h2 {
 
 .chore-cards {
   display: grid;
-  gap: var(--space-xxs); /* Reduced from xs to xxs */
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  padding: var(--space-xxs); /* Add slight padding to container */
+  gap: var(--space-xxs);
+  grid-template-columns: 1fr; /* changed to a single column layout */
+  padding: var(--space-xxs);
 }
 
 /* Transition Group Animations */
