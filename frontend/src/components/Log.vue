@@ -44,7 +44,7 @@ const latestLog = computed(() => (logStore.logEntries[0] ? logStore.logEntries[0
   box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.3s ease-in-out;
   transform: translateY(calc(100% - 56px));
   z-index: 1000;
   padding: 8px 16px 16px;
@@ -67,6 +67,14 @@ const latestLog = computed(() => (logStore.logEntries[0] ? logStore.logEntries[0
   border-radius: 2px;
   margin-bottom: 8px;
 }
+/* Removed the .handle:active bounce animation to allow natural dragging */
+@keyframes bounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Optionally, if you wish to trigger bounce on click (not on drag), you can add a class in the toggleExpand handler */
 .log-entry {
   border-bottom: 1px solid #eee;
   padding: 8px 0;
