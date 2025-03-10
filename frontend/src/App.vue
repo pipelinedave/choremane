@@ -3,6 +3,7 @@
     <Header @addChore="handleAddChore" />
     <!-- Removed duplicate ChoreList component -->
     <router-view></router-view>
+    <Log />
   </div>
 </template>
 
@@ -12,6 +13,7 @@ import axios from '@/plugins/axios'
 import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
+import Log from '@/components/Log.vue'
 
 const versionInfo = ref(null)
 const choreStore = useChoreStore()
