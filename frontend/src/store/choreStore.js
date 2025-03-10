@@ -1,6 +1,7 @@
 ﻿import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/plugins/axios';
+import { useLogStore } from '@/store/logStore';
 
 export const useChoreStore = defineStore('chores', () => {
   const chores = ref([]);
@@ -84,10 +85,21 @@ export const useChoreStore = defineStore('chores', () => {
           last_done: new Date().toISOString()
         };
       }
+      const logStore = useLogStore();
+      logStore.addLogEntry(`${chore.name} marked as done`);
       return response.data;
     } catch (error) {
       console.error('Failed to mark chore as done:', error);
       throw error;
+    }
+  };
+
+  const undoChore = (choreId) => {
+    const chore = chores.value.find(c => c.id === choreId);
+    if (chore) {
+      chore.done = false;
+      const logStore = useLogStore();
+      logStore.addLogEntry(`${chore.name} undone`);
     }
   };
 
@@ -156,5 +168,6 @@ export const useChoreStore = defineStore('chores', () => {
     updateChore,
     archiveChore,
     markChoreDone,
+    undoChore,
   };
 });
