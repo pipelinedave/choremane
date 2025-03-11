@@ -37,23 +37,25 @@ const latestLog = computed(() => (logStore.logEntries[0] ? logStore.logEntries[0
 .log-overlay {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: var(--space-md);
+  right: var(--space-md);
+  max-width: 1200px;
+  margin: 0 auto;
   background: #333;
   color: #fff;
   box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.3s ease-in-out;
+  transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
   transform: translateY(calc(100% - 56px));
   z-index: 1000;
   padding: 8px 16px 16px;
 }
+
 .log-overlay.expanded {
   transform: translateY(0);
-  max-height: 50vh;
-  overflow-y: auto;
 }
+
 .handle {
   width: 100%;
   display: flex;
