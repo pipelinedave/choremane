@@ -1,6 +1,7 @@
 ﻿const CACHE_NAME = 'choremane-v1';
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // force waiting SW to become active
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
@@ -31,6 +32,11 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    })
+    .then(() => self.clients.claim())
+    .then(() => self.clients.matchAll({ type: 'window' }))
+    .then(clients => {
+      clients.forEach(client => client.postMessage({ type: 'reload' }));
     })
   );
 });
