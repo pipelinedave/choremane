@@ -211,3 +211,30 @@ input:focus, textarea:focus, select:focus {
   margin: 0 auto;
   padding: 0 var(--space-md);
 }
+
+/* Override for done-today state to ensure visual distinction */
+.chore-card.done-today {
+  position: relative;
+  opacity: 0.6 !important;
+  filter: grayscale(40%) !important;
+  pointer-events: none !important;
+}
+
+.chore-card.done-today .chore-content {
+  text-decoration: line-through !important;
+  text-decoration-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.chore-card.done-today::after {
+  content: "✓ Done today" !important;
+  position: absolute !important;
+  top: 50% !important;
+  right: var(--space-md) !important;
+  transform: translateY(-50%) !important;
+  font-size: 0.8rem !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  padding: 0.2em 0.6em !important;
+  border-radius: var(--radius-sm) !important;
+  pointer-events: none !important;
+}

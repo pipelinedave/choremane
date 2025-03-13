@@ -10,8 +10,16 @@
       </div>
       <div v-else>
         <div v-for="entry in logEntries" :key="entry.id" class="log-entry">
-          <small>{{ entry.timestamp }}</small>
-          <div>{{ entry.message }}</div>
+          <small>{{ new Date(entry.timestamp).toLocaleTimeString() }}</small>
+          <div>
+            <!-- Display structured log entries if available -->
+            <span v-if="entry.action">
+              [{{ entry.action }}] {{ entry.message }}
+            </span>
+            <span v-else>
+              {{ entry.message }}
+            </span>
+          </div>
         </div>
       </div>
     </div>

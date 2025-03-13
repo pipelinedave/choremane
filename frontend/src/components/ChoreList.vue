@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import ChoreCard from './ChoreCard.vue';
 
@@ -37,9 +37,7 @@ onMounted(() => {
   choreStore.fetchChores();
 });
 
-const sortedChores = computed(() => {
-  return choreStore.sortedByUrgency;
-});
+const sortedChores = computed(() => choreStore.sortedByUrgency);
 
 const markAsDone = async (choreId) => {
   try {
