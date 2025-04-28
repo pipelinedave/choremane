@@ -3,9 +3,9 @@ import api from '@/plugins/axios'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: null,
-    userColor: null,
-    username: null,
+    token: localStorage.getItem('token') || null,
+    userColor: localStorage.getItem('userColor') || null,
+    username: localStorage.getItem('username') || null,
   }),
 
   actions: {
@@ -14,6 +14,8 @@ export const useAuthStore = defineStore('auth', {
       this.userColor = color
       this.username = username
       localStorage.setItem('token', token)
+      localStorage.setItem('userColor', color)
+      localStorage.setItem('username', username)
     },
 
     async logout() {
@@ -21,6 +23,8 @@ export const useAuthStore = defineStore('auth', {
       this.userColor = null
       this.username = null
       localStorage.removeItem('token')
+      localStorage.removeItem('userColor')
+      localStorage.removeItem('username')
     },
 
     isAuthenticated() {

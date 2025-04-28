@@ -1,9 +1,19 @@
 ﻿<template>
   <div class="chore-list">
-    <!-- Animation for refreshing the list -->
+    <div class="filter-pills">
+      <button
+        v-for="pill in pills"
+        :key="pill.value"
+        :class="['pill', { active: filter === pill.value }]"
+        @click="filter = pill.value"
+        :aria-label="pill.label"
+      >
+        {{ pill.label }}
+      </button>
+    </div>
     <transition-group name="list" tag="div" class="chore-cards">
       <ChoreCard
-        v-for="chore in sortedChores"
+        v-for="chore in filteredChores"
         :key="chore.id"
         :chore="chore"
         @markAsDone="markAsDone"
@@ -27,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import ChoreCard from './ChoreCard.vue';
 
@@ -37,7 +47,23 @@ onMounted(() => {
   choreStore.fetchChores();
 });
 
-const sortedChores = computed(() => choreStore.sortedByUrgency);
+const filter = ref('all');
+const pills = [
+  { label: 'All', value: 'all' },
+  { label: 'Overdue', value: 'overdue' },
+  { label: 'Due Today', value: 'today' },
+  { label: 'Upcoming', value: 'upcoming' },
+  { label: 'Archived', value: 'archived' },
+];
+
+const filteredChores = computed(() => {
+  if (filter.value === 'all') return choreStore.sortedByUrgency;
+  if (filter.value === 'overdue') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date) < new Date().setHours(0,0,0,0) && !c.archived);
+  if (filter.value === 'today') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === new Date().toDateString() && !c.archived);
+  if (filter.value === 'upcoming') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date) > new Date().setHours(0,0,0,0) && !c.archived);
+  if (filter.value === 'archived') return choreStore.sortedByUrgency.filter(c => c.archived);
+  return choreStore.sortedByUrgency;
+});
 
 const markAsDone = async (choreId) => {
   try {
@@ -126,5 +152,28 @@ h2 {
 .list-enter-from, .list-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.filter-pills {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.pill {
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4em 1.2em;
+  font-size: 0.95em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+}
+.pill.active, .pill:focus {
+  background: var(--color-primary);
+  color: #fff;
 }
 </style>

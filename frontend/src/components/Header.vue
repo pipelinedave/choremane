@@ -3,18 +3,23 @@
     <div class="header-content">
       <h1>CHOREMANE</h1>
       <div class="header-buttons">
-        <button @click="toggleAddMode" class="add-button">+</button>
+        <button @click="toggleAddMode" class="add-button" aria-label="Add new chore">+</button>
         <button
           v-if="showInstallButton"
           @click="installPWA"
           class="install-button"
+          aria-label="Install app"
         >
           Install App
         </button>
-        <button @click="toggleBanner">About</button>
+        <button @click="toggleBanner" aria-label="About">About</button>
+        <button @click="toggleNotifications" aria-label="Notification settings">Notifications</button>
+        <button @click="toggleImportExport" aria-label="Import or export data">Import/Export</button>
       </div>
     </div>
     <AddChoreForm v-if="addMode" @addChore="handleAddChore" @cancel="toggleAddMode" />
+    <NotificationSettings v-if="showNotifications" @close="toggleNotifications" />
+    <ImportExport v-if="showImportExport" @close="toggleImportExport" />
     <div v-if="showBanner && versionInfo" class="version-banner">
       <a :href="versionTagLink" target="_blank" rel="noopener noreferrer">
         {{ versionInfo.version_tag }} github ref
@@ -35,6 +40,8 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from '@/plugins/axios'
 import AddChoreForm from '@/components/AddChoreForm.vue'
+import NotificationSettings from '@/components/NotificationSettings.vue'
+import ImportExport from '@/components/ImportExport.vue'
 
 const showBanner = ref(false)
 const versionInfo = ref(null)
@@ -107,6 +114,16 @@ const installPWA = async () => {
     deferredPrompt.value = null
     showInstallButton.value = false
   }
+}
+
+const showNotifications = ref(false)
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+}
+
+const showImportExport = ref(false)
+const toggleImportExport = () => {
+  showImportExport.value = !showImportExport.value
 }
 </script>
 

@@ -4,6 +4,7 @@
     <!-- Removed duplicate ChoreList component -->
     <router-view></router-view>
     <Log />
+    <CopilotButton />
   </div>
 </template>
 
@@ -14,6 +15,7 @@ import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
 import Log from '@/components/Log.vue'
+import CopilotButton from '@/components/CopilotButton.vue'
 
 const versionInfo = ref(null)
 const choreStore = useChoreStore()

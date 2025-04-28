@@ -12,6 +12,9 @@ api.interceptors.request.use(
     if (authStore.token) {
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
+    if (authStore.username) {
+      config.headers['X-User-Email'] = authStore.username
+    }
     return config
   },
   (error) => Promise.reject(error)

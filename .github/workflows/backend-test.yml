@@ -13,6 +13,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: choresdb
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,7 +38,14 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest psycopg2
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h localhost -p 5432; do sleep 1; done
+      - name: Run migrations (if any)
+        run: |
+          # If you have migration scripts, run them here
+          echo "No-op for now"
       - name: Run backend tests
         run: |
           cd backend

@@ -15,6 +15,13 @@
       <input id="chore-interval" v-model="chore.interval_days" type="number" required />
     </div>
 
+    <div class="form-group">
+      <label>
+        <input type="checkbox" v-model="chore.is_private" />
+        Private (only visible to me)
+      </label>
+    </div>
+
     <div class="form-actions">
       <button type="submit" class="submit-btn">Add Chore</button>
       <button type="button" class="cancel-btn" @click="onCancel">Cancel</button>
@@ -24,12 +31,15 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useAuthStore } from '@/store/authStore';
 
 // Helper function to format today's date as YYYY-MM-DD
 const getTodayDate = () => {
   const today = new Date();
   return today.toISOString().split('T')[0];
 };
+
+const authStore = useAuthStore();
 
 const chore = ref({
   name: '',
@@ -38,13 +48,21 @@ const chore = ref({
   done: false, // Default value
   done_by: null, // Default value
   archived: false, // Default value
+  is_private: false, // New field
 });
 
 const emit = defineEmits(['addChore', 'cancel']);
 
 const onSubmit = () => {
   console.log('Submitting new chore:', chore.value);
-  emit('addChore', chore.value);
+  // Attach owner_email if private
+  const choreData = { ...chore.value };
+  if (choreData.is_private) {
+    choreData.owner_email = authStore.username;
+  } else {
+    choreData.owner_email = null;
+  }
+  emit('addChore', choreData);
   // Reset chore to default values
   chore.value = {
     name: '',
@@ -53,6 +71,7 @@ const onSubmit = () => {
     done: false,
     done_by: null,
     archived: false,
+    is_private: false,
   };
 };
 

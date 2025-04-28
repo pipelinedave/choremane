@@ -128,3 +128,227 @@ def test_get_version_info(monkeypatch):
     assert data["version_tag"] == "v1.2.3"
     assert data["backend_image"] == "backend:latest"
     assert data["frontend_image"] == "frontend:latest"
+
+def test_private_and_shared_chores(monkeypatch):
+    # Simulate DB returning both private and shared chores
+    def fake_get_db_connection():
+        from datetime import date
+        rows = [
+            [1, "Shared Chore", 7, date.today(), False, None, False, None, False],
+            [2, "Private Chore", 3, date.today(), False, None, False, "user@example.com", True]
+        ]
+        class DummyCursor:
+            def execute(self, *a, **k): pass
+            def fetchall(self): return rows
+            def close(self): pass
+        class DummyConn:
+            def cursor(self): return DummyCursor()
+            def close(self): pass
+        return DummyConn()
+    monkeypatch.setattr("app.api.routes.get_db_connection", fake_get_db_connection)
+    # Simulate user requesting chores
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.get("/api/chores", headers={"X-User-Email": "user@example.com"})
+    assert response.status_code == 200
+    data = response.json()
+    # Should see both shared and their own private chore
+    assert any(c['name'] == "Shared Chore" for c in data)
+    assert any(c['name'] == "Private Chore" for c in data)
+    # Simulate another user (should only see shared chore)
+    response2 = client.get("/api/chores", headers={"X-User-Email": "other@example.com"})
+    data2 = response2.json()
+    assert any(c['name'] == "Shared Chore" for c in data2)
+    assert not any(c['name'] == "Private Chore" for c in data2)
+
+def test_add_chore_with_privacy(monkeypatch):
+    # Simulate DB insert and return id
+    def fake_get_db_connection():
+        class DummyCursor:
+            def execute(self, *a, **k): pass
+            def fetchone(self): return [123]
+            def close(self): pass
+        class DummyConn:
+            def cursor(self): return DummyCursor()
+            def commit(self): pass
+            def rollback(self): pass
+            def close(self): pass
+        return DummyConn()
+    monkeypatch.setattr("app.api.routes.get_db_connection", fake_get_db_connection)
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    chore = {
+        "name": "Private Chore",
+        "interval_days": 5,
+        "due_date": "2025-04-28",
+        "done": False,
+        "done_by": None,
+        "archived": False,
+        "owner_email": "user@example.com",
+        "is_private": True
+    }
+    response = client.post("/api/chores", json=chore)
+    assert response.status_code == 200
+    assert response.json()["id"] == 123
+
+def test_undo_created_action(monkeypatch):
+    # Simulate DB for undoing a 'created' action
+    class DummyCursor:
+        def __init__(self):
+            self.closed = False
+            self.deleted = False
+            self.log_id = None
+        def execute(self, query, params=None):
+            if "SELECT action_type" in query:
+                self.log_id = params[0]
+                self._row = ("created", json.dumps({"id": 42}))
+            elif "DELETE FROM chores" in query:
+                self.deleted = True
+        def fetchone(self):
+            return getattr(self, '_row', None)
+        def close(self):
+            self.closed = True
+    class DummyConn:
+        def cursor(self): return DummyCursor()
+        def commit(self): pass
+        def rollback(self): pass
+        def close(self): pass
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.post("/api/undo", json={"log_id": 1})
+    assert response.status_code == 200
+    assert "undone successfully" in response.json()["message"]
+
+def test_undo_invalid_log(monkeypatch):
+    # Simulate DB for missing log entry
+    class DummyCursor:
+        def execute(self, query, params=None):
+            self._row = None
+        def fetchone(self):
+            return None
+        def close(self): pass
+    class DummyConn:
+        def cursor(self): return DummyCursor()
+        def commit(self): pass
+        def rollback(self): pass
+        def close(self): pass
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.post("/api/undo", json={"log_id": 999})
+    assert response.status_code == 404
+    assert "Log entry not found" in response.json()["detail"]
+
+def test_undo_updated_action(monkeypatch):
+    # Simulate DB for undoing an 'updated' action
+    class DummyCursor:
+        def __init__(self):
+            self.closed = False
+            self.updated = False
+            self.log_id = None
+        def execute(self, query, params=None):
+            if "SELECT action_type" in query:
+                self.log_id = params[0]
+                self._row = ("updated", json.dumps({"previous_state": {"name": "Old Name", "interval_days": 2, "due_date": "2025-04-28", "id": 42}}))
+            elif "UPDATE chores SET name" in query:
+                self.updated = True
+        def fetchone(self):
+            return getattr(self, '_row', None)
+        def close(self):
+            self.closed = True
+    class DummyConn:
+        def cursor(self): return DummyCursor()
+        def commit(self): pass
+        def rollback(self): pass
+        def close(self): pass
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.post("/api/undo", json={"log_id": 2})
+    assert response.status_code == 200
+    assert "undone successfully" in response.json()["message"]
+
+def test_undo_archived_action(monkeypatch):
+    # Simulate DB for undoing an 'archived' action
+    class DummyCursor:
+        def __init__(self):
+            self.closed = False
+            self.unarchived = False
+            self.log_id = None
+        def execute(self, query, params=None):
+            if "SELECT action_type" in query:
+                self.log_id = params[0]
+                self._row = ("archived", json.dumps({"id": 42}))
+            elif "UPDATE chores SET archived = FALSE" in query:
+                self.unarchived = True
+        def fetchone(self):
+            return getattr(self, '_row', None)
+        def close(self):
+            self.closed = True
+    class DummyConn:
+        def cursor(self): return DummyCursor()
+        def commit(self): pass
+        def rollback(self): pass
+        def close(self): pass
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.post("/api/undo", json={"log_id": 3})
+    assert response.status_code == 200
+    assert "undone successfully" in response.json()["message"]
+
+def test_undo_marked_done_action(monkeypatch):
+    # Simulate DB for undoing a 'marked_done' action
+    class DummyCursor:
+        def __init__(self):
+            self.closed = False
+            self.undone = False
+            self.log_id = None
+        def execute(self, query, params=None):
+            if "SELECT action_type" in query:
+                self.log_id = params[0]
+                self._row = ("marked_done", json.dumps({"chore_id": 42, "previous_due_date": "2025-04-27"}))
+            elif "UPDATE chores SET done = FALSE" in query:
+                self.undone = True
+        def fetchone(self):
+            return getattr(self, '_row', None)
+        def close(self):
+            self.closed = True
+    class DummyConn:
+        def cursor(self): return DummyCursor()
+        def commit(self): pass
+        def rollback(self): pass
+        def close(self): pass
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.post("/api/undo", json={"log_id": 4})
+    assert response.status_code == 200
+    assert "undone successfully" in response.json()["message"]
+
+def test_undo_unsupported_action(monkeypatch):
+    # Simulate DB for unsupported undo action
+    class DummyCursor:
+        def __init__(self):
+            self.closed = False
+            self.log_id = None
+        def execute(self, query, params=None):
+            if "SELECT action_type" in query:
+                self.log_id = params[0]
+                self._row = ("something_else", json.dumps({"id": 42}))
+        def fetchone(self):
+            return getattr(self, '_row', None)
+        def close(self):
+            self.closed = True
+    class DummyConn:
+        def cursor(self): return DummyCursor()
+        def commit(self): pass
+        def rollback(self): pass
+        def close(self): pass
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.post("/api/undo", json={"log_id": 5})
+    assert response.status_code == 400
+    assert "Undo not supported" in response.json()["detail"]

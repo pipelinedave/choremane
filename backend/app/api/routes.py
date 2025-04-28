@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta, date
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from typing import List
 
@@ -61,12 +61,26 @@ def get_logs():
     ]
 
 @api_router.get("/chores", response_model=List[Chore])
-def get_chores():
-    logging.info("Fetching all chores...")
+def get_chores(request: Request):
+    """
+    Fetch chores visible to the current user:
+    - All shared chores (is_private = false)
+    - Private chores owned by the user (is_private = true and owner_email = user)
+    """
+    user_email = request.headers.get("X-User-Email")  # In production, extract from auth/session
+    logging.info(f"Fetching chores for user: {user_email}")
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id, name, interval_days, due_date, done, done_by, archived FROM chores WHERE archived = FALSE ORDER BY due_date ASC")
+        cur.execute(
+            """
+            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private
+            FROM chores
+            WHERE archived = FALSE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
+            ORDER BY due_date ASC
+            """,
+            (user_email,)
+        )
         rows = cur.fetchall()
         chores = [
             Chore(
@@ -77,6 +91,8 @@ def get_chores():
                 done=row[4],
                 done_by=row[5],
                 archived=row[6],
+                owner_email=row[7],
+                is_private=row[8],
             ) for row in rows
         ]
         return chores
@@ -88,13 +104,17 @@ def get_chores():
         conn.close()
 
 @api_router.post("/chores")
-def add_chore(chore: Chore):
+def add_chore(chore: Chore, request: Request):
+    user_email = request.headers.get("X-User-Email")
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute(
-            "INSERT INTO chores (name, interval_days, due_date, archived) VALUES (%s, %s, %s, FALSE) RETURNING id",
-            (chore.name, chore.interval_days, chore.due_date)
+            """
+            INSERT INTO chores (name, interval_days, due_date, archived, owner_email, is_private)
+            VALUES (%s, %s, %s, FALSE, %s, %s) RETURNING id
+            """,
+            (chore.name, chore.interval_days, chore.due_date, user_email if chore.is_private else None, chore.is_private)
         )
         chore_id = cur.fetchone()[0]
         conn.commit()

@@ -5,11 +5,15 @@
       choreClass(chore),
       {
         'edit-mode': editMode,
-        'done-today': choreStore.isDoneToday(chore)
+        'done-today': choreStore.isDoneToday(chore),
+        'private-chore': chore.is_private
       }
     ]"
     :id="`chore-card-${chore.id}`"
     @dblclick="handleDblClick"
+    role="listitem"
+    tabindex="0"
+    :aria-label="chore.is_private ? `Private chore: ${chore.name}` : `Chore: ${chore.name}`"
   >
   <transition name="fade">
       <div v-if="editMode" class="chore-edit">
@@ -29,6 +33,13 @@
             <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
           </div>
 
+          <div class="form-group">
+            <label>
+              <input type="checkbox" v-model="editableChore.is_private" />
+              Private (only visible to me)
+            </label>
+          </div>
+
           <div class="form-actions">
             <button type="submit" class="submit-btn">Save</button>
             <button type="button" class="cancel-btn" @click="cancelEditMode">Cancel</button>
@@ -37,7 +48,10 @@
         </form>
       </div>
       <div v-else class="chore-content">
-        <span class="chore-title">{{ chore.name }}</span>
+        <span class="chore-title">
+          <span v-if="chore.is_private" title="Private chore" aria-label="Private chore" role="img">🔒</span>
+          {{ chore.name }}
+        </span>
         <div class="chore-right">
           <span
             :class="{'chore-overdue': isOverdue(chore.due_date), 'chore-due': !isOverdue(chore.due_date)}"
@@ -106,7 +120,9 @@ const saveChore = async () => {
       ...props.chore,    // Preserve existing values
       ...editableChore.value,  // Merge edited values
       due_date: new Date(editableChore.value.due_date).toISOString(), // Ensure date format
-      interval_days: editableChore.value.interval_days // Ensure interval_days is updated
+      interval_days: editableChore.value.interval_days, // Ensure interval_days is updated
+      is_private: editableChore.value.is_private,
+      owner_email: editableChore.value.is_private ? editableChore.value.owner_email : null
     };
     console.log("Saving Chore Data:", choreData);
     await choreStore.updateChore(choreData);
@@ -298,5 +314,11 @@ const friendlyDueDate = (due_date) => {
   padding: 0.2em 0.6em;
   border-radius: var(--radius-sm);
   pointer-events: none;
+}
+
+/* Add private chore state */
+.chore-card.private-chore {
+  border-left: 4px solid #ffb300;
+  background: linear-gradient(90deg, #232323 90%, #ffb30022 100%);
 }
 </style>

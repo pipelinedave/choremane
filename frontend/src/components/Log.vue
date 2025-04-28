@@ -1,7 +1,6 @@
 ﻿<template>
-  <div :class="['log-overlay', { expanded }]">
-    <div class="handle" @click="toggleExpand">
-      <!-- Drag handle indicator -->
+  <div :class="['log-overlay', { expanded }]" role="region" aria-label="Activity Log Overlay">
+    <div class="handle" @click="toggleExpand" tabindex="0" role="button" aria-label="Expand or collapse log overlay">
       <div class="handle-bar"></div>
     </div>
     <div class="log-content">
@@ -9,10 +8,9 @@
         <strong>Latest:</strong> {{ latestLog }}
       </div>
       <div v-else>
-        <div v-for="entry in logEntries" :key="entry.id" class="log-entry">
+        <div v-for="entry in logEntries" :key="entry.id" class="log-entry" @click="handleLogClick(entry)" tabindex="0" role="button" :aria-label="`Undo action for log ${entry.id}`">
           <small>{{ new Date(entry.timestamp).toLocaleTimeString() }}</small>
           <div>
-            <!-- Display structured log entries if available -->
             <span v-if="entry.action">
               [{{ entry.action }}] {{ entry.message }}
             </span>
@@ -29,9 +27,12 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useLogStore } from '@/store/logStore';
+import api from '@/plugins/axios';
+import { useChoreStore } from '@/store/choreStore';
 
 const expanded = ref(false);
 const logStore = useLogStore();
+const choreStore = useChoreStore();
 
 const toggleExpand = () => {
   expanded.value = !expanded.value;
@@ -39,6 +40,18 @@ const toggleExpand = () => {
 
 const logEntries = computed(() => logStore.logEntries);
 const latestLog = computed(() => (logStore.logEntries[0] ? logStore.logEntries[0].message : 'No actions yet'));
+
+const handleLogClick = async (entry) => {
+  if (!entry.id) return;
+  try {
+    await api.post('/undo', { log_id: entry.id });
+    // After undo, refresh chores
+    await choreStore.fetchChores();
+    logStore.addLogEntry(`Undid action for log #${entry.id}`);
+  } catch (e) {
+    logStore.addLogEntry(`Failed to undo action for log #${entry.id}`);
+  }
+};
 </script>
 
 <style scoped>
