@@ -3,18 +3,21 @@
 Choremane is a Progressive Web App (PWA) designed to simplify household chore management. It allows users to organize, assign, and track chores efficiently with a clean and modern interface.
 
 ## Features
-- 📅 **Smart Chore Scheduling** - Automatically assigns due dates based on intervals.
-- 🔒 **Authentication** - Login with GitHub and Google via Dex.
-- 🎨 **Customizable UI** - Material Design-style UI with chore filtering by due date.
-- 📱 **PWA Support** - Installable on mobile and desktop for quick access.
-- 🔄 **Swipe Actions** - Intuitive chore management with swipe-to-complete and swipe-to-edit.
-- 📊 **Log System** - Tracks chore actions with an undo feature.
-- 🚀 **CI/CD Workflow** - Staging and production deployments via GitHub Actions.
-- ☁️ **Cloud-Synced** - Data stored in PostgreSQL with API access via Kubernetes.
-- 🔔 **Push Notifications** - Get reminders for due and overdue chores.
+- 📅 **Smart Chore Scheduling** - Automatically assigns due dates based on intervals
+- 🔒 **Authentication** - Login with GitHub and Google via Dex
+- 🎨 **Customizable UI** - Material You design with dynamic theming
+- 📱 **PWA Support** - Installable on mobile and desktop for quick access
+- 🔄 **Swipe Actions** - Swipe gestures using Hammer.js for intuitive interactions
+- 📊 **Log System** - Tracks all actions with undo capability
+- 🚀 **CI/CD Workflow** - GitOps with GitHub Actions and ArgoCD
+- ☁️ **Cloud-Synced** - PostgreSQL backend with FastAPI
+- 🔔 **Push Notifications** - Configurable daily reminders
+- 🎯 **Smart Filtering** - Filter chores by overdue, today, and upcoming
+- 🔐 **Private Chores** - User-specific private chore support
+- 🔄 **Offline Support** - Full functionality without internet
 
 ## Deployment
-Choremane runs on a Kubernetes cluster with ArgoCD managing deployments. The backend is built with FastAPI, while the frontend is a Vue-based PWA.
+Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s cluster. The backend uses FastAPI with PostgreSQL, while the frontend is a Vue 3 PWA.
 
 ### Local Development
 1. Clone the repository:
@@ -34,15 +37,19 @@ Choremane runs on a Kubernetes cluster with ArgoCD managing deployments. The bac
    ```
 
 ## CI/CD Pipeline
-- **Staging Deployment**: Auto-deploys on commits to the main branch.
-- **Production Deployment**: Triggered by `*prod*` tags.
+- **Staging Deployment**: Auto-deploys on commits to the main branch
+- **Production Deployment**: Triggered by `choremane/prod/v.*` tags
+- **Environment Separation**: Distinct staging and production namespaces
 
 ## Roadmap
 - ✅ **Basic chore management**
 - ✅ **GitHub Actions CI/CD**
-- 🔄 **PWA enhancements**
+- ✅ **PWA core features**
 - 🔄 **Dex authentication integration**
 - 🔄 **Advanced chore filters & smart suggestions**
+- 🔄 **DALL-E generated chore banners**
+- 🔄 **Multi-language support**
+- 🔄 **Performance optimizations**
 
 ## Contributing
-Contributions are welcome! Open an issue or submit a pull request to suggest improvements.
+Contributions welcome! Please read our contributing guidelines and submit PRs for review.
