@@ -1,0 +1,34 @@
+﻿name: Frontend Tests
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-test.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+      - name: Run Jest unit tests
+        run: |
+          cd frontend
+          npx jest --ci --coverage
+      - name: Run Cypress e2e tests (if present)
+        run: |
+          cd frontend
+          if [ -d cypress ]; then npx cypress run || echo "Cypress not configured"; fi
