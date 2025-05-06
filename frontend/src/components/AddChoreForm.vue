@@ -1,32 +1,41 @@
 ﻿<template>
-  <form @submit.prevent="onSubmit" class="add-chore-form">
-    <div class="form-group">
-      <label for="chore-name">Name</label>
-      <input id="chore-name" v-model="chore.name" type="text" placeholder="Chore Name" required />
-    </div>
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Add New Chore" @click.self="onCancel">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Chore</h2>
+        <button class="close-button" @click="onCancel" aria-label="Cancel adding chore">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form @submit.prevent="onSubmit" id="add-chore-form">
+          <div class="form-group">
+            <label for="chore-name">Name</label>
+            <input id="chore-name" v-model="chore.name" type="text" placeholder="Chore Name" required />
+          </div>
 
-    <div class="form-group">
-      <label for="chore-due-date">Due Date</label>
-      <input id="chore-due-date" v-model="chore.due_date" type="date" required />
-    </div>
+          <div class="form-group">
+            <label for="chore-due-date">Due Date</label>
+            <input id="chore-due-date" v-model="chore.due_date" type="date" required />
+          </div>
 
-    <div class="form-group">
-      <label for="chore-interval">Interval (days)</label>
-      <input id="chore-interval" v-model="chore.interval_days" type="number" required />
-    </div>
+          <div class="form-group">
+            <label for="chore-interval">Interval (days)</label>
+            <input id="chore-interval" v-model="chore.interval_days" type="number" required />
+          </div>
 
-    <div class="form-group">
-      <label>
-        <input type="checkbox" v-model="chore.is_private" />
-        Private (only visible to me)
-      </label>
+          <div class="form-group checkbox-wrapper">
+            <input type="checkbox" id="chore-private" v-model="chore.is_private" />
+            <label for="chore-private">Private (only visible to me)</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="cancel-button" @click="onCancel">Cancel</button>
+        <button type="submit" form="add-chore-form" class="submit-button">Add Chore</button>
+      </div>
     </div>
-
-    <div class="form-actions">
-      <button type="submit" class="submit-btn">Add Chore</button>
-      <button type="button" class="cancel-btn" @click="onCancel">Cancel</button>
-    </div>
-  </form>
+  </div>
 </template>
 
 <script setup>
@@ -82,89 +91,169 @@ const onCancel = () => {
 </script>
 
 <style scoped>
-.add-chore-form {
-  background: #202020;
-  padding: 1.5rem;
-  border-radius: 10px;
-  color: #fff;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  min-width: 280px;
   width: 100%;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: var(--color-surface-light);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-surface-lighter);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  transform: none;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-surface-lighter);
+  gap: 0.75rem;
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 0.5rem;
+  color: var(--color-text);
 }
 
-.form-group input,
-.form-group textarea {
+.form-group input {
   width: 100%;
-  padding: 0.5rem;
-  border-radius: 5px;
-  border: 1px solid #444;
-  background: #333;
-  color: #fff;
+  padding: 0.625rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-surface-lighter);
+  background: var(--color-surface-light);
+  color: var(--color-text);
   box-sizing: border-box;
+  transition: border-color var(--transition-fast);
 }
 
-.form-actions {
+.form-group input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.checkbox-wrapper {
   display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.submit-btn,
-.cancel-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
+.checkbox-wrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.checkbox-wrapper label {
+  margin-bottom: 0;
+}
+
+.submit-button {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
+  font-weight: 600;
   min-width: 120px;
 }
 
+.submit-button:hover {
+  background: var(--color-primary-hover);
+  transform: none;
+}
+
+.cancel-button {
+  background: var(--color-danger);
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.cancel-button:hover {
+  background: var(--color-danger-hover);
+  transform: none;
+}
+
 @media (max-width: 576px) {
-  .add-chore-form {
+  .modal-content {
+    max-width: 95%;
+  }
+  
+  .modal-header, .modal-body, .modal-footer {
     padding: 1rem;
   }
   
-  .form-actions {
-    flex-direction: column;
+  .modal-footer {
+    flex-direction: column-reverse;
   }
   
-  .submit-btn, 
-  .cancel-btn {
+  .submit-button, .cancel-button {
     width: 100%;
-    margin-bottom: 0.5rem;
   }
-}
-
-.submit-btn {
-  background-color: #27ae60;
-  color: white;
-  font-weight: bold;
-}
-
-.submit-btn:hover {
-  background-color: #2ecc71;
-}
-
-.cancel-btn {
-  background-color: #e74c3c;
-  color: white;
-  font-weight: bold;
-}
-
-.cancel-btn:hover {
-  background-color: #ff6f61;
 }
 </style>

@@ -1,13 +1,24 @@
 ﻿<template>
-  <div class="import-export-modal" role="dialog" aria-modal="true" aria-label="Import/Export Data">
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Import/Export Data" @click.self="$emit('close')">
     <div class="modal-content">
-      <h2>Import/Export Chores & Logs</h2>
-      <button @click="exportData">Export Data</button>
-      <input type="file" ref="importInput" style="display:none" @change="importData" accept="application/json" />
-      <button @click="triggerImport">Import Data</button>
-      <div v-if="importError" class="import-error">{{ importError }}</div>
-      <div class="actions">
-        <button @click="$emit('close')">Close</button>
+      <div class="modal-header">
+        <h2>Import/Export Chores & Logs</h2>
+        <button class="close-button" @click="$emit('close')" aria-label="Close dialog">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <button class="action-button export-button" @click="exportData">
+          <i class="fas fa-download"></i> Export Data
+        </button>
+        <input type="file" ref="importInput" style="display:none" @change="importData" accept="application/json" />
+        <button class="action-button import-button" @click="triggerImport">
+          <i class="fas fa-upload"></i> Import Data
+        </button>
+        <div v-if="importError" class="import-error">{{ importError }}</div>
+      </div>
+      <div class="modal-footer">
+        <button class="primary-button" @click="$emit('close')">Close</button>
       </div>
     </div>
   </div>
@@ -68,21 +79,21 @@ const importData = (event) => {
 </script>
 
 <style scoped>
-.import-export-modal {
+.modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
   background: var(--color-surface);
   color: var(--color-text);
-  padding: 2rem;
   border-radius: var(--radius-md);
   min-width: 280px;
   width: 100%;
@@ -90,38 +101,132 @@ const importData = (event) => {
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: var(--color-surface-light);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-surface-lighter);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  transform: none;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
-.modal-content button {
-  padding: 0.75rem;
+.modal-footer {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-surface-lighter);
+  gap: 0.75rem;
+}
+
+.action-button {
+  padding: 0.75rem 1rem;
   border-radius: var(--radius-sm);
   background: var(--color-surface-light);
   color: var(--color-text);
   border: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color var(--transition-fast);
+}
+
+.action-button:hover {
+  background: var(--color-surface-lighter);
+  transform: none;
+}
+
+.export-button {
+  background: var(--color-primary);
+  color: white;
+}
+
+.export-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.import-button {
+  background: var(--color-warning);
+  color: white;
+}
+
+.import-button:hover {
+  background: var(--color-warning-hover);
+}
+
+.primary-button {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-button:hover {
+  background: var(--color-primary-hover);
+  transform: none;
 }
 
 .import-error {
   color: var(--color-danger);
-  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
   word-break: break-word;
-}
-
-.actions {
-  margin-top: 1.5rem;
-  text-align: right;
 }
 
 @media (max-width: 576px) {
   .modal-content {
-    padding: 1.5rem 1rem;
+    max-width: 95%;
   }
   
-  .actions button, 
-  .modal-content > button {
+  .modal-header, .modal-body, .modal-footer {
+    padding: 1rem;
+  }
+  
+  .action-button, .primary-button {
     width: 100%;
-    margin-bottom: 0.5rem;
   }
 }
 </style>
