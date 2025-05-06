@@ -18,32 +18,43 @@
   <transition name="fade">
       <div v-if="editMode" class="chore-edit">
         <form @submit.prevent="saveChore" class="edit-chore-form">
-          <div class="form-group">
-            <label for="chore-name">Name</label>
-            <input id="chore-name" v-model="editableChore.name" type="text" placeholder="Chore Name" required />
+          <div class="form-header">
+            <h3>Edit Chore</h3>
+            <button type="button" class="close-edit-button" @click="cancelEditMode" aria-label="Cancel editing">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div class="form-body">
+            <div class="form-group">
+              <label for="chore-name">Name</label>
+              <input id="chore-name" v-model="editableChore.name" type="text" placeholder="Chore Name" required />
+            </div>
+
+            <div class="form-group">
+              <label for="chore-due-date">Due Date</label>
+              <input id="chore-due-date" v-model="editableChore.due_date" type="date" required />
+            </div>
+
+            <div class="form-group">
+              <label for="chore-interval">Interval (days)</label>
+              <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
+            </div>
+
+            <div class="form-group checkbox-wrapper">
+              <input type="checkbox" id="chore-private" v-model="editableChore.is_private" />
+              <label for="chore-private">Private (only visible to me)</label>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="chore-due-date">Due Date</label>
-            <input id="chore-due-date" v-model="editableChore.due_date" type="date" required />
-          </div>
-
-          <div class="form-group">
-            <label for="chore-interval">Interval (days)</label>
-            <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
-          </div>
-
-          <div class="form-group">
-            <label>
-              <input type="checkbox" v-model="editableChore.is_private" />
-              Private (only visible to me)
-            </label>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="submit-btn">Save</button>
-            <button type="button" class="cancel-btn" @click="cancelEditMode">Cancel</button>
-            <button type="button" class="archive-btn" @click="archiveChore">Archive</button>
+          <div class="form-footer">
+            <button type="button" class="archive-button" @click="archiveChore">
+              <i class="fas fa-archive"></i> Archive
+            </button>
+            <div class="action-buttons">
+              <button type="button" class="cancel-button" @click="cancelEditMode">Cancel</button>
+              <button type="submit" class="save-button">Save</button>
+            </div>
           </div>
         </form>
       </div>
@@ -248,6 +259,26 @@ const friendlyDueDate = (due_date) => {
   .chore-card {
     padding: var(--space-xs) var(--space-sm);
   }
+  
+  .form-header, .form-body, .form-footer {
+    padding: 0.75rem;
+  }
+  
+  .form-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .save-button, .cancel-button, .archive-button {
+    width: 100%;
+    padding: 0.5rem;
+  }
 }
 
 .chore-due {
@@ -275,52 +306,149 @@ const friendlyDueDate = (due_date) => {
 
 .edit-chore-form {
   background: var(--color-surface);
-  padding: var(--space-md);
+  padding: 0;
   border-radius: var(--radius-md);
   margin: var(--space-xs) 0;
   box-shadow: var(--shadow-lg);
   width: 100%;
+  overflow: hidden;
+}
+
+.form-header {
+  background: var(--color-surface-light);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-surface-lighter);
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.close-edit-button {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.close-edit-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  transform: none;
+}
+
+.form-body {
+  padding: 1rem;
+}
+
+.form-footer {
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--color-surface-lighter);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-xs);
 }
 
 .form-group {
-  margin-bottom: var(--space-xs);
+  margin-bottom: var(--space-sm);
 }
 
 .form-group input {
-  composes: form-control from global;
   width: 100%;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-surface-lighter);
+  background: var(--color-surface-light);
+  color: var(--color-text);
   box-sizing: border-box;
+  transition: border-color var(--transition-fast);
 }
 
-.form-actions {
+.form-group input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.checkbox-wrapper {
   display: flex;
-  gap: var(--space-sm);
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-@media (max-width: 576px) {
-  .edit-chore-form {
-    padding: var(--space-sm);
-  }
-  
-  .form-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .form-actions button {
-    width: 100%;
-    margin-bottom: var(--space-xs);
-    padding: var(--space-xs) var(--space-sm);
-  }
+.checkbox-wrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
 }
 
-.edit-chore-form label {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 0.3em;
-  display: block;
+.checkbox-wrapper label {
+  margin-bottom: 0;
+}
+
+.save-button {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.save-button:hover {
+  background: var(--color-primary-hover);
+  transform: none;
+}
+
+.cancel-button {
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cancel-button:hover {
+  background: var(--color-surface-lighter);
+  transform: none;
+}
+
+.archive-button {
+  background: var(--color-warning);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.archive-button:hover {
+  background: var(--color-warning-hover);
+  transform: none;
 }
 
 /* Status Colors */

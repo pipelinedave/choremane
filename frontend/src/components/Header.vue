@@ -62,7 +62,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="primary-button" @click="toggleAboutModal">Close</button>
+          <button class="neutral-button" @click="toggleAboutModal">Close</button>
         </div>
       </div>
     </div>
@@ -323,6 +323,21 @@ const toggleImportExport = () => {
 
 .primary-button:hover {
   background: var(--color-primary-hover);
+  transform: none;
+}
+
+.neutral-button {
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.neutral-button:hover {
+  background: var(--color-surface-lighter);
   transform: none;
 }
 

@@ -18,7 +18,7 @@
         <div v-if="importError" class="import-error">{{ importError }}</div>
       </div>
       <div class="modal-footer">
-        <button class="primary-button" @click="$emit('close')">Close</button>
+        <button class="primary-button" @click="$emit('close')">Done</button>
       </div>
     </div>
   </div>
@@ -193,8 +193,8 @@ const importData = (event) => {
 }
 
 .primary-button {
-  background: var(--color-primary);
-  color: white;
+  background: var(--color-surface-light);
+  color: var(--color-text);
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-sm);
   border: none;
@@ -203,7 +203,7 @@ const importData = (event) => {
 }
 
 .primary-button:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-surface-lighter);
   transform: none;
 }
 

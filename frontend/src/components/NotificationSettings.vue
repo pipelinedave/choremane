@@ -29,7 +29,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="primary-button" @click="$emit('close')" aria-label="Close notification settings">Save & Close</button>
+        <button class="save-button" @click="$emit('close')" aria-label="Save notification settings">Save & Close</button>
       </div>
     </div>
   </div>
@@ -236,6 +236,21 @@ const onToggleNotifications = async () => {
 }
 
 .primary-button {
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary-button:hover {
+  background: var(--color-surface-lighter);
+  transform: none;
+}
+
+.save-button {
   background: var(--color-primary);
   color: white;
   padding: 0.625rem 1.25rem;
@@ -245,7 +260,7 @@ const onToggleNotifications = async () => {
   font-weight: 600;
 }
 
-.primary-button:hover {
+.save-button:hover {
   background: var(--color-primary-hover);
   transform: none;
 }

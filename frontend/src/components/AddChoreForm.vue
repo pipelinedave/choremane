@@ -224,8 +224,8 @@ const onCancel = () => {
 }
 
 .cancel-button {
-  background: var(--color-danger);
-  color: white;
+  background: var(--color-surface-light);
+  color: var(--color-text);
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-sm);
   border: none;
@@ -235,7 +235,7 @@ const onCancel = () => {
 }
 
 .cancel-button:hover {
-  background: var(--color-danger-hover);
+  background: var(--color-surface-lighter);
   transform: none;
 }
 
