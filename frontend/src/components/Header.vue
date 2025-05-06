@@ -3,18 +3,27 @@
     <div class="header-content">
       <h1>CHOREMANE</h1>
       <div class="header-buttons">
-        <button @click="toggleAddMode" class="add-button" aria-label="Add new chore">+</button>
+        <button @click="toggleAddMode" class="add-button" aria-label="Add new chore" title="Add new chore">
+          <i class="fas fa-plus"></i>
+        </button>
         <button
           v-if="showInstallButton"
           @click="installPWA"
           class="install-button"
           aria-label="Install app"
+          title="Install app"
         >
-          Install App
+          <i class="fas fa-download"></i>
         </button>
-        <button @click="toggleBanner" aria-label="About">About</button>
-        <button @click="toggleNotifications" aria-label="Notification settings">Notifications</button>
-        <button @click="toggleImportExport" aria-label="Import or export data">Import/Export</button>
+        <button @click="toggleBanner" aria-label="About" title="About">
+          <i class="fas fa-info-circle"></i>
+        </button>
+        <button @click="toggleNotifications" aria-label="Notification settings" title="Notifications">
+          <i class="fas fa-bell"></i>
+        </button>
+        <button @click="toggleImportExport" aria-label="Import or export data" title="Import/Export">
+          <i class="fas fa-exchange-alt"></i>
+        </button>
       </div>
     </div>
     <AddChoreForm v-if="addMode" @addChore="handleAddChore" @cancel="toggleAddMode" />
@@ -147,7 +156,6 @@ const toggleImportExport = () => {
 }
 
 .header-buttons button {
-  composes: btn from global;
   min-width: 36px;
   min-height: 36px;
   padding: var(--space-xs);
@@ -161,6 +169,14 @@ const toggleImportExport = () => {
   cursor: pointer;
   font-size: 0.9rem;
   transition: background-color 0.2s;
+}
+
+.header-buttons button:hover {
+  background: var(--color-surface-lighter);
+}
+
+.header-buttons i {
+  font-size: 1rem;
 }
 
 @media (max-width: 576px) {
@@ -177,18 +193,17 @@ const toggleImportExport = () => {
   
   .header-buttons button:not(.add-button) {
     font-size: 0.8rem;
-    white-space: nowrap;
     border-radius: var(--radius-sm);
-    padding: var(--space-xs) var(--space-sm);
-    min-width: unset;
+    padding: var(--space-xs);
+    min-width: 32px;
     width: auto;
     flex: 1;
     margin: 0 0.1rem;
   }
-}
-
-.header-buttons button:hover {
-  background: var(--color-surface-lighter);
+  
+  .header-buttons i {
+    font-size: 0.9rem;
+  }
 }
 
 .version-banner {

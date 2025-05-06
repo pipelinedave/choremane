@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import { createPinia } from 'pinia'
 import './assets/shared.css'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 import { useChoreStore } from '@/store/choreStore'
 
 function getNotificationSettings() {
