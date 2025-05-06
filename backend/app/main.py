@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mcp import FastApiMCP
 from app.api.routes import api_router
+from app.api.mcp_routes import router as mcp_router
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(mcp_router)
 
 # Initialize and mount FastAPI-MCP
 mcp = FastApiMCP(app)

@@ -9,6 +9,7 @@ from typing import List
 from app.database import get_db_connection
 from app.models import Chore, UndoRequest
 from app.utils import log_action
+from app.api.mcp_routes import router as mcp_router
 
 api_router = APIRouter(prefix="/api")
 
