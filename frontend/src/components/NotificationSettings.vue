@@ -3,14 +3,16 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 id="notif-title">Notification Settings</h2>
-        <button class="close-button" @click="$emit('close')" aria-label="Close dialog">
-          <i class="fas fa-times"></i>
-        </button>
       </div>
       <div class="modal-body">
-        <div class="checkbox-wrapper">
+        <div class="custom-checkbox-wrapper">
           <input type="checkbox" id="enable-notif" v-model="enabled" @change="onToggleNotifications" aria-checked="enabled" aria-label="Enable push notifications" />
-          <label for="enable-notif">Enable Push Notifications</label>
+          <label for="enable-notif">
+            <span class="checkbox-icon">
+              <i v-if="enabled" class="fas fa-check"></i>
+            </span>
+            <span class="checkbox-text">Enable Push Notifications</span>
+          </label>
         </div>
         
         <div v-if="enabled" class="times-section">
@@ -29,7 +31,12 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="save-button" @click="$emit('close')" aria-label="Save notification settings">Save & Close</button>
+        <button class="cancel-button" @click="$emit('close')" aria-label="Cancel changes">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button class="save-button" @click="$emit('close')" aria-label="Save notification settings">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
       </div>
     </div>
   </div>
@@ -150,16 +157,55 @@ const onToggleNotifications = async () => {
   gap: 0.75rem;
 }
 
-.checkbox-wrapper {
+.custom-checkbox-wrapper {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.checkbox-wrapper input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
+.custom-checkbox-wrapper input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.custom-checkbox-wrapper label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+
+.checkbox-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--color-surface-light);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  margin-right: 0.75rem;
+  color: white;
+  transition: background-color var(--transition-fast);
+}
+
+.custom-checkbox-wrapper input[type="checkbox"]:checked + label .checkbox-icon {
+  background: var(--color-primary);
+}
+
+.custom-checkbox-wrapper input[type="checkbox"]:focus + label .checkbox-icon {
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.3);
+}
+
+.checkbox-text {
+  color: var(--color-text);
+  transition: color var(--transition-fast);
+}
+
+.custom-checkbox-wrapper:hover .checkbox-text {
+  color: var(--color-primary);
 }
 
 .times-section {
@@ -262,6 +308,25 @@ const onToggleNotifications = async () => {
 
 .save-button:hover {
   background: var(--color-primary-hover);
+  transform: none;
+}
+
+.cancel-button {
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.cancel-button:hover {
+  background: var(--color-surface-lighter);
   transform: none;
 }
 

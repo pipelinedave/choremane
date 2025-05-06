@@ -20,9 +20,6 @@
         <form @submit.prevent="saveChore" class="edit-chore-form">
           <div class="form-header">
             <h3>Edit Chore</h3>
-            <button type="button" class="close-edit-button" @click="cancelEditMode" aria-label="Cancel editing">
-              <i class="fas fa-times"></i>
-            </button>
           </div>
           
           <div class="form-body">
@@ -41,9 +38,14 @@
               <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
             </div>
 
-            <div class="form-group checkbox-wrapper">
+            <div class="form-group custom-checkbox-wrapper">
               <input type="checkbox" id="chore-private" v-model="editableChore.is_private" />
-              <label for="chore-private">Private (only visible to me)</label>
+              <label for="chore-private">
+                <span class="checkbox-icon">
+                  <i v-if="editableChore.is_private" class="fas fa-check"></i>
+                </span>
+                <span class="checkbox-text">Private (only visible to me)</span>
+              </label>
             </div>
           </div>
 
@@ -52,8 +54,12 @@
               <i class="fas fa-archive"></i> Archive
             </button>
             <div class="action-buttons">
-              <button type="button" class="cancel-button" @click="cancelEditMode">Cancel</button>
-              <button type="submit" class="save-button">Save</button>
+              <button type="submit" class="save-button">
+                <i class="fas fa-save"></i> Save
+              </button>
+              <button type="button" class="cancel-button" @click="cancelEditMode">
+                <i class="fas fa-times"></i> Cancel
+              </button>
             </div>
           </div>
         </form>
@@ -387,20 +393,55 @@ const friendlyDueDate = (due_date) => {
   outline: none;
 }
 
-.checkbox-wrapper {
+.custom-checkbox-wrapper {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.custom-checkbox-wrapper input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.custom-checkbox-wrapper label {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
 }
 
-.checkbox-wrapper input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
+.checkbox-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--color-surface-light);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  margin-right: 0.75rem;
+  color: white;
+  transition: background-color var(--transition-fast);
 }
 
-.checkbox-wrapper label {
-  margin-bottom: 0;
+.custom-checkbox-wrapper input[type="checkbox"]:checked + label .checkbox-icon {
+  background: var(--color-primary);
+}
+
+.custom-checkbox-wrapper input[type="checkbox"]:focus + label .checkbox-icon {
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.3);
+}
+
+.checkbox-text {
+  color: var(--color-text);
+  transition: color var(--transition-fast);
+}
+
+.custom-checkbox-wrapper:hover .checkbox-text {
+  color: var(--color-primary);
 }
 
 .save-button {
@@ -443,6 +484,7 @@ const friendlyDueDate = (due_date) => {
   font-weight: 600;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 

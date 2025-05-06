@@ -31,13 +31,10 @@
     <ImportExport v-if="showImportExport" @close="toggleImportExport" />
     
     <!-- About Modal Dialog -->
-    <div v-if="showAboutModal && versionInfo" class="modal-overlay" @click.self="toggleAboutModal">
+    <div v-if="showAboutModal && versionInfo" class="modal-overlay" role="dialog" aria-modal="true" aria-label="About ChoreMane" @click.self="toggleAboutModal">
       <div class="modal-content">
         <div class="modal-header">
           <h2>About ChoreMane</h2>
-          <button class="close-button" @click="toggleAboutModal" aria-label="Close dialog">
-            <i class="fas fa-times"></i>
-          </button>
         </div>
         <div class="modal-body">
           <div class="about-info">
@@ -62,7 +59,9 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="neutral-button" @click="toggleAboutModal">Close</button>
+          <button class="primary-button" @click="toggleAboutModal">
+            <i class="fas fa-check"></i> Done
+          </button>
         </div>
       </div>
     </div>
@@ -319,6 +318,10 @@ const toggleImportExport = () => {
   border: none;
   cursor: pointer;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .primary-button:hover {

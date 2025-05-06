@@ -3,9 +3,6 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Add New Chore</h2>
-        <button class="close-button" @click="onCancel" aria-label="Cancel adding chore">
-          <i class="fas fa-times"></i>
-        </button>
       </div>
       <div class="modal-body">
         <form @submit.prevent="onSubmit" id="add-chore-form">
@@ -24,15 +21,24 @@
             <input id="chore-interval" v-model="chore.interval_days" type="number" required />
           </div>
 
-          <div class="form-group checkbox-wrapper">
+          <div class="form-group custom-checkbox-wrapper">
             <input type="checkbox" id="chore-private" v-model="chore.is_private" />
-            <label for="chore-private">Private (only visible to me)</label>
+            <label for="chore-private">
+              <span class="checkbox-icon">
+                <i v-if="chore.is_private" class="fas fa-check"></i>
+              </span>
+              <span class="checkbox-text">Private (only visible to me)</span>
+            </label>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="cancel-button" @click="onCancel">Cancel</button>
-        <button type="submit" form="add-chore-form" class="submit-button">Add Chore</button>
+        <button type="submit" form="add-chore-form" class="submit-button">
+          <i class="fas fa-plus"></i> Add Chore
+        </button>
+        <button type="button" class="cancel-button" @click="onCancel">
+          <i class="fas fa-times"></i> Cancel
+        </button>
       </div>
     </div>
   </div>
@@ -203,8 +209,55 @@ const onCancel = () => {
   accent-color: var(--color-primary);
 }
 
-.checkbox-wrapper label {
-  margin-bottom: 0;
+.custom-checkbox-wrapper {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.custom-checkbox-wrapper input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.custom-checkbox-wrapper label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+
+.checkbox-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--color-surface-light);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  margin-right: 0.75rem;
+  color: white;
+  transition: background-color var(--transition-fast);
+}
+
+.custom-checkbox-wrapper input[type="checkbox"]:checked + label .checkbox-icon {
+  background: var(--color-primary);
+}
+
+.custom-checkbox-wrapper input[type="checkbox"]:focus + label .checkbox-icon {
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.3);
+}
+
+.checkbox-text {
+  color: var(--color-text);
+  transition: color var(--transition-fast);
+}
+
+.custom-checkbox-wrapper:hover .checkbox-text {
+  color: var(--color-primary);
 }
 
 .submit-button {

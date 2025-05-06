@@ -3,9 +3,6 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2>Import/Export Chores & Logs</h2>
-        <button class="close-button" @click="$emit('close')" aria-label="Close dialog">
-          <i class="fas fa-times"></i>
-        </button>
       </div>
       <div class="modal-body">
         <button class="action-button export-button" @click="exportData">
@@ -18,7 +15,9 @@
         <div v-if="importError" class="import-error">{{ importError }}</div>
       </div>
       <div class="modal-footer">
-        <button class="primary-button" @click="$emit('close')">Done</button>
+        <button class="primary-button" @click="$emit('close')">
+          <i class="fas fa-check"></i> Done
+        </button>
       </div>
     </div>
   </div>
