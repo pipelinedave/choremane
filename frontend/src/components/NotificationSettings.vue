@@ -31,10 +31,10 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="cancel-button" @click="$emit('close')" aria-label="Cancel changes">
+        <button class="cancel-button" @click="cancelChanges" aria-label="Cancel changes">
           <i class="fas fa-times"></i> Cancel
         </button>
-        <button class="save-button" @click="$emit('close')" aria-label="Save notification settings">
+        <button class="save-button" @click="saveChanges" aria-label="Save notification settings">
           <i class="fas fa-save"></i> Save Changes
         </button>
       </div>
@@ -48,25 +48,89 @@ import { ref, watch, onMounted } from 'vue';
 const NOTIF_KEY = 'notificationSettings';
 const enabled = ref(false);
 const times = ref(["09:00"]);
+const initialSettings = ref({ enabled: false, times: ["09:00"] });
+
+const emit = defineEmits(['close']);
 
 onMounted(() => {
-  const saved = localStorage.getItem(NOTIF_KEY);
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    enabled.value = parsed.enabled;
-    times.value = parsed.times || ["09:00"];
-  }
+  loadSettings();
 });
 
-watch([enabled, times], () => {
-  localStorage.setItem(NOTIF_KEY, JSON.stringify({ enabled: enabled.value, times: times.value }));
-});
+function loadSettings() {
+  const saved = localStorage.getItem(NOTIF_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      enabled.value = parsed.enabled;
+      // Ensure times is always an array, even if it was somehow saved incorrectly
+      times.value = Array.isArray(parsed.times) && parsed.times.length > 0 
+        ? parsed.times 
+        : ["09:00"];
+      
+      // Store initial settings for cancellation
+      initialSettings.value = { 
+        enabled: enabled.value, 
+        times: [...times.value] 
+      };
+    } catch (e) {
+      console.error("Error loading notification settings:", e);
+      resetToDefaults();
+    }
+  } else {
+    resetToDefaults();
+  }
+}
+
+function resetToDefaults() {
+  enabled.value = false;
+  times.value = ["09:00"];
+  initialSettings.value = { enabled: false, times: ["09:00"] };
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(NOTIF_KEY, JSON.stringify({ 
+      enabled: enabled.value, 
+      times: times.value 
+    }));
+    // Update initial settings after saving
+    initialSettings.value = { 
+      enabled: enabled.value, 
+      times: [...times.value] 
+    };
+    return true;
+  } catch (e) {
+    console.error("Error saving notification settings:", e);
+    return false;
+  }
+}
 
 const addTime = () => {
   times.value.push("12:00");
 };
+
 const removeTime = (idx) => {
   times.value.splice(idx, 1);
+  // Ensure we always have at least one time
+  if (times.value.length === 0) {
+    times.value.push("09:00");
+  }
+};
+
+const saveChanges = () => {
+  const success = saveSettings();
+  if (success) {
+    emit('close');
+  } else {
+    alert('Failed to save notification settings. Please try again.');
+  }
+};
+
+const cancelChanges = () => {
+  // Restore the initial settings
+  enabled.value = initialSettings.value.enabled;
+  times.value = [...initialSettings.value.times];
+  emit('close');
 };
 
 const onToggleNotifications = async () => {

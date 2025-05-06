@@ -9,8 +9,17 @@ import { useChoreStore } from '@/store/choreStore'
 
 function getNotificationSettings() {
   try {
-    return JSON.parse(localStorage.getItem('notificationSettings')) || { enabled: false, times: [] };
-  } catch {
+    const settings = JSON.parse(localStorage.getItem('notificationSettings'));
+    if (!settings) return { enabled: false, times: [] };
+    
+    // Ensure times is always an array
+    if (!settings.times || !Array.isArray(settings.times)) {
+      settings.times = [];
+    }
+    
+    return settings;
+  } catch (error) {
+    console.error('Error parsing notification settings:', error);
     return { enabled: false, times: [] };
   }
 }

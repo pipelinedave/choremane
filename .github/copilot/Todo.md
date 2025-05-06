@@ -11,7 +11,7 @@
 - #bug Fix import functionality not actually importing data - appears to work in UI but after page refresh, everything reverts to pre-import state
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #bug Fix GitHub Actions tests that fail consistently
-- #bug Fix push notification times not being stored - only the first notification time persists after refresh
+- #feature Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -29,3 +29,4 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #bug Fix push notification times not being stored - only the first notification time persists after refresh
