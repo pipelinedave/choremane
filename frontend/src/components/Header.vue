@@ -175,4 +175,19 @@ const toggleImportExport = () => {
 .version-banner a:hover {
   color: var(--color-primary-hover);
 }
+
+.link-button {
+  padding: 8px 16px;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.link-button:hover {
+  background-color: #3182ce;
+}
 </style>

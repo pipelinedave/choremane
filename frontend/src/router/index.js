@@ -9,11 +9,6 @@ const routes = [
     component: ChoreList,
     meta: { title: "Chores" },
   },
-  // {
-  //   path: '/chores',
-  //   name: 'ChoreList',
-  //   component: ChoreList,
-  // },
   {
     path: '/:catchAll(.*)',
     redirect: '/'
