@@ -141,8 +141,22 @@ h2 {
 .chore-cards {
   display: grid;
   gap: var(--space-xxs);
-  grid-template-columns: 1fr; /* changed to a single column layout */
+  grid-template-columns: 1fr; /* Base is single column */
   padding: var(--space-xxs);
+}
+
+@media (min-width: 768px) {
+  .chore-cards {
+    grid-template-columns: repeat(2, 1fr); /* Two columns on tablets */
+    gap: var(--space-xs);
+  }
+}
+
+@media (min-width: 1200px) {
+  .chore-cards {
+    grid-template-columns: repeat(3, 1fr); /* Three columns on larger screens */
+    gap: var(--space-sm);
+  }
 }
 
 /* Transition Group Animations */
@@ -159,7 +173,9 @@ h2 {
   gap: 0.5rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
+
 .pill {
   background: var(--color-surface-light);
   color: var(--color-text);
@@ -171,6 +187,23 @@ h2 {
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
   outline: none;
+  margin-bottom: 0.3rem;
+}
+
+@media (max-width: 576px) {
+  .filter-pills {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .pill {
+    font-size: 0.85em;
+    padding: 0.3em 0.9em;
+    white-space: nowrap;
+  }
 }
 .pill.active, .pill:focus {
   background: var(--color-primary);

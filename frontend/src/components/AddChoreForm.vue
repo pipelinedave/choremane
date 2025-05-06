@@ -89,6 +89,10 @@ const onCancel = () => {
   color: #fff;
   margin-bottom: 1.5rem;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .form-group {
@@ -109,11 +113,14 @@ const onCancel = () => {
   border: 1px solid #444;
   background: #333;
   color: #fff;
+  box-sizing: border-box;
 }
 
 .form-actions {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .submit-btn,
@@ -122,6 +129,23 @@ const onCancel = () => {
   border-radius: 5px;
   border: none;
   cursor: pointer;
+  min-width: 120px;
+}
+
+@media (max-width: 576px) {
+  .add-chore-form {
+    padding: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .submit-btn, 
+  .cancel-btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
 }
 
 .submit-btn {

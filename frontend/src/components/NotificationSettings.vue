@@ -68,23 +68,49 @@ const onToggleNotifications = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
+
 .modal-content {
   background: var(--color-surface);
   color: var(--color-text);
   padding: 2rem;
   border-radius: var(--radius-md);
-  min-width: 320px;
+  min-width: 280px;
+  width: 100%;
+  max-width: 500px;
   box-shadow: var(--shadow-lg);
 }
+
 .actions {
   margin-top: 1.5rem;
   text-align: right;
 }
+
 .times-section label {
   display: flex;
   align-items: center;
   gap: 0.5em;
   margin-bottom: 0.5em;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+  .modal-content {
+    padding: 1rem;
+  }
+  
+  .times-section label {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1em;
+  }
+  
+  .times-section button,
+  .actions button {
+    width: 100%;
+    margin-top: 0.5em;
+    padding: 0.75em;
+  }
 }
 </style>

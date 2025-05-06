@@ -76,21 +76,52 @@ const importData = (event) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
+
 .modal-content {
   background: var(--color-surface);
   color: var(--color-text);
   padding: 2rem;
   border-radius: var(--radius-md);
-  min-width: 320px;
+  min-width: 280px;
+  width: 100%;
+  max-width: 500px;
   box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
+
+.modal-content button {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-light);
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+}
+
 .import-error {
   color: var(--color-danger);
   margin-top: 1rem;
+  word-break: break-word;
 }
+
 .actions {
   margin-top: 1.5rem;
   text-align: right;
+}
+
+@media (max-width: 576px) {
+  .modal-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .actions button, 
+  .modal-content > button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
 }
 </style>

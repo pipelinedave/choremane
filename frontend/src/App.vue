@@ -87,3 +87,20 @@ const handleAddChore = async (newChore) => {
   text-decoration: underline;
 }
 </style>
+
+<style>
+/* Global styles */
+#app {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 576px) {
+  #app {
+    padding: 0.5rem;
+  }
+}
+</style>

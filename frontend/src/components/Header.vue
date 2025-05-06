@@ -136,11 +136,14 @@ const toggleImportExport = () => {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
+  flex-wrap: wrap;
 }
 
 .header-buttons {
   display: flex;
   gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-xs);
 }
 
 .header-buttons button {
@@ -151,6 +154,37 @@ const toggleImportExport = () => {
   background: var(--color-surface-light);
   color: var(--color-text);
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+@media (max-width: 576px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-buttons {
+    margin-top: var(--space-md);
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .header-buttons button:not(.add-button) {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) var(--space-sm);
+    min-width: unset;
+    width: auto;
+    flex: 1;
+    margin: 0 0.1rem;
+  }
 }
 
 .header-buttons button:hover {
@@ -163,6 +197,14 @@ const toggleImportExport = () => {
   padding: var(--space-sm);
   border-radius: var(--radius-sm);
   margin-top: var(--space-sm);
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
 }
 
 .version-banner a {
@@ -170,6 +212,19 @@ const toggleImportExport = () => {
   margin: 0 var(--space-xs);
   text-decoration: none;
   transition: color var(--transition-fast);
+}
+
+@media (max-width: 576px) {
+  .version-banner {
+    padding: var(--space-xs);
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .version-banner a {
+    display: block;
+    margin: var(--space-xxs) 0;
+  }
 }
 
 .version-banner a:hover {

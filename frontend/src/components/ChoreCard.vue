@@ -203,26 +203,51 @@ const friendlyDueDate = (due_date) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-sm); /* Reduced gap between title and metadata */
-  min-height: 2.5rem; /* Ensure consistent height for cards */
+  gap: var(--space-sm);
+  min-height: 2.5rem;
+  flex-wrap: wrap;
 }
 
 .chore-title {
   font-weight: 600;
-  font-size: clamp(0.85rem, 1.5vw, 1rem); /* Slightly smaller font */
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
   letter-spacing: 0.02em;
-  flex: 1; /* Allow title to take available space */
-  white-space: nowrap;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: normal; /* Allow wrapping */
+  word-break: break-word; /* Prevent overflow on small screens */
 }
 
 .chore-right {
   display: flex;
-  gap: var(--space-xs); /* Reduced gap between elements */
+  gap: var(--space-xs);
   align-items: center;
-  flex-shrink: 0; /* Prevent metadata from shrinking */
-  font-weight: 500;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 576px) {
+  .chore-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+  
+  .chore-title {
+    font-size: 0.95rem;
+    width: 100%;
+    margin-bottom: var(--space-xxs);
+  }
+  
+  .chore-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .chore-card {
+    padding: var(--space-xs) var(--space-sm);
+  }
 }
 
 .chore-due {
@@ -254,6 +279,7 @@ const friendlyDueDate = (due_date) => {
   border-radius: var(--radius-md);
   margin: var(--space-xs) 0;
   box-shadow: var(--shadow-lg);
+  width: 100%;
 }
 
 .form-group {
@@ -262,12 +288,32 @@ const friendlyDueDate = (due_date) => {
 
 .form-group input {
   composes: form-control from global;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-actions {
   display: flex;
   gap: var(--space-sm);
   justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+  .edit-chore-form {
+    padding: var(--space-sm);
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .form-actions button {
+    width: 100%;
+    margin-bottom: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+  }
 }
 
 .edit-chore-form label {
