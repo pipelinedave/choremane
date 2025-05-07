@@ -5,7 +5,8 @@
       <!-- Removed duplicate ChoreList component -->
       <router-view></router-view>
       <Log />
-      <CopilotButton />
+      <!-- AI Assistant button hidden temporarily -->
+      <!-- <CopilotButton /> -->
       <VersionChecker />
     </ErrorBoundary>
   </div>
@@ -19,7 +20,8 @@ import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
 import Log from '@/components/Log.vue'
-import CopilotButton from '@/components/CopilotButton.vue'
+// Commented out AI assistant import
+// import CopilotButton from '@/components/CopilotButton.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import VersionChecker from '@/components/VersionChecker.vue'
 

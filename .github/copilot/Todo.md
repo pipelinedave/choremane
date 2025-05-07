@@ -16,6 +16,8 @@
 - #feature Add a light theme to the app with a toggle switch in the settings menu
 - #bug Fix external links in about dialog being too long on small viewports causing dialog overflow
 - #ui Add buttons on either end of each chore card for non-mobile devices (done on left, edit on right) and hide them on mobile devices
+- #feature Implement smart scheduling suggestions for frequently completed chores. basically, if you do a chore a few times before its due, the app will suggest to adjust the interval for example. stuff like that. brainstorm ideas for this
+- #feature Add comprehensive multi-language support
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -24,9 +26,12 @@
 - #ui Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
 - #maintenance Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
 - #ci Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
+- #ui Overhaul animations throughout the app, especially focusing on return animations
+- #documentation Add API documentation
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
+- #feature Re-implement AI assistant with proper functionality
 
 ## In Progress
 <!-- Tasks currently being worked on -->
