@@ -15,23 +15,23 @@
         >
           <i class="fas fa-download"></i>
         </button>
-        <button @click="toggleAboutModal" aria-label="About" title="About">
-          <i class="fas fa-info-circle"></i>
-        </button>
-        <button @click="toggleNotifications" aria-label="Notification settings" title="Notifications">
-          <i class="fas fa-bell"></i>
-        </button>
-        <button @click="toggleImportExport" aria-label="Import or export data" title="Import/Export">
-          <i class="fas fa-exchange-alt"></i>
-        </button>
-        <button @click="toggleSettings" aria-label="Settings menu" title="Settings">
-          <i class="fas fa-cog"></i>
+        <button @click="toggleSettings" aria-label="Menu" title="Menu">
+          <i class="fas fa-bars"></i>
         </button>
       </div>
     </div>
     
-    <!-- Settings Menu -->
+    <!-- Menu -->
     <div v-if="showSettings" class="settings-menu">
+      <div class="settings-menu-item" @click="toggleAboutModal">
+        <i class="fas fa-info-circle"></i> About
+      </div>
+      <div class="settings-menu-item" @click="toggleNotifications">
+        <i class="fas fa-bell"></i> Notifications
+      </div>
+      <div class="settings-menu-item" @click="toggleImportExport">
+        <i class="fas fa-exchange-alt"></i> Import/Export
+      </div>
       <div class="settings-menu-item" @click="goToResetPage">
         <i class="fas fa-wrench"></i> Troubleshooting
       </div>
@@ -185,6 +185,10 @@ const toggleSettings = () => {
   if (showSettings.value) {
     showNotifications.value = false
     showImportExport.value = false
+  } else {
+    // Also close these when closing the menu
+    showNotifications.value = false
+    showImportExport.value = false
   }
 }
 
@@ -193,6 +197,8 @@ const goToResetPage = () => {
   const resetPath = '/reset.html';
   // Open in a new tab to avoid navigating away from the app
   window.open(window.location.origin + resetPath, '_blank');
+  // Close the menu after selecting an option
+  showSettings.value = false;
 }
 </script>
 
@@ -248,17 +254,18 @@ const goToResetPage = () => {
   .header-buttons {
     margin-top: var(--space-md);
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
   
-  .header-buttons button:not(.add-button) {
+  .header-buttons button {
     font-size: 0.8rem;
-    border-radius: var(--radius-sm);
+    border-radius: 50%;
     padding: var(--space-xs);
-    min-width: 32px;
-    width: auto;
-    flex: 1;
-    margin: 0 0.1rem;
+    min-width: 36px;
+    max-width: 36px;
+    width: 36px;
+    height: 36px;
+    margin-left: var(--space-xs);
   }
   
   .header-buttons i {
