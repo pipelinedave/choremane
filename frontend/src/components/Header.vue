@@ -22,10 +22,7 @@
     </div>
     
     <!-- Menu -->
-    <div v-if="showSettings" class="settings-menu">
-      <div class="settings-menu-item" @click="toggleAboutModal">
-        <i class="fas fa-info-circle"></i> About
-      </div>
+    <div v-if="showSettings" class="settings-menu" ref="settingsMenu">
       <div class="settings-menu-item" @click="toggleNotifications">
         <i class="fas fa-bell"></i> Notifications
       </div>
@@ -35,8 +32,8 @@
       <div class="settings-menu-item" @click="goToResetPage">
         <i class="fas fa-wrench"></i> Troubleshooting
       </div>
-      <div class="settings-menu-item" @click="toggleSettings">
-        <i class="fas fa-times"></i> Close
+      <div class="settings-menu-item" @click="toggleAboutModal">
+        <i class="fas fa-info-circle"></i> About
       </div>
     </div>
     
@@ -83,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import axios from '@/plugins/axios'
 import api from '@/plugins/axios'
 import AddChoreForm from '@/components/AddChoreForm.vue'
@@ -179,14 +176,28 @@ const toggleImportExport = () => {
 }
 
 const showSettings = ref(false)
-const toggleSettings = () => {
+const settingsMenu = ref(null)
+
+const closeSettingsOnClickOutside = (event) => {
+  if (settingsMenu.value && !settingsMenu.value.contains(event.target) && 
+      !event.target.closest('[aria-label="Menu"]')) {
+    showSettings.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeSettingsOnClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeSettingsOnClickOutside)
+})
+
+const toggleSettings = (event) => {
+  if (event) event.stopPropagation()
   showSettings.value = !showSettings.value
   // Close other popovers if opening settings
   if (showSettings.value) {
-    showNotifications.value = false
-    showImportExport.value = false
-  } else {
-    // Also close these when closing the menu
     showNotifications.value = false
     showImportExport.value = false
   }
@@ -211,19 +222,20 @@ const goToResetPage = () => {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
-  flex-wrap: wrap;
 }
 
 .header-buttons {
   display: flex;
   gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-top: var(--space-xs);
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .header-buttons button {
   min-width: 36px;
   min-height: 36px;
+  width: 36px;
+  height: 36px;
   padding: var(--space-xs);
   background: var(--color-surface-light);
   color: var(--color-text);
@@ -234,18 +246,75 @@ const goToResetPage = () => {
   border: none;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s;
 }
 
 .header-buttons button:hover {
   background: var(--color-surface-lighter);
+  transform: translateY(-1px);
+}
+
+.header-buttons button:active {
+  transform: translateY(0);
 }
 
 .header-buttons i {
   font-size: 1rem;
 }
 
-@media (max-width: 576px) {
+/* Settings Menu Styles */
+.settings-menu {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  overflow: hidden;
+  width: 220px;
+  animation: menuFadeIn 0.2s ease-out;
+  transform-origin: top right;
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.settings-menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text);
+}
+
+.settings-menu-item:hover {
+  background-color: var(--color-surface-light);
+}
+
+.settings-menu-item:active {
+  background-color: var(--color-surface-lighter);
+}
+
+.settings-menu-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+}
+
+/* Only apply flex-wrap at a very small screen size */
+@media (max-width: 380px) {
   .header-content {
     flex-direction: column;
     align-items: flex-start;
@@ -258,18 +327,15 @@ const goToResetPage = () => {
   }
   
   .header-buttons button {
-    font-size: 0.8rem;
-    border-radius: 50%;
-    padding: var(--space-xs);
-    min-width: 36px;
-    max-width: 36px;
-    width: 36px;
-    height: 36px;
     margin-left: var(--space-xs);
   }
-  
-  .header-buttons i {
-    font-size: 0.9rem;
+
+  .settings-menu {
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    top: 120px;
   }
 }
 
@@ -414,46 +480,5 @@ const goToResetPage = () => {
 .version-link:hover {
   color: var(--color-primary-hover);
   text-decoration: underline;
-}
-
-/* Settings Menu Styles */
-.settings-menu {
-  position: absolute;
-  top: 60px;
-  right: 10px;
-  background-color: var(--color-background);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  overflow: hidden;
-  width: 200px;
-}
-
-.settings-menu-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.settings-menu-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.settings-menu-item i {
-  width: 20px;
-  text-align: center;
-}
-
-@media (max-width: 576px) {
-  .modal-content {
-    max-width: 95%;
-  }
-  
-  .modal-header, .modal-body, .modal-footer {
-    padding: 1rem;
-  }
 }
 </style>

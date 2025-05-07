@@ -18,7 +18,6 @@
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
-- #ui Add a menu to the header to contain about, notifications and import/export buttons
 - #ui Improve filter pills to make it clearer which ones are active
 - #ui Remove the "archived" filter pill and hide it in the upcoming header menu
 - #ui Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
@@ -35,6 +34,7 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #ui Add a menu to the header to contain about, notifications and import/export buttons
 - #bug Fix settings->troubleshoot link to /reset.html - error "Cannot read properties of undefined (reading 'BASE_URL')" in Header.vue indicates missing environment configuration in staging environment
 - #ui Move "cancel" button before "save" button in edit chore mode for UI consistency
 - #ui Make "Done" button in about dialog gray instead of green to match the import/export dialog
