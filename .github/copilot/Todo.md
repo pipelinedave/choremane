@@ -10,7 +10,6 @@
 - #feature The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
 - #feature Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
 - #feature Move notifications settings to server side storage instead of local storage for cross-device consistency
-- #bug Fix push notifications not firing - implementation appears incomplete
 - #documentation Overhaul PRD.md and README.md to reflect current project state and goals
 
 ### Medium Priority
@@ -36,6 +35,7 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #bug Fix push notifications not firing - implementation appears incomplete
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #bug Fix push notification times not being stored - only the first notification time persists after refresh
 - #feature Add import and export API endpoints for consistency with the frontend

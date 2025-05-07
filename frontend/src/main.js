@@ -102,11 +102,11 @@ if (!localStorage.getItem('version_cleanup_performed')) {
 function getNotificationSettings() {
   try {
     const settings = JSON.parse(localStorage.getItem('notificationSettings'));
-    if (!settings) return { enabled: false, times: [] };
+    if (!settings) return { enabled: false, times: ["09:00"] }; // Default with one time
     
     // Ensure times is always an array
     if (!settings.times || !Array.isArray(settings.times)) {
-      settings.times = [];
+      settings.times = ["09:00"]; // Default with one time if array is missing
     }
     
     // Validate structure of notification settings
@@ -119,14 +119,19 @@ function getNotificationSettings() {
       return typeof time === 'string' && /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
     });
     
+    // Ensure there's always at least one time
+    if (settings.times.length === 0) {
+      settings.times = ["09:00"];
+    }
+    
     // Update storage with validated settings to fix any inconsistencies
     localStorage.setItem('notificationSettings', JSON.stringify(settings));
     
     return settings;
   } catch (error) {
     console.error('Error parsing notification settings:', error);
-    // Reset to default state
-    const defaultSettings = { enabled: false, times: [] };
+    // Reset to default state with one notification time
+    const defaultSettings = { enabled: false, times: ["09:00"] };
     localStorage.setItem('notificationSettings', JSON.stringify(defaultSettings));
     return defaultSettings;
   }

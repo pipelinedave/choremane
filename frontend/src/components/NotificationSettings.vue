@@ -20,7 +20,13 @@
             <label>Notification Time:</label>
             <div class="time-controls">
               <input type="time" v-model="times[idx]" aria-label="Notification time" />
-              <button type="button" class="danger-button" @click="removeTime(idx)" aria-label="Remove notification time">
+              <button 
+                v-if="times.length > 1" 
+                type="button" 
+                class="danger-button" 
+                @click="removeTime(idx)" 
+                aria-label="Remove notification time"
+              >
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
@@ -110,10 +116,9 @@ const addTime = () => {
 };
 
 const removeTime = (idx) => {
-  times.value.splice(idx, 1);
-  // Ensure we always have at least one time
-  if (times.value.length === 0) {
-    times.value.push("09:00");
+  // Only remove if we have more than one time to prevent having zero times
+  if (times.value.length > 1) {
+    times.value.splice(idx, 1);
   }
 };
 
