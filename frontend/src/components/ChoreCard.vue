@@ -54,11 +54,11 @@
               <i class="fas fa-archive"></i> Archive
             </button>
             <div class="action-buttons">
-              <button type="submit" class="save-button">
-                <i class="fas fa-save"></i> Save
-              </button>
               <button type="button" class="cancel-button" @click="cancelEditMode">
                 <i class="fas fa-times"></i> Cancel
+              </button>
+              <button type="submit" class="save-button">
+                <i class="fas fa-save"></i> Save
               </button>
             </div>
           </div>

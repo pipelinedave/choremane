@@ -9,9 +9,13 @@
 - #bug Fix GitHub Actions tests that fail consistently
 - #feature Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - #feature The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
+- #bug Fix push notifications not firing - implementation appears incomplete
 - #feature Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
 - #feature Move notifications settings to server side storage instead of local storage for cross-device consistency
 - #documentation Overhaul PRD.md and README.md to reflect current project state and goals
+- #feature Add a light theme to the app with a toggle switch in the settings menu
+- #bug Fix external links in about dialog being too long on small viewports causing dialog overflow
+- #bug Fix settings->troubleshoot link to /reset.html not working in staging environment due to Traefik proxy redirection
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -25,17 +29,16 @@
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
-- #ui Change label on notification settings modal from "Save Changes" to just "Save"
-- #ui Make "Done" button in about dialog gray instead of green to match the import/export dialog
-- #ui Move "cancel" button before "save" button in edit chore mode for UI consistency
 
 ## In Progress
 <!-- Tasks currently being worked on -->
-- #bug the page refreshes once per second in the staging environment but not in the local development setup - investigate and fix
 
 ## Completed
 <!-- Finished tasks -->
-- #bug Fix push notifications not firing - implementation appears incomplete
+- #ui Move "cancel" button before "save" button in edit chore mode for UI consistency
+- #ui Make "Done" button in about dialog gray instead of green to match the import/export dialog
+- #ui Change label on notification settings modal from "Save Changes" to just "Save"
+- #bug the page refreshes once per second in the staging environment but not in the local development setup - investigate and fix
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #bug Fix push notification times not being stored - only the first notification time persists after refresh
 - #feature Add import and export API endpoints for consistency with the frontend
