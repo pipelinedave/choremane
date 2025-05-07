@@ -5,7 +5,6 @@
 
 ### High Priority
 <!-- Critical bugs and important features -->
-- #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #bug Fix GitHub Actions tests that fail consistently
 - #feature Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - #feature The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
@@ -32,6 +31,7 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #bug Fix push notification times not being stored - only the first notification time persists after refresh
 - #feature Add import and export API endpoints for consistency with the frontend
 - #bug Fix import functionality not actually importing data - appears to work in UI but after page refresh, everything reverts to pre-import state
