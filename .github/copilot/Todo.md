@@ -1,4 +1,6 @@
 # Project Todo List
+- in the notifications dialog, you can not delete the notification if you only have one configured, but the delete button still shows. this is confusing as a user
+- the push notifications do not actually fire, probably unfinished implementation
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
