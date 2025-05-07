@@ -41,7 +41,7 @@
           <i class="fas fa-times"></i> Cancel
         </button>
         <button class="save-button" @click="saveChanges" aria-label="Save notification settings">
-          <i class="fas fa-save"></i> Save Changes
+          <i class="fas fa-save"></i> Save
         </button>
       </div>
     </div>
