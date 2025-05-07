@@ -73,7 +73,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="primary-button" @click="toggleAboutModal">
+          <button class="neutral-button" @click="toggleAboutModal">
             <i class="fas fa-check"></i> Done
           </button>
         </div>
