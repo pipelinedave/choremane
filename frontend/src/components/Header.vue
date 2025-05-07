@@ -189,7 +189,9 @@ const toggleSettings = () => {
 }
 
 const goToResetPage = () => {
-  window.location.href = '/reset.html'
+  // Use relative navigation that works with base URLs
+  const baseUrl = window.location.origin + import.meta.env.BASE_URL
+  window.location.href = baseUrl + 'reset.html'
 }
 </script>
 

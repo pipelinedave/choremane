@@ -15,7 +15,7 @@
 - #documentation Overhaul PRD.md and README.md to reflect current project state and goals
 - #feature Add a light theme to the app with a toggle switch in the settings menu
 - #bug Fix external links in about dialog being too long on small viewports causing dialog overflow
-- #bug Fix settings->troubleshoot link to /reset.html not working in staging environment due to Traefik proxy redirection
+
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -32,6 +32,7 @@
 
 ## In Progress
 <!-- Tasks currently being worked on -->
+- #bug Fix settings->troubleshoot link to /reset.html not working in staging environment due to Traefik proxy redirection
 
 ## Completed
 <!-- Finished tasks -->
