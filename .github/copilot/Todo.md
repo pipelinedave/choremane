@@ -2,6 +2,7 @@
 - in the notifications dialog, you can not delete the notification if you only have one configured, but the delete button still shows. this is confusing as a user
 - the push notifications do not actually fire, probably unfinished implementation
 - the prd.md and the readme.md need an overhaul. reconsider everything and update accordingly
+- change GitHub workflows so they only trigger build push deployment etc when actually necessary, like not when things like the Todo list get an update etc
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
