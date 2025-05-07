@@ -5,7 +5,6 @@ import router from './router'
 import { createPinia } from 'pinia'
 import './assets/shared.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
-import { useChoreStore } from '@/store/choreStore'
 import api from '@/plugins/axios'
 
 // Add version check to handle data migrations on app updates
@@ -267,6 +266,9 @@ if ('serviceWorker' in navigator) {
       const lastRefresh = parseInt(sessionStorage.getItem('last_page_refresh') || '0');
       const now = Date.now();
       const justRefreshed = (now - lastRefresh) < 30000; // 30 seconds
+      
+      // CRITICAL FIX: Always update timestamp before proceeding to prevent refresh loops
+      sessionStorage.setItem('last_page_refresh', now.toString());
       
       if (!isDevelopment && !justRefreshed) {
         // Only dispatch the custom event, don't force reload

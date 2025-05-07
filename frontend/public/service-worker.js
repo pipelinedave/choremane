@@ -1,4 +1,4 @@
-﻿// Extract version from URL query parameter if available
+// Extract version from URL query parameter if available
 // If no version parameter is provided, use a fixed fallback instead of Date.now()
 // to prevent triggering unnecessary updates on each refresh
 self.CACHE_VERSION = new URL(self.location).searchParams.get('v') || 'base-version';
@@ -52,55 +52,76 @@ self.addEventListener('activate', event => {
                            self.location.hostname === '127.0.0.1' ||
                            self.location.hostname.includes('.local');
       
-      // Only notify clients about the update if this is a new version AND not in development
-      const isVersionChange = !self.previousVersion || self.previousVersion !== self.CACHE_VERSION;
-      
-      if (isVersionChange && !isDevelopment) {
-        console.log('Notifying clients about version change from', self.previousVersion, 'to', self.CACHE_VERSION);
-        
-        // Store this notification in the cache to prevent duplicate notifications
-        caches.open('version-notifications').then(cache => {
-          // Check if we've already notified for this version recently (within last 5 minutes)
-          return cache.match('last-notification').then(response => {
-            if (response) {
-              return response.json().then(data => {
-                const notifiedRecently = (Date.now() - data.timestamp) < 300000; // 5 minutes
-                
-                if (notifiedRecently && data.version === self.CACHE_VERSION) {
-                  console.log('Already notified about this version recently, skipping notification');
-                  return;
-                }
-                
-                // Notification is either for a different version or was sent long ago
-                sendNotification();
-              });
-            } else {
-              // No recent notification found
-              sendNotification();
+      // Special fix for refresh loop issue: always skip the first activation notification
+      // This prevents the page from refreshing in an infinite loop
+      if (clients.length > 0) {
+        caches.open('version-info').then(cache => {
+          cache.match('previous-version').then(response => {
+            if (!response) {
+              // First activation - store version but don't notify
+              cache.put('previous-version', new Response(self.CACHE_VERSION));
+              console.log('First service worker activation - storing version without notification');
+              return;
             }
-          });
-        });
-        
-        function sendNotification() {
-          // Store this notification timestamp
-          caches.open('version-notifications').then(cache => {
-            cache.put('last-notification', new Response(JSON.stringify({
-              version: self.CACHE_VERSION,
-              timestamp: Date.now()
-            })));
-          });
-          
-          clients.forEach(client => {
-            client.postMessage({ 
-              type: 'reload',
-              version: self.CACHE_VERSION
+            
+            // Get the stored version
+            response.text().then(previousVersion => {
+              // If version changed and not in development, notify
+              if (previousVersion !== self.CACHE_VERSION && !isDevelopment) {
+                // Check if we recently notified (within 30 seconds)
+                caches.open('version-notifications').then(notifCache => {
+                  notifCache.match('last-notification').then(notifResponse => {
+                    let shouldNotify = true;
+                    
+                    if (notifResponse) {
+                      notifResponse.json().then(data => {
+                        const notifiedRecently = (Date.now() - data.timestamp) < 30000; // 30 seconds
+                        
+                        if (notifiedRecently) {
+                          console.log('Already notified recently, skipping to prevent refresh loop');
+                          shouldNotify = false;
+                        } else {
+                          // Only notify about the new version
+                          sendNotificationToClients(clients);
+                        }
+                      });
+                    } else {
+                      // No recent notification, safe to notify
+                      sendNotificationToClients(clients);
+                    }
+                  });
+                });
+              } else {
+                console.log('Version unchanged or in development, not notifying');
+              }
+              
+              // Always update the stored version
+              cache.put('previous-version', new Response(self.CACHE_VERSION));
             });
           });
-        }
+        });
       }
-      
-      // Track the current version to detect future changes
-      self.previousVersion = self.CACHE_VERSION;
     })
   );
 });
+
+// Helper function to send notifications to clients
+function sendNotificationToClients(clients) {
+  console.log('Notifying clients about new version:', self.CACHE_VERSION);
+  
+  // Record notification time to prevent refresh loops
+  caches.open('version-notifications').then(cache => {
+    cache.put('last-notification', new Response(JSON.stringify({
+      version: self.CACHE_VERSION,
+      timestamp: Date.now()
+    })));
+  });
+  
+  // Notify all clients
+  clients.forEach(client => {
+    client.postMessage({ 
+      type: 'reload',
+      version: self.CACHE_VERSION
+    });
+  });
+}

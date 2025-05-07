@@ -286,10 +286,25 @@ onMounted(() => {
     const now = Date.now();
     const recentlyRefreshed = (now - lastRefresh) < 30000; // 30 seconds
     
+    // Update timestamp immediately to prevent update notification cascades
+    sessionStorage.setItem('last_page_refresh', now.toString());
+    
     if (recentlyRefreshed) {
       console.log('Page was recently refreshed, ignoring update notification');
       return;
     }
+    
+    // Check if this notification has already been shown recently
+    const lastUpdateNotification = parseInt(sessionStorage.getItem('last_update_notification') || '0');
+    const recentlyNotified = (now - lastUpdateNotification) < 60000; // 1 minute
+    
+    if (recentlyNotified) {
+      console.log('Update notification was recently shown, ignoring duplicate');
+      return;
+    }
+    
+    // Record this notification timestamp
+    sessionStorage.setItem('last_update_notification', now.toString());
     
     // Check if user has not dismissed this version before showing notification
     const dismissedVersion = localStorage.getItem(DISMISS_UNTIL_NEXT_VERSION_KEY);
