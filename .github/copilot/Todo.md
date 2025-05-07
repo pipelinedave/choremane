@@ -15,7 +15,6 @@
 ### Medium Priority
 <!-- Enhancements and improvements -->
 - #ui Add a menu to the header to contain about, notifications and import/export buttons
-- #ui Update notification settings modal dialog - arrange cancel and save buttons vertically instead of horizontally for consistency
 - #ui Improve filter pills to make it clearer which ones are active
 - #ui Remove the "archived" filter pill and hide it in the upcoming header menu
 - #ui Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
@@ -41,3 +40,4 @@
 - #bug Fix import functionality not actually importing data - appears to work in UI but after page refresh, everything reverts to pre-import state
 - #bug Fix import/export functionality errors - resolved 'coroutine' error and database null value constraint violation
 - #ui Fix notification settings to prevent delete button showing when only one notification time exists
+- #ui Update notification settings modal dialog - arrange cancel and save buttons vertically instead of horizontally for consistency
