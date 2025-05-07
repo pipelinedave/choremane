@@ -24,8 +24,22 @@
         <button @click="toggleImportExport" aria-label="Import or export data" title="Import/Export">
           <i class="fas fa-exchange-alt"></i>
         </button>
+        <button @click="toggleSettings" aria-label="Settings menu" title="Settings">
+          <i class="fas fa-cog"></i>
+        </button>
       </div>
     </div>
+    
+    <!-- Settings Menu -->
+    <div v-if="showSettings" class="settings-menu">
+      <div class="settings-menu-item" @click="goToResetPage">
+        <i class="fas fa-wrench"></i> Troubleshooting
+      </div>
+      <div class="settings-menu-item" @click="toggleSettings">
+        <i class="fas fa-times"></i> Close
+      </div>
+    </div>
+    
     <AddChoreForm v-if="addMode" @addChore="handleAddChore" @cancel="toggleAddMode" />
     <NotificationSettings v-if="showNotifications" @close="toggleNotifications" />
     <ImportExport v-if="showImportExport" @close="toggleImportExport" />
@@ -71,6 +85,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from '@/plugins/axios'
+import api from '@/plugins/axios'
 import AddChoreForm from '@/components/AddChoreForm.vue'
 import NotificationSettings from '@/components/NotificationSettings.vue'
 import ImportExport from '@/components/ImportExport.vue'
@@ -89,7 +104,7 @@ const toggleAboutModal = () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/version')
+    const response = await api.get('version')
     versionInfo.value = response.data
   } catch (error) {
     console.error('Failed to fetch version info:', error)
@@ -161,6 +176,20 @@ const toggleNotifications = () => {
 const showImportExport = ref(false)
 const toggleImportExport = () => {
   showImportExport.value = !showImportExport.value
+}
+
+const showSettings = ref(false)
+const toggleSettings = () => {
+  showSettings.value = !showSettings.value
+  // Close other popovers if opening settings
+  if (showSettings.value) {
+    showNotifications.value = false
+    showImportExport.value = false
+  }
+}
+
+const goToResetPage = () => {
+  window.location.href = '/reset.html'
 }
 </script>
 
@@ -377,6 +406,37 @@ const toggleImportExport = () => {
   text-decoration: underline;
 }
 
+/* Settings Menu Styles */
+.settings-menu {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  background-color: var(--color-background);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  width: 200px;
+}
+
+.settings-menu-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.settings-menu-item i {
+  width: 20px;
+  text-align: center;
+}
+
 @media (max-width: 576px) {
   .modal-content {
     max-width: 95%;
@@ -385,20 +445,5 @@ const toggleImportExport = () => {
   .modal-header, .modal-body, .modal-footer {
     padding: 1rem;
   }
-}
-
-.link-button {
-  padding: 8px 16px;
-  background-color: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.link-button:hover {
-  background-color: #3182ce;
 }
 </style>

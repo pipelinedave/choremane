@@ -10,6 +10,7 @@
       <div class="error-actions">
         <button @click="resetError" class="retry-button">Try Again</button>
         <button @click="clearAndReload" class="reset-button">Reset App Data</button>
+        <button @click="goToResetPage" class="reset-page-button">Fix Update Issues</button>
         <button @click="toggleDetails" class="details-button">
           {{ showDetails ? 'Hide Details' : 'Show Details' }}
         </button>
@@ -65,6 +66,11 @@ const clearAndReload = () => {
   
   // Reload the page
   window.location.reload();
+};
+
+// Go to the dedicated reset page
+const goToResetPage = () => {
+  window.location.href = '/reset.html';
 };
 
 // Toggle showing error details
@@ -137,6 +143,11 @@ button {
 
 .reset-button {
   background-color: #e53935;
+  color: white;
+}
+
+.reset-page-button {
+  background-color: #ff9800;
   color: white;
 }
 

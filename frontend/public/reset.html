@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choremane Storage Reset</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+    }
+    .card {
+      background-color: #f5f5f5;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .button {
+      display: inline-block;
+      background-color: #4a6fff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: 10px;
+      border: none;
+      cursor: pointer;
+    }
+    .button.danger {
+      background-color: #ff4a4a;
+    }
+    .status {
+      margin-top: 20px;
+      font-weight: 500;
+    }
+    .success {
+      color: #2c9e2c;
+    }
+    .error {
+      color: #e22828;
+    }
+  </style>
+</head>
+<body>
+  <h1>Choremane Storage Reset</h1>
+  
+  <div class="card">
+    <h2>Fix Update Notification Issue</h2>
+    <p>
+      This page will reset the storage data that might be causing the persistent 
+      update notification issue, without removing your chores or settings.
+    </p>
+    <button id="fixButton" class="button">Reset Version Data</button>
+    <div id="fixStatus" class="status"></div>
+  </div>
+  
+  <div class="card">
+    <h2>Complete Reset</h2>
+    <p>
+      If you're experiencing other issues, you can perform a complete reset of 
+      all application data. <strong>This will clear all data stored by the Choremane app</strong>, 
+      including your chores and settings.
+    </p>
+    <button id="resetButton" class="button danger">Complete Reset</button>
+    <div id="resetStatus" class="status"></div>
+  </div>
+  
+  <p>
+    <a href="/" class="button">Return to Choremane</a>
+  </p>
+
+  <script>
+    document.getElementById('fixButton').addEventListener('click', function() {
+      try {
+        // List of potentially problematic storage keys
+        const keysToRemove = [
+          'choremane_current_version',
+          'choremane_dismissed_update',
+          'VERSION_STORAGE_KEY',
+          'DISMISS_UNTIL_NEXT_VERSION_KEY',
+          'appVersionInfo',
+          'version_cleanup_performed'
+        ];
+        
+        // Remove these keys from localStorage
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+        });
+        
+        // Log that the cleanup was performed
+        localStorage.setItem('version_cleanup_performed_at', new Date().toISOString());
+        
+        document.getElementById('fixStatus').textContent = 'Version data successfully reset! You should no longer see the update notification.';
+        document.getElementById('fixStatus').className = 'status success';
+      } catch (error) {
+        document.getElementById('fixStatus').textContent = 'Error: ' + error.message;
+        document.getElementById('fixStatus').className = 'status error';
+      }
+    });
+
+    document.getElementById('resetButton').addEventListener('click', function() {
+      if (confirm('Are you sure you want to completely reset all Choremane data? This cannot be undone.')) {
+        try {
+          localStorage.clear();
+          document.getElementById('resetStatus').textContent = 'All data successfully reset! The app will be in its initial state when you return.';
+          document.getElementById('resetStatus').className = 'status success';
+        } catch (error) {
+          document.getElementById('resetStatus').textContent = 'Error: ' + error.message;
+          document.getElementById('resetStatus').className = 'status error';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

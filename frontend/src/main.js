@@ -6,7 +6,7 @@ import { createPinia } from 'pinia'
 import './assets/shared.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import { useChoreStore } from '@/store/choreStore'
-import axios from '@/plugins/axios'
+import api from '@/plugins/axios'
 
 // Add version check to handle data migrations on app updates
 const APP_VERSION = '1.0.0'; // Update this when making breaking changes to storage
@@ -21,7 +21,7 @@ async function verifyStorageVersion() {
     
     try {
       // Fetch version info from backend to confirm redeployment
-      const versionResponse = await axios.get('/version');
+      const versionResponse = await api.get('version');
       console.log('Backend version info:', versionResponse.data);
       
       // Perform migration based on version changes
@@ -70,6 +70,33 @@ function resetProblematicStores() {
   if (token) localStorage.setItem('token', token);
   if (userColor) localStorage.setItem('userColor', userColor);
   if (username) localStorage.setItem('username', username);
+}
+
+// Clear any stored state that might be causing persistent update notifications
+function cleanupPreviousVersioningIssues() {
+  try {
+    // Remove keys that may have been causing issues
+    const keysToRemove = [
+      'DISMISS_UNTIL_NEXT_VERSION_KEY',
+      'VERSION_STORAGE_KEY'
+    ];
+    
+    keysToRemove.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Mark this cleanup as done to prevent it from running on every reload
+    localStorage.setItem('version_cleanup_performed', 'true');
+  } catch (error) {
+    console.error('Error during version cleanup:', error);
+  }
+}
+
+// Run the cleanup only if it hasn't been run before
+if (!localStorage.getItem('version_cleanup_performed')) {
+  cleanupPreviousVersioningIssues();
 }
 
 function getNotificationSettings() {
@@ -162,12 +189,41 @@ verifyStorageVersion().then(() => {
 });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Pass the APP_VERSION to the service worker to ensure cache busting on updates
-    const swUrl = `/service-worker.js?v=${APP_VERSION}`;
+  window.addEventListener('load', async () => {
+    let versionParam;
+    try {
+      // Try to get backend version info first, if available
+      const storedVersionInfo = localStorage.getItem('appVersionInfo');
+      if (storedVersionInfo) {
+        const parsed = JSON.parse(storedVersionInfo);
+        // Use a hash of the version info for a stable identifier that changes only on real version changes
+        versionParam = `${parsed.version_tag}-${parsed.frontend_image.split(':')[1] || 'latest'}`;
+      } else {
+        // Try to get fresh version info from the API
+        try {
+          const versionResponse = await api.get('version');
+          const versionData = versionResponse.data;
+          // Cache this info for future use
+          localStorage.setItem('appVersionInfo', JSON.stringify(versionData));
+          versionParam = `${versionData.version_tag}-${versionData.frontend_image.split(':')[1] || 'latest'}`;
+        } catch (apiError) {
+          console.error('Could not fetch version info from API:', apiError);
+          // Fall back to APP_VERSION
+          versionParam = APP_VERSION;
+        }
+        // Fall back to APP_VERSION if no backend version info is available
+        versionParam = APP_VERSION;
+      }
+    } catch (error) {
+      console.error('Error generating version parameter for service worker:', error);
+      versionParam = APP_VERSION;
+    }
+    
+    // Register the service worker with a consistent version parameter
+    const swUrl = `/service-worker.js?v=${versionParam}`;
     navigator.serviceWorker.register(swUrl)
       .then(registration => {
-        console.log('ServiceWorker registration successful')
+        console.log('ServiceWorker registration successful with version:', versionParam);
         
         // Add update checking
         registration.addEventListener('updatefound', () => {
@@ -176,12 +232,10 @@ if ('serviceWorker' in navigator) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New service worker is installed but waiting to activate
-              console.log('New version available! Reload to update.');
+              console.log('New version available! Using non-blocking notification.');
               
-              // Optionally show a notification to the user
-              if (confirm('A new version of Choremane is available. Reload to update?')) {
-                window.location.reload();
-              }
+              // Use custom event instead of confirm dialog
+              window.dispatchEvent(new CustomEvent('choremane:update-available'));
             }
           });
         });
@@ -194,8 +248,27 @@ if ('serviceWorker' in navigator) {
   // Listen for service worker messages
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data.type === 'reload') {
-      console.log('Service worker requested reload');
-      window.location.reload();
+      console.log('Service worker requested reload with version:', event.data.version);
+      
+      // Check if we're in development mode to prevent constant refreshes
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname.includes('.local');
+      
+      // Check if we just refreshed the page (within last 10 seconds)
+      const lastRefresh = parseInt(sessionStorage.getItem('last_page_refresh') || '0');
+      const now = Date.now();
+      const justRefreshed = (now - lastRefresh) < 10000; // 10 seconds
+      
+      if (!isDevelopment && !justRefreshed) {
+        // Only dispatch the custom event, don't force reload
+        window.dispatchEvent(new CustomEvent('choremane:update-available'));
+      } else {
+        console.log('Skipping update notification:', isDevelopment ? 'in development mode' : 'page was just refreshed');
+      }
+      
+      // Record this page load time
+      sessionStorage.setItem('last_page_refresh', now.toString());
     }
   });
 }

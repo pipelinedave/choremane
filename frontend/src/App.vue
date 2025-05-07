@@ -14,6 +14,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from '@/plugins/axios'
+import api from '@/plugins/axios'
 import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
@@ -45,18 +46,13 @@ async function checkVersionConsistency() {
         
         isVersionMismatch.value = true;
         
-        // Show user a message about clearing storage
-        const confirmReset = confirm(
-          'A new version of the application has been detected. ' +
-          'To prevent errors, would you like to clear application data? ' +
-          '(Your login information will be preserved)'
-        );
-        
-        if (confirmReset) {
-          await resetLocalStorage();
-          // Reload the page to ensure a clean state
-          window.location.reload();
-        }
+        // Dispatch custom event instead of showing blocking dialog
+        window.dispatchEvent(new CustomEvent('choremane:data-migration-needed', {
+          detail: {
+            fromVersion: parsedStoredVersion,
+            toVersion: versionInfo.value
+          }
+        }));
       }
     }
     
@@ -95,8 +91,43 @@ async function resetLocalStorage() {
 }
 
 onMounted(async () => {
+  // Check if we need to clean up version data to fix persistent notification issues
+  const persistentVersionFix = async () => {
+    try {
+      // Count how many times the app has been loaded with the same version
+      const versionLoadCount = localStorage.getItem('version_load_count') || '0';
+      const currentCount = parseInt(versionLoadCount, 10) + 1;
+      localStorage.setItem('version_load_count', currentCount.toString());
+      
+      // If the app has been loaded more than 3 times and we still have a version issue
+      if (currentCount > 3 && localStorage.getItem('version_cleanup_performed') !== 'true') {
+        // Perform an automatic cleanup
+        console.log('Performing automatic version data cleanup after multiple loads');
+        const keysToRemove = [
+          'choremane_current_version',
+          'choremane_dismissed_update',
+          'VERSION_STORAGE_KEY',
+          'DISMISS_UNTIL_NEXT_VERSION_KEY',
+          'appVersionInfo'
+        ];
+        
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+        });
+        
+        // Mark this cleanup as performed
+        localStorage.setItem('version_cleanup_performed', 'true');
+      }
+    } catch (error) {
+      console.error('Error in persistent version fix:', error);
+    }
+  };
+  
+  await persistentVersionFix();
+  
+  // Continue with normal app initialization
   try {
-    const response = await axios.get('/version')
+    const response = await api.get('version')
     versionInfo.value = response.data
     
     // After getting version info, check consistency

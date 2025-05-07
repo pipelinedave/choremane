@@ -1,7 +1,9 @@
 ﻿// Extract version from URL query parameter if available
-self.CACHE_VERSION = new URL(self.location).searchParams.get('v') || Date.now();
+// If no version parameter is provided, use a fixed fallback instead of Date.now()
+// to prevent triggering unnecessary updates on each refresh
+self.CACHE_VERSION = new URL(self.location).searchParams.get('v') || 'base-version';
 
-// Use a dynamic cache name with app version to ensure it changes on each deployment
+// Use a dynamic cache name with app version to ensure it changes on deployments only
 const CACHE_NAME = 'choremane-cache-' + self.CACHE_VERSION;
 
 self.addEventListener('install', (event) => {
@@ -45,13 +47,35 @@ self.addEventListener('activate', event => {
     })
     .then(() => self.clients.matchAll({ type: 'window' }))
     .then(clients => {
-      // Notify clients about the update
-      clients.forEach(client => {
-        client.postMessage({ 
-          type: 'reload',
-          version: self.CACHE_VERSION
+      // Check if we're in a development environment
+      const isDevelopment = self.location.hostname === 'localhost' || 
+                           self.location.hostname === '127.0.0.1' ||
+                           self.location.hostname.includes('.local');
+      
+      // Only notify clients about the update if this is a new version AND not in development
+      const isVersionChange = !self.previousVersion || self.previousVersion !== self.CACHE_VERSION;
+      
+      if (isVersionChange && !isDevelopment) {
+        console.log('Notifying clients about version change from', self.previousVersion, 'to', self.CACHE_VERSION);
+        
+        // Store this notification in the cache to prevent duplicate notifications
+        caches.open('version-notifications').then(cache => {
+          cache.put('last-notification', new Response(JSON.stringify({
+            version: self.CACHE_VERSION,
+            timestamp: Date.now()
+          })));
         });
-      });
+        
+        clients.forEach(client => {
+          client.postMessage({ 
+            type: 'reload',
+            version: self.CACHE_VERSION
+          });
+        });
+      }
+      
+      // Track the current version to detect future changes
+      self.previousVersion = self.CACHE_VERSION;
     })
   );
 });
