@@ -60,18 +60,43 @@ self.addEventListener('activate', event => {
         
         // Store this notification in the cache to prevent duplicate notifications
         caches.open('version-notifications').then(cache => {
-          cache.put('last-notification', new Response(JSON.stringify({
-            version: self.CACHE_VERSION,
-            timestamp: Date.now()
-          })));
-        });
-        
-        clients.forEach(client => {
-          client.postMessage({ 
-            type: 'reload',
-            version: self.CACHE_VERSION
+          // Check if we've already notified for this version recently (within last 5 minutes)
+          return cache.match('last-notification').then(response => {
+            if (response) {
+              return response.json().then(data => {
+                const notifiedRecently = (Date.now() - data.timestamp) < 300000; // 5 minutes
+                
+                if (notifiedRecently && data.version === self.CACHE_VERSION) {
+                  console.log('Already notified about this version recently, skipping notification');
+                  return;
+                }
+                
+                // Notification is either for a different version or was sent long ago
+                sendNotification();
+              });
+            } else {
+              // No recent notification found
+              sendNotification();
+            }
           });
         });
+        
+        function sendNotification() {
+          // Store this notification timestamp
+          caches.open('version-notifications').then(cache => {
+            cache.put('last-notification', new Response(JSON.stringify({
+              version: self.CACHE_VERSION,
+              timestamp: Date.now()
+            })));
+          });
+          
+          clients.forEach(client => {
+            client.postMessage({ 
+              type: 'reload',
+              version: self.CACHE_VERSION
+            });
+          });
+        }
       }
       
       // Track the current version to detect future changes

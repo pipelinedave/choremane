@@ -47,6 +47,13 @@ const checkForUpdates = async () => {
     // Check if we recently reloaded the page (within last 30 seconds)
     const lastRefresh = parseInt(sessionStorage.getItem('last_page_refresh') || '0');
     const now = Date.now();
+    // If lastRefresh is 0, it means the sessionStorage key is not set yet - set it now
+    if (lastRefresh === 0) {
+      sessionStorage.setItem('last_page_refresh', now.toString());
+      console.log('Setting initial page refresh timestamp');
+      return; // Skip this check until next interval
+    }
+    
     const recentlyRefreshed = (now - lastRefresh) < 30000; // 30 seconds
     
     if (recentlyRefreshed) {
@@ -154,7 +161,9 @@ const reloadApp = async () => {
 
 // Mark the current page load time in session storage
 const recordPageLoadTime = () => {
-  sessionStorage.setItem('last_page_refresh', Date.now().toString());
+  const now = Date.now();
+  sessionStorage.setItem('last_page_refresh', now.toString());
+  console.log('Recorded page load time:', new Date(now).toISOString());
 };
 
 // Dismiss the update notice until next version

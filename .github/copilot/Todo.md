@@ -5,6 +5,7 @@
 
 ### High Priority
 <!-- Critical bugs and important features -->
+
 - #bug Fix GitHub Actions tests that fail consistently
 - #feature Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - #feature The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
@@ -30,6 +31,7 @@
 
 ## In Progress
 <!-- Tasks currently being worked on -->
+- #bug the page refreshes once per second in the staging environment but not in the local development setup - investigate and fix
 
 ## Completed
 <!-- Finished tasks -->

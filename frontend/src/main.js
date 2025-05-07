@@ -195,6 +195,9 @@ verifyStorageVersion().then(() => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
+    // Record page load time immediately to prevent refresh loops
+    sessionStorage.setItem('last_page_refresh', Date.now().toString());
+    
     let versionParam;
     try {
       // Try to get backend version info first, if available
@@ -260,10 +263,10 @@ if ('serviceWorker' in navigator) {
                            window.location.hostname === '127.0.0.1' ||
                            window.location.hostname.includes('.local');
       
-      // Check if we just refreshed the page (within last 10 seconds)
+      // Check if we just refreshed the page (within last 30 seconds)
       const lastRefresh = parseInt(sessionStorage.getItem('last_page_refresh') || '0');
       const now = Date.now();
-      const justRefreshed = (now - lastRefresh) < 10000; // 10 seconds
+      const justRefreshed = (now - lastRefresh) < 30000; // 30 seconds
       
       if (!isDevelopment && !justRefreshed) {
         // Only dispatch the custom event, don't force reload
