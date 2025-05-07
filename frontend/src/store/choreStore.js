@@ -122,11 +122,15 @@ export const useChoreStore = defineStore('chores', () => {
     }
   };
 
-  const updateChore = async (updatedChore) => {
+  const updateChore = async (choreId, updatedChore) => {
     try {
-      const response = await api.put(`/chores/${updatedChore.id}`, updatedChore);
+      const payload = {
+        ...updatedChore,
+        id: choreId
+      };
+      const response = await api.put(`/chores/${choreId}`, payload);
       console.log("Updated Chore Response:", response.data);  // Log API response
-      const index = chores.value.findIndex(c => c.id === updatedChore.id);
+      const index = chores.value.findIndex(c => c.id === choreId);
       if (index !== -1) {
         chores.value[index] = {
           ...chores.value[index],  // Preserve existing values

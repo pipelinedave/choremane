@@ -15,6 +15,13 @@ def log_action(chore_id, done_by, action_type, action_details=None):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
+        # Special case for system-level actions like import/export that don't relate to a specific chore
+        if action_type in ["import", "export"] and chore_id is None:
+            # Don't try to log to database for these system operations
+            logging.info(f"System operation: {action_type}, details stored in application logs only")
+            return
+        
+        # Normal case - log to database
         cur.execute(
             """
             INSERT INTO chore_logs (chore_id, done_by, action_type, action_details)
@@ -23,7 +30,7 @@ def log_action(chore_id, done_by, action_type, action_details=None):
             (chore_id, done_by, action_type, action_details_str)
         )
         conn.commit()
-        logging.info(f"Action logged successfully for chore_id={chore_id}")
+        logging.info(f"Action logged successfully for action_type={action_type}")
     except Exception as e:
         logging.error(f"Error logging action for chore_id={chore_id}: {e}")
         conn.rollback()

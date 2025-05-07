@@ -27,6 +27,7 @@
 import { useChoreStore } from '@/store/choreStore'
 import { useLogStore } from '@/store/logStore'
 import { ref } from 'vue'
+import api from '@/plugins/axios'
 
 const choreStore = useChoreStore()
 const logStore = useLogStore()
@@ -34,19 +35,24 @@ const importInput = ref(null)
 const importError = ref('')
 
 const exportData = () => {
-  const data = {
-    chores: choreStore.chores,
-    logs: logStore.logEntries,
-  }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `choremane-backup-${new Date().toISOString().slice(0,10)}.json`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  // Use the backend API for export
+  api.get('/export')
+    .then(response => {
+      const data = response.data
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `choremane-backup-${new Date().toISOString().slice(0,10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
+    .catch(error => {
+      console.error('Export error:', error)
+      importError.value = 'Failed to export data. Please try again.'
+    })
 }
 
 const triggerImport = () => {
@@ -58,19 +64,28 @@ const importData = (event) => {
   const file = event.target.files[0]
   if (!file) return
   const reader = new FileReader()
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result)
       if (!Array.isArray(data.chores) || !Array.isArray(data.logs)) {
         throw new Error('Invalid file structure')
       }
-      // Replace current data (could be merged if desired)
-      choreStore.chores = data.chores
+      
+      // Save logs to localStorage
       logStore.logEntries = data.logs
       localStorage.setItem('logEntries', JSON.stringify(data.logs))
-      importError.value = 'Import successful!'
+      
+      // Send chores to the backend import API
+      const response = await api.post('/import', { chores: data.chores })
+      
+      // Refresh the chore list from the server
+      await choreStore.fetchChores()
+      
+      // Show import results to user
+      importError.value = `Import successful! ${response.data.imported_chores} chores imported.`
     } catch (err) {
-      importError.value = 'Import failed: ' + err.message
+      console.error('Import error:', err)
+      importError.value = `Import failed: ${err.message}`
     }
   }
   reader.readAsText(file)

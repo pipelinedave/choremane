@@ -274,3 +274,137 @@ def get_version_info():
         "backend_image": backend_image,
         "frontend_image": frontend_image
     }
+
+@api_router.post("/import")
+async def import_data(request: Request):
+    """
+    Import data from a JSON file.
+    Expects a JSON object with:
+    - 'chores': array of chore objects  
+    """
+    try:
+        import_data = await request.json()
+        user_email = request.headers.get("X-User-Email")
+        
+        if not import_data.get("chores"):
+            raise HTTPException(status_code=400, detail="No chores data found in the import file")
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        imported_chores = []
+        for chore in import_data["chores"]:
+            try:
+                # Check if chore with this ID already exists
+                if chore.get("id"):
+                    cur.execute("SELECT id FROM chores WHERE id = %s", (chore["id"],))
+                    if cur.fetchone():
+                        # Update existing chore
+                        cur.execute(
+                            """
+                            UPDATE chores 
+                            SET name = %s, interval_days = %s, due_date = %s, 
+                                is_private = %s, owner_email = %s
+                            WHERE id = %s
+                            """,
+                            (
+                                chore["name"], 
+                                chore["interval_days"], 
+                                chore["due_date"],
+                                chore.get("is_private", False),
+                                user_email if chore.get("is_private", False) else None,
+                                chore["id"]
+                            )
+                        )
+                        imported_chores.append({"id": chore["id"], "status": "updated"})
+                        continue
+                
+                # Insert as new chore
+                cur.execute(
+                    """
+                    INSERT INTO chores (name, interval_days, due_date, archived, owner_email, is_private)
+                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+                    """,
+                    (
+                        chore["name"], 
+                        chore["interval_days"], 
+                        chore["due_date"],
+                        chore.get("archived", False),
+                        user_email if chore.get("is_private", False) else None,
+                        chore.get("is_private", False)
+                    )
+                )
+                new_id = cur.fetchone()[0]
+                imported_chores.append({"id": new_id, "status": "created"})
+            except Exception as e:
+                logging.error(f"Error importing chore {chore.get('name')}: {e}")
+                # Continue with next chore
+        
+        conn.commit()
+        log_action(None, user_email, "import", action_details={"imported_chores": imported_chores})
+        
+        return {
+            "message": "Import successful",
+            "imported_chores": len(imported_chores),
+            "details": imported_chores
+        }
+    except Exception as e:
+        logging.error(f"Error during import: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to import data: {str(e)}")
+
+@api_router.get("/export")
+def export_data(request: Request):
+    """
+    Export all chores and logs for the current user.
+    """
+    user_email = request.headers.get("X-User-Email")
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Get chores (visible to this user)
+        cur.execute(
+            """
+            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private
+            FROM chores
+            WHERE is_private = FALSE OR (is_private = TRUE AND owner_email = %s)
+            """,
+            (user_email,)
+        )
+        chores = []
+        for row in cur.fetchall():
+            chore = dict(zip([desc[0] for desc in cur.description], row))
+            # Convert date objects to string
+            if isinstance(chore["due_date"], (datetime, date)):
+                chore["due_date"] = chore["due_date"].isoformat()
+            chores.append(chore)
+        
+        # Get logs
+        cur.execute(
+            """
+            SELECT id, chore_id, done_by, done_at, action_details, action_type
+            FROM chore_logs
+            ORDER BY done_at DESC
+            """
+        )
+        logs = []
+        for row in cur.fetchall():
+            log = dict(zip([desc[0] for desc in cur.description], row))
+            # Convert date objects to string
+            if isinstance(log["done_at"], (datetime, date)):
+                log["done_at"] = log["done_at"].isoformat()
+            logs.append(log)
+            
+        log_action(None, user_email, "export", action_details={"chore_count": len(chores), "log_count": len(logs)})
+        
+        return {
+            "chores": chores,
+            "logs": logs
+        }
+    except Exception as e:
+        logging.error(f"Error during export: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to export data: {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
