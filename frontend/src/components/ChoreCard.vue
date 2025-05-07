@@ -15,7 +15,21 @@
     tabindex="0"
     :aria-label="chore.is_private ? `Private chore: ${chore.name}` : `Chore: ${chore.name}`"
   >
-  <transition name="fade">
+    <!-- Left swipe action (Edit) -->
+    <div class="swipe-action edit-action">
+      <button class="edit-button" @click="enterEditMode">
+        <i class="fas fa-edit"></i>
+      </button>
+    </div>
+    
+    <!-- Right swipe action (Mark as done) -->
+    <div class="swipe-action done-action">
+      <button class="done-button" @click="markDone">
+        <i class="fas fa-check"></i>
+      </button>
+    </div>
+    
+    <transition name="fade">
       <div v-if="editMode" class="chore-edit">
         <form @submit.prevent="saveChore" class="edit-chore-form">
           <div class="form-header">
@@ -97,37 +111,120 @@ const choreStore = useChoreStore();
 
 const editMode = ref(false);
 const editableChore = ref({ ...props.chore });
+let hammer = null;
+let isRevealingAction = false;
 
 const handleDblClick = () => {
   if (choreStore.isDoneToday(props.chore)) return;
   editMode.value = true;
 };
 
+const enterEditMode = () => {
+  if (choreStore.isDoneToday(props.chore)) return;
+  editMode.value = true;
+};
+
+const markDone = () => {
+  if (choreStore.isDoneToday(props.chore)) {
+    console.log('Chore already done today');
+    return;
+  }
+  emit('markAsDone', props.chore.id);
+};
+
+const resetSwipeState = (card) => {
+  // Reset all swipe-related classes
+  card.classList.remove('swipe-left', 'swipe-right', 'swipe-reveal-left', 'swipe-reveal-right');
+  // Reset inline style transform
+  card.style.transform = '';
+  isRevealingAction = false;
+};
+
 onMounted(() => {
   const card = document.getElementById(`chore-card-${props.chore.id}`);
-  const hammer = new Hammer(card);
-
-  hammer.on('swiperight', () => {
-    if (choreStore.isDoneToday(props.chore)) {
-      console.log('Chore already done today');
-      return;
-    }
-    card.classList.add('swipe-right');
-    setTimeout(() => {
-      emit('markAsDone', props.chore.id);
-    }, 300);
+  
+  // Initialize Hammer.js
+  hammer = new Hammer(card);
+  hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+  
+  // Pan (swipe with position feedback) - better for reveal pattern
+  hammer.on('panstart', () => {
+    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    card.classList.add('swiping');
   });
-
-  hammer.on('swipeleft', () => {
-    card.classList.add('enter-edit-mode');
-    setTimeout(() => {
-      editMode.value = true;
-      card.classList.remove('enter-edit-mode');
-    }, 300);
+  
+  hammer.on('panleft', (event) => {
+    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    
+    // Apply a transform effect to the card during panning
+    const translateX = Math.min(0, event.deltaX);
+    card.style.transform = `translateX(${translateX}px)`;
+    
+    const percentage = Math.min(100, Math.abs(event.deltaX) / 2);
+    if (percentage > 25) { // Reduced threshold for easier activation
+      card.classList.add('swipe-reveal-left');
+      isRevealingAction = true;
+    } else {
+      card.classList.remove('swipe-reveal-left');
+      isRevealingAction = false;
+    }
+  });
+  
+  hammer.on('panright', (event) => {
+    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    
+    // Apply a transform effect to the card during panning
+    const translateX = Math.max(0, event.deltaX);
+    card.style.transform = `translateX(${translateX}px)`;
+    
+    const percentage = Math.min(100, Math.abs(event.deltaX) / 2);
+    if (percentage > 25) { // Reduced threshold for easier activation
+      card.classList.add('swipe-reveal-right');
+      isRevealingAction = true;
+    } else {
+      card.classList.remove('swipe-reveal-right');
+      isRevealingAction = false;
+    }
+  });
+  
+  hammer.on('panend', (event) => {
+    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    
+    card.classList.remove('swiping');
+    card.style.transform = ''; // Reset inline transform
+    
+    // If revealing action and swipe was significant
+    if (isRevealingAction) {
+      if (card.classList.contains('swipe-reveal-left')) {
+        // For left swipe (Edit)
+        card.classList.add('swipe-left');
+        setTimeout(() => {
+          enterEditMode();
+          resetSwipeState(card);
+        }, 300);
+      } else if (card.classList.contains('swipe-reveal-right')) {
+        // For right swipe (Done)
+        card.classList.add('swipe-right');
+        setTimeout(() => {
+          markDone();
+          resetSwipeState(card);
+        }, 300);
+      }
+    } else {
+      // For short swipes, return to original position with animation
+      card.classList.add('returning');
+      setTimeout(() => {
+        card.classList.remove('returning');
+        resetSwipeState(card);
+      }, 300);
+    }
   });
 
   onBeforeUnmount(() => {
-    hammer.destroy();
+    if (hammer) {
+      hammer.destroy();
+      hammer = null;
+    }
   });
 });
 
@@ -214,6 +311,97 @@ const friendlyDueDate = (due_date) => {
   transition: all var(--transition-normal);
   color: rgba(255, 255, 255, 0.95); /* Base text color for all cards */
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); /* Subtle text shadow for better contrast */
+  position: relative;
+  overflow: hidden; /* Important for hiding the swipe actions */
+}
+
+/* Swipe Action Containers */
+.swipe-action {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 80px; /* Increased width for better visibility */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* Add shadow for depth */
+  z-index: 2; /* Ensure actions appear above card content */
+}
+
+.edit-action {
+  right: 0;
+  background-color: #FF9800; /* Brighter orange for edit */
+  transform: translateX(100%); /* Hidden by default */
+}
+
+.done-action {
+  left: 0;
+  background-color: #4CAF50; /* Brighter green for done */
+  transform: translateX(-100%); /* Hidden by default */
+}
+
+/* Swipe Action Buttons */
+.done-button, .edit-button {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 1.75rem; /* Larger icons */
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); /* Add text shadow for better contrast */
+}
+
+/* Reveal states */
+.chore-card.swipe-reveal-left .edit-action {
+  transform: translateX(0); /* Show edit action */
+}
+
+.chore-card.swipe-reveal-right .done-action {
+  transform: translateX(0); /* Show done action */
+}
+
+/* Add text labels to buttons */
+.done-button::after, .edit-button::after {
+  position: absolute;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-top: 3.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.done-button::after {
+  content: "Done";
+}
+
+.edit-button::after {
+  content: "Edit";
+}
+
+/* Animation states */
+.chore-card.swipe-left {
+  transform: translateX(-100px);
+  opacity: 0.9;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.chore-card.swipe-right {
+  transform: translateX(100px);
+  opacity: 0.9;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.chore-card.swiping {
+  transition: transform 0.1s;
+}
+
+.chore-card.returning {
+  transition: transform 0.3s ease-out;
 }
 
 .chore-content {
@@ -223,8 +411,10 @@ const friendlyDueDate = (due_date) => {
   gap: var(--space-sm);
   min-height: 2.5rem;
   flex-wrap: wrap;
+  z-index: 1; /* Ensure content is above the swipe actions */
 }
 
+/* Rest of the original styles */
 .chore-title {
   font-weight: 600;
   font-size: clamp(0.85rem, 1.5vw, 1rem);
@@ -536,5 +726,109 @@ const friendlyDueDate = (due_date) => {
 .chore-card.private-chore {
   border-left: 4px solid #ffb300;
   background: linear-gradient(90deg, #232323 90%, #ffb30022 100%);
+}
+
+/* Visual hint for swipable cards - refined */
+@media (min-width: 768px) {
+  .chore-card:not(.done-today)::before,
+  .chore-card:not(.done-today)::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    background-color: rgba(255, 255, 255, 0.15);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease, background-color 0.3s ease;
+  }
+  
+  .chore-card:not(.done-today)::before {
+    left: 0;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    background-image: linear-gradient(to right, transparent, #4CAF50);
+  }
+  
+  .chore-card:not(.done-today):hover::before {
+    opacity: 1;
+  }
+  
+  .chore-card:not(.done-today)::after {
+    right: 0;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background-image: linear-gradient(to left, transparent, #FF9800);
+  }
+  
+  .chore-card:not(.done-today):hover::after {
+    opacity: 1;
+  }
+  
+  /* Add swipe hint icon on hover */
+  .chore-card:not(.done-today):hover::before {
+    content: '⟸'; /* Left arrow for done action */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    width: 24px;
+  }
+  
+  .chore-card:not(.done-today):hover::after {
+    content: '⟹'; /* Right arrow for edit action */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    width: 24px;
+  }
+}
+
+/* Animation for swipe actions */
+@keyframes ripple {
+  0% { 
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3);
+    opacity: 1;
+  }
+  100% { 
+    box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
+    opacity: 0;
+  }
+}
+
+.chore-card.swipe-reveal-left .edit-action::before,
+.chore-card.swipe-reveal-right .done-action::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  animation: ripple 1s infinite;
+}
+
+/* Add pulsing animation for action buttons */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.chore-card.swipe-reveal-left .edit-button i,
+.chore-card.swipe-reveal-right .done-button i {
+  animation: pulse 0.75s infinite;
+}
+
+/* Fade transition for edit mode */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>
