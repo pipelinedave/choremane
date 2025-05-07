@@ -15,15 +15,17 @@
 - #documentation Overhaul PRD.md and README.md to reflect current project state and goals
 - #feature Add a light theme to the app with a toggle switch in the settings menu
 - #bug Fix external links in about dialog being too long on small viewports causing dialog overflow
+- #ui Add buttons on either end of each chore card for non-mobile devices (done on left, edit on right) and hide them on mobile devices
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
 - #ui Improve filter pills to make it clearer which ones are active
-- #ui Remove the "archived" filter pill and hide it in the upcoming header menu
+- #ui Remove the "archived" filter pill and hide a functionality to manage archived items in the upcoming header menu
 - #ui Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
 - #maintenance Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
 - #ui Make chore card actions "marking done" and "enter edit mode" use material swipe-to-reveal action pattern
 - #ci Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
+- #feature Add new filter pills for "due tomorrow" and "due this week" using similar logic to the "due today" pill
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
