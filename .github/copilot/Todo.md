@@ -16,7 +16,6 @@
 - #feature Add a light theme to the app with a toggle switch in the settings menu
 - #bug Fix external links in about dialog being too long on small viewports causing dialog overflow
 
-
 ### Medium Priority
 <!-- Enhancements and improvements -->
 - #ui Add a menu to the header to contain about, notifications and import/export buttons
@@ -32,7 +31,7 @@
 
 ## In Progress
 <!-- Tasks currently being worked on -->
-- #bug Fix settings->troubleshoot link to /reset.html not working in staging environment due to Traefik proxy redirection
+- #bug Fix settings->troubleshoot link to /reset.html - error "Cannot read properties of undefined (reading 'BASE_URL')" in Header.vue indicates missing environment configuration in staging environment
 
 ## Completed
 <!-- Finished tasks -->
@@ -41,9 +40,3 @@
 - #ui Change label on notification settings modal from "Save Changes" to just "Save"
 - #bug the page refreshes once per second in the staging environment but not in the local development setup - investigate and fix
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
-- #bug Fix push notification times not being stored - only the first notification time persists after refresh
-- #feature Add import and export API endpoints for consistency with the frontend
-- #bug Fix import functionality not actually importing data - appears to work in UI but after page refresh, everything reverts to pre-import state
-- #bug Fix import/export functionality errors - resolved 'coroutine' error and database null value constraint violation
-- #ui Fix notification settings to prevent delete button showing when only one notification time exists
-- #ui Update notification settings modal dialog - arrange cancel and save buttons vertically instead of horizontally for consistency
