@@ -54,15 +54,42 @@ const pills = [
   { label: 'All', value: 'all', color: '#3d3d3d' }, // Darker than surface-light
   { label: 'Overdue', value: 'overdue', color: 'var(--color-overdue)' },
   { label: 'Due Today', value: 'today', color: 'var(--color-due-today)' },
-  { label: 'Upcoming', value: 'upcoming', color: '#4db6ac' }, // Using the due-far-future teal color
+  { label: 'Due Tomorrow', value: 'tomorrow', color: 'var(--color-due-soon)' },
+  { label: 'Due This Week', value: 'thisWeek', color: 'var(--color-due-7-days)' },
+  { label: 'Later', value: 'upcoming', color: '#4db6ac' }, // Using the due-far-future teal color
   { label: 'Archived', value: 'archived', color: 'var(--color-archived)' },
 ];
 
 const filteredChores = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const nextWeek = new Date(today);
+  nextWeek.setDate(today.getDate() + 7);
+  
   if (filter.value === 'all') return choreStore.sortedByUrgency;
-  if (filter.value === 'overdue') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date) < new Date().setHours(0,0,0,0) && !c.archived);
-  if (filter.value === 'today') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === new Date().toDateString() && !c.archived);
-  if (filter.value === 'upcoming') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date) > new Date().setHours(0,0,0,0) && !c.archived);
+  if (filter.value === 'overdue') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date) < today && !c.archived);
+  if (filter.value === 'today') return choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === today.toDateString() && !c.archived);
+  if (filter.value === 'tomorrow') {
+    return choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === tomorrow.toDateString() && !c.archived);
+  }
+  if (filter.value === 'thisWeek') {
+    return choreStore.sortedByUrgency.filter(c => {
+      const dueDate = new Date(c.due_date);
+      // Exclude today and tomorrow, but include the rest of the week
+      return dueDate > tomorrow && dueDate <= nextWeek && !c.archived;
+    });
+  }
+  if (filter.value === 'upcoming') {
+    return choreStore.sortedByUrgency.filter(c => {
+      const dueDate = new Date(c.due_date);
+      // Only show chores due after next week
+      return dueDate > nextWeek && !c.archived;
+    });
+  }
   if (filter.value === 'archived') return choreStore.sortedByUrgency.filter(c => c.archived);
   return choreStore.sortedByUrgency;
 });
@@ -72,14 +99,35 @@ const pillsWithCounts = computed(() => {
     let count = 0;
     let color = pill.color;
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
     if (pill.value === 'all') {
       count = choreStore.sortedByUrgency.length;
     } else if (pill.value === 'overdue') {
-      count = choreStore.sortedByUrgency.filter(c => new Date(c.due_date) < new Date().setHours(0,0,0,0) && !c.archived).length;
+      count = choreStore.sortedByUrgency.filter(c => new Date(c.due_date) < today && !c.archived).length;
     } else if (pill.value === 'today') {
-      count = choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === new Date().toDateString() && !c.archived).length;
+      count = choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === today.toDateString() && !c.archived).length;
+    } else if (pill.value === 'tomorrow') {
+      count = choreStore.sortedByUrgency.filter(c => new Date(c.due_date).toDateString() === tomorrow.toDateString() && !c.archived).length;
+    } else if (pill.value === 'thisWeek') {
+      count = choreStore.sortedByUrgency.filter(c => {
+        const dueDate = new Date(c.due_date);
+        // Exclude today and tomorrow, but include the rest of the week
+        return dueDate > tomorrow && dueDate <= nextWeek && !c.archived;
+      }).length;
     } else if (pill.value === 'upcoming') {
-      count = choreStore.sortedByUrgency.filter(c => new Date(c.due_date) > new Date().setHours(0,0,0,0) && !c.archived).length;
+      count = choreStore.sortedByUrgency.filter(c => {
+        const dueDate = new Date(c.due_date);
+        // Only count chores due after next week
+        return dueDate > nextWeek && !c.archived;
+      }).length;
     } else if (pill.value === 'archived') {
       count = choreStore.sortedByUrgency.filter(c => c.archived).length;
     }

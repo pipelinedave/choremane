@@ -25,7 +25,7 @@
 - #maintenance Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
 - #ui Make chore card actions "marking done" and "enter edit mode" use material swipe-to-reveal action pattern
 - #ci Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
-- #feature Add new filter pills for "due tomorrow" and "due this week" using similar logic to the "due today" pill
+
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
@@ -36,6 +36,7 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #feature Add new filter pills for "due tomorrow" and "due this week" using similar logic to the "due today" pill
 - #ui Add a menu to the header to contain about, notifications and import/export buttons
 - #bug Fix settings->troubleshoot link to /reset.html - error "Cannot read properties of undefined (reading 'BASE_URL')" in Header.vue indicates missing environment configuration in staging environment
 - #ui Move "cancel" button before "save" button in edit chore mode for UI consistency
