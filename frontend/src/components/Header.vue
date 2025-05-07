@@ -189,8 +189,10 @@ const toggleSettings = () => {
 }
 
 const goToResetPage = () => {
-  // Use window.location.origin and path navigation instead of relying on import.meta.env.BASE_URL
-  window.location.href = window.location.origin + '/reset.html'
+  // Ensure we're using the correct path that matches our ingress configuration
+  const resetPath = '/reset.html';
+  // Open in a new tab to avoid navigating away from the app
+  window.open(window.location.origin + resetPath, '_blank');
 }
 </script>
 

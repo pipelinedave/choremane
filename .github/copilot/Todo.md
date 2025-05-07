@@ -31,10 +31,11 @@
 
 ## In Progress
 <!-- Tasks currently being worked on -->
-- #bug Fix settings->troubleshoot link to /reset.html - error "Cannot read properties of undefined (reading 'BASE_URL')" in Header.vue indicates missing environment configuration in staging environment
+- #bug Add specific path for /reset.html in Traefik ingress to prevent redirection back to the app
 
 ## Completed
 <!-- Finished tasks -->
+- #bug Fix settings->troubleshoot link to /reset.html - error "Cannot read properties of undefined (reading 'BASE_URL')" in Header.vue indicates missing environment configuration in staging environment
 - #ui Move "cancel" button before "save" button in edit chore mode for UI consistency
 - #ui Make "Done" button in about dialog gray instead of green to match the import/export dialog
 - #ui Change label on notification settings modal from "Save Changes" to just "Save"
