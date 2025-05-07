@@ -1,8 +1,4 @@
 # Project Todo List
-- in the notifications dialog, you can not delete the notification if you only have one configured, but the delete button still shows. this is confusing as a user
-- the push notifications do not actually fire, probably unfinished implementation
-- the prd.md and the readme.md need an overhaul. reconsider everything and update accordingly
-- change GitHub workflows so they only trigger build push deployment etc when actually necessary, like not when things like the Todo list get an update etc
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
@@ -14,6 +10,8 @@
 - #feature The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
 - #feature Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
 - #feature Move notifications settings to server side storage instead of local storage for cross-device consistency
+- #bug Fix push notifications not firing - implementation appears incomplete
+- #documentation Overhaul PRD.md and README.md to reflect current project state and goals
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -23,12 +21,15 @@
 - #ui Remove the "archived" filter pill and hide it in the upcoming header menu
 - #ui Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
 - #maintenance Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
+- #ui Make chore card actions "marking done" and "enter edit mode" use material swipe-to-reveal action pattern
+- #ci Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
 - #ui Change label on notification settings modal from "Save Changes" to just "Save"
 - #ui Make "Done" button in about dialog gray instead of green to match the import/export dialog
 - #ui Move "cancel" button before "save" button in edit chore mode for UI consistency
+- #ui Fix notification settings to prevent delete button showing when only one notification exists
 
 ## In Progress
 <!-- Tasks currently being worked on -->
