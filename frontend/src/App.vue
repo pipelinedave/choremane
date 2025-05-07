@@ -1,29 +1,106 @@
 ﻿<template>
   <div id="app">
-    <Header @addChore="handleAddChore" />
-    <!-- Removed duplicate ChoreList component -->
-    <router-view></router-view>
-    <Log />
-    <CopilotButton />
+    <ErrorBoundary>
+      <Header @addChore="handleAddChore" />
+      <!-- Removed duplicate ChoreList component -->
+      <router-view></router-view>
+      <Log />
+      <CopilotButton />
+      <VersionChecker />
+    </ErrorBoundary>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from '@/plugins/axios'
 import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
 import Log from '@/components/Log.vue'
 import CopilotButton from '@/components/CopilotButton.vue'
+import ErrorBoundary from '@/components/ErrorBoundary.vue'
+import VersionChecker from '@/components/VersionChecker.vue'
 
 const versionInfo = ref(null)
 const choreStore = useChoreStore()
+const isVersionMismatch = ref(false)
+
+// Function to check if localStorage needs to be cleared
+async function checkVersionConsistency() {
+  try {
+    const storedVersionInfo = localStorage.getItem('appVersionInfo');
+    
+    if (versionInfo.value && storedVersionInfo) {
+      const parsedStoredVersion = JSON.parse(storedVersionInfo);
+      
+      // If the backend or frontend image has changed, we may need to reset storage
+      if (parsedStoredVersion.backend_image !== versionInfo.value.backend_image ||
+          parsedStoredVersion.frontend_image !== versionInfo.value.frontend_image) {
+        
+        console.log('Version mismatch detected:', {
+          stored: parsedStoredVersion,
+          current: versionInfo.value
+        });
+        
+        isVersionMismatch.value = true;
+        
+        // Show user a message about clearing storage
+        const confirmReset = confirm(
+          'A new version of the application has been detected. ' +
+          'To prevent errors, would you like to clear application data? ' +
+          '(Your login information will be preserved)'
+        );
+        
+        if (confirmReset) {
+          await resetLocalStorage();
+          // Reload the page to ensure a clean state
+          window.location.reload();
+        }
+      }
+    }
+    
+    // Store current version info for future comparisons
+    if (versionInfo.value) {
+      localStorage.setItem('appVersionInfo', JSON.stringify(versionInfo.value));
+    }
+  } catch (error) {
+    console.error('Error checking version consistency:', error);
+  }
+}
+
+// Reset local storage but preserve authentication
+async function resetLocalStorage() {
+  // Save authentication data
+  const token = localStorage.getItem('token');
+  const userColor = localStorage.getItem('userColor');
+  const username = localStorage.getItem('username');
+  
+  // Clear all localStorage except specific items we want to preserve
+  const itemsToPreserve = ['choremane_storage_version', 'token', 'userColor', 'username'];
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!itemsToPreserve.includes(key)) {
+      localStorage.removeItem(key);
+    }
+  }
+  
+  // Restore auth data if it was present
+  if (token) localStorage.setItem('token', token);
+  if (userColor) localStorage.setItem('userColor', userColor);
+  if (username) localStorage.setItem('username', username);
+  
+  console.log('Local storage has been reset (preserving auth data)');
+}
 
 onMounted(async () => {
   try {
     const response = await axios.get('/version')
     versionInfo.value = response.data
+    
+    // After getting version info, check consistency
+    await checkVersionConsistency();
   } catch (error) {
     console.error('Failed to fetch version info:', error)
   }
