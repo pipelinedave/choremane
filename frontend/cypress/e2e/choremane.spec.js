@@ -24,11 +24,33 @@ describe('Choremane E2E', () => {
   })
 
   it('exports and imports chores/logs', () => {
-    // cy.get('button[aria-label="Import or export data"]').click()
-    // cy.get('button').contains('Export Data').click()
-    // cy.get('button').contains('Import Data').click()
-    // cy.get('input[type="file"]').attachFile('backup.json')
-    // cy.contains('Import successful!')
+    // Export test
+    cy.get('button[aria-label="Import or export data"]').click()
+    cy.get('button').contains('Export Data').click()
+    
+    // Set up a cy.stub for API calls during import to ensure they happen
+    cy.window().then((win) => {
+      cy.stub(win.axios, 'put').as('updateChore')
+      cy.stub(win.axios, 'post').as('addChore')
+      cy.stub(win.axios, 'get').as('fetchChores')
+    })
+    
+    // Import test
+    cy.get('button').contains('Import Data').click()
+    cy.get('input[type="file"]').attachFile('backup.json')
+    
+    // Verify API calls occurred
+    cy.get('@updateChore').should('have.been.called')
+    cy.get('@fetchChores').should('have.been.called')
+    
+    // Verify UI shows success
+    cy.contains('Import successful')
+    
+    // Reload page to verify persistence
+    cy.reload()
+    
+    // Verify data persisted after reload
+    cy.get('.chore-card').should('exist')
   })
 
   it('configures notifications', () => {

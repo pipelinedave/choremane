@@ -1,0 +1,21 @@
+{
+  "chores": [
+    {
+      "id": 99,
+      "name": "Test Imported Chore",
+      "interval_days": 7,
+      "due_date": "2025-05-14",
+      "done": false,
+      "archived": false,
+      "is_private": false
+    }
+  ],
+  "logs": [
+    {
+      "id": 1,
+      "timestamp": "2025-05-07T14:46:00Z",
+      "action": "imported",
+      "choreName": "Test Imported Chore"
+    }
+  ]
+}
