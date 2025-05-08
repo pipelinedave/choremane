@@ -6,7 +6,8 @@
       {
         'edit-mode': editMode,
         'done-today': choreStore.isDoneToday(chore),
-        'private-chore': chore.is_private
+        'private-chore': chore.is_private,
+        'archived-view': isArchivedView
       }
     ]"
     :id="`chore-card-${chore.id}`"
@@ -64,8 +65,8 @@
           </div>
 
           <div class="form-footer">
-            <button type="button" class="archive-button" @click="archiveChore">
-              <i class="fas fa-archive"></i> Archive
+            <button v-if="!isArchivedView" type="button" class="archive-button" @click="archiveChore">
+              <i class="fas" :class="chore.archived ? 'fa-undo' : 'fa-archive'"></i> {{ chore.archived ? 'Unarchive' : 'Archive' }}
             </button>
             <div class="action-buttons">
               <button type="button" class="cancel-button" @click="cancelEditMode">
@@ -104,7 +105,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import Hammer from 'hammerjs';
 import { useChoreStore } from '@/store/choreStore';
 
-const props = defineProps(['chore']);
+const props = defineProps(['chore', 'isArchivedView']);
 const emit = defineEmits(['markAsDone', 'updateChore', 'archiveChore']);
 
 const choreStore = useChoreStore();
@@ -115,18 +116,18 @@ let hammer = null;
 let isRevealingAction = false;
 
 const handleDblClick = () => {
-  if (choreStore.isDoneToday(props.chore)) return;
+  if (choreStore.isDoneToday(props.chore) || props.isArchivedView) return;
   editMode.value = true;
 };
 
 const enterEditMode = () => {
-  if (choreStore.isDoneToday(props.chore)) return;
+  if (choreStore.isDoneToday(props.chore) || props.isArchivedView) return;
   editMode.value = true;
 };
 
 const markDone = () => {
-  if (choreStore.isDoneToday(props.chore)) {
-    console.log('Chore already done today');
+  if (choreStore.isDoneToday(props.chore) || props.isArchivedView) {
+    console.log('Chore already done today or is in archived view');
     return;
   }
   emit('markAsDone', props.chore.id);
@@ -142,6 +143,11 @@ const resetSwipeState = (card) => {
 
 onMounted(() => {
   const card = document.getElementById(`chore-card-${props.chore.id}`);
+  
+  // Skip initializing Hammer.js for archived chores view
+  if (props.isArchivedView) {
+    return;
+  }
   
   // Initialize Hammer.js
   hammer = new Hammer(card);
@@ -239,7 +245,7 @@ const saveChore = async () => {
       owner_email: editableChore.value.is_private ? editableChore.value.owner_email : null
     };
     console.log("Saving Chore Data:", choreData);
-    await choreStore.updateChore(choreData);
+    await choreStore.updateChore(props.chore.id, choreData);
     emit('updateChore', choreData);
     editMode.value = false;
   } catch (error) {
@@ -249,10 +255,17 @@ const saveChore = async () => {
 
 const archiveChore = async () => {
   try {
-    await choreStore.archiveChore(props.chore.id);
+    if (props.chore.archived) {
+      // If already archived, then unarchive
+      const updatedChore = { ...props.chore, archived: false };
+      await choreStore.updateChore(props.chore.id, updatedChore);
+    } else {
+      // If not archived, then archive
+      await choreStore.archiveChore(props.chore.id);
+    }
     emit('archiveChore', props.chore.id);
   } catch (error) {
-    console.error('Error archiving chore:', error);
+    console.error('Error updating archive status:', error);
   }
 };
 
@@ -830,5 +843,25 @@ const friendlyDueDate = (due_date) => {
 
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
+}
+
+/* Archived view styles */
+.chore-card.archived-view {
+  opacity: 0.85;
+  position: relative;
+  pointer-events: none; /* Disable interactions */
+  overflow: hidden; /* Ensure the overlay stays contained */
+  margin-bottom: 0; /* Remove the default margin when in archived view */
+}
+
+.chore-card.archived-view::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(60, 60, 60, 0.2);
+  z-index: 10;
 }
 </style>

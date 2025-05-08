@@ -23,6 +23,9 @@
     
     <!-- Menu -->
     <div v-if="showSettings" class="settings-menu" ref="settingsMenu">
+      <div class="settings-menu-item" @click="toggleArchivedChores">
+        <i class="fas fa-archive"></i> Archived Chores
+      </div>
       <div class="settings-menu-item" @click="toggleNotifications">
         <i class="fas fa-bell"></i> Notifications
       </div>
@@ -40,6 +43,7 @@
     <AddChoreForm v-if="addMode" @addChore="handleAddChore" @cancel="toggleAddMode" />
     <NotificationSettings v-if="showNotifications" @close="toggleNotifications" />
     <ImportExport v-if="showImportExport" @close="toggleImportExport" />
+    <ArchivedChores v-if="showArchivedChores" @close="toggleArchivedChores" />
     
     <!-- About Modal Dialog -->
     <div v-if="showAboutModal && versionInfo" class="modal-overlay" role="dialog" aria-modal="true" aria-label="About ChoreMane" @click.self="toggleAboutModal">
@@ -86,6 +90,7 @@ import api from '@/plugins/axios'
 import AddChoreForm from '@/components/AddChoreForm.vue'
 import NotificationSettings from '@/components/NotificationSettings.vue'
 import ImportExport from '@/components/ImportExport.vue'
+import ArchivedChores from '@/components/ArchivedChores.vue'
 
 const showBanner = ref(false)
 const showAboutModal = ref(false)
@@ -168,6 +173,13 @@ const installPWA = async () => {
 const showNotifications = ref(false)
 const toggleNotifications = () => {
   showNotifications.value = !showNotifications.value
+  showSettings.value = false
+}
+
+const showArchivedChores = ref(false)
+const toggleArchivedChores = () => {
+  showArchivedChores.value = !showArchivedChores.value
+  showSettings.value = false
 }
 
 const showImportExport = ref(false)
@@ -200,6 +212,8 @@ const toggleSettings = (event) => {
   if (showSettings.value) {
     showNotifications.value = false
     showImportExport.value = false
+    showArchivedChores.value = false
+    showAboutModal.value = false
   }
 }
 

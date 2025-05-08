@@ -1,11 +1,10 @@
-﻿import { defineStore } from 'pinia';
+import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/plugins/axios';
 import { useLogStore } from '@/store/logStore';
 
 export const useChoreStore = defineStore('chores', () => {
   const chores = ref([]);
-  const archivedChores = ref([]); // Separate ref for archived chores
   const loading = ref(false);
   const error = ref(null);
 
@@ -26,22 +25,23 @@ export const useChoreStore = defineStore('chores', () => {
       ...chore,
       disabled: isChoreDisabledToday(chore)
     })).sort((a, b) => {
+      if (a.archived && !b.archived) return 1;
+      if (!a.archived && b.archived) return -1;
+
       const dateA = new Date(a.due_date);
       const dateB = new Date(b.due_date);
       return dateA - dateB;
     });
   });
 
-  // Get all archived chores sorted by due date
-  const sortedArchivedChores = computed(() => {
-    return [...archivedChores.value].map(chore => ({
-      ...chore,
-      disabled: isChoreDisabledToday(chore)
-    })).sort((a, b) => {
-      const dateA = new Date(a.due_date);
-      const dateB = new Date(b.due_date);
-      return dateA - dateB;
-    });
+  // Get archived chores
+  const archivedChores = computed(() => {
+    return chores.value.filter(c => c.archived);
+  });
+
+  // Get non-archived chores
+  const activeChores = computed(() => {
+    return chores.value.filter(c => !c.archived);
   });
 
   const isDoneToday = (chore) => {
@@ -61,19 +61,22 @@ export const useChoreStore = defineStore('chores', () => {
     loading.value = true;
     error.value = null;
     try {
-      // First fetch active chores
-      const response = await api.get('/chores');
-      chores.value = response.data.map(chore => ({
+      // First get the active chores
+      const activeResponse = await api.get('/chores');
+      const activeChores = activeResponse.data.map(chore => ({
         ...chore,
         disabled: isChoreDisabledToday(chore)
       }));
       
-      // Then fetch archived chores
+      // Then get archived chores directly from backend
       const archivedResponse = await api.get('/chores/archived');
-      archivedChores.value = archivedResponse.data.map(chore => ({
+      const archivedChores = archivedResponse.data.map(chore => ({
         ...chore,
         disabled: isChoreDisabledToday(chore)
       }));
+      
+      // Combine both sets
+      chores.value = [...activeChores, ...archivedChores];
     } catch (err) {
       error.value = 'Failed to fetch chores. Please try again later.';
       console.error('Failed to fetch chores:', err);
@@ -154,7 +157,8 @@ export const useChoreStore = defineStore('chores', () => {
           ...chores.value[index],  // Preserve existing values
           ...response.data,        // Update only returned fields
           interval_days: updatedChore.interval_days, // Ensure interval_days is updated
-          due_date: updatedChore.due_date // Ensure due_date is updated
+          due_date: updatedChore.due_date, // Ensure due_date is updated
+          archived: updatedChore.archived // Ensure archived status is updated
         };
         chores.value = [...chores.value];  // Force reactivity update
       }
@@ -170,8 +174,8 @@ export const useChoreStore = defineStore('chores', () => {
       const response = await api.put(`/chores/${choreId}/archive`);
       const index = chores.value.findIndex(c => c.id === choreId);
       if (index !== -1) {
-        archivedChores.value.push(chores.value[index]); // Add to archived chores
-        chores.value.splice(index, 1); // Remove from active chores
+        chores.value[index] = { ...chores.value[index], archived: true };
+        chores.value = [...chores.value];  // Force reactivity update
       }
       return response.data;
     } catch (error) {
@@ -180,43 +184,18 @@ export const useChoreStore = defineStore('chores', () => {
     }
   };
 
-  // Add unarchive chore method
-  const unarchiveChore = async (choreId) => {
-    try {
-      // Call the unarchive endpoint
-      const response = await api.put(`/chores/${choreId}/unarchive`);
-      
-      // Update local state by moving from archived to active
-      const index = archivedChores.value.findIndex(c => c.id === choreId);
-      if (index !== -1) {
-        // Remove from archived chores
-        const unarchived = { ...archivedChores.value[index], archived: false };
-        archivedChores.value.splice(index, 1);
-        
-        // Add to active chores
-        chores.value.push(unarchived);
-      }
-      
-      return response.data;
-    } catch (error) {
-      console.error('Failed to unarchive chore:', error);
-      throw error;
-    }
-  };
-
   return {
     chores,
-    archivedChores, // Expose archived chores
     loading,
     error,
     sortedByUrgency,
-    sortedArchivedChores, // Expose sorted archived chores
+    archivedChores,  // New computed property
+    activeChores,    // New computed property
     isDoneToday,
     fetchChores,
     addChore,
     updateChore,
     archiveChore,
-    unarchiveChore, // Export the new unarchive method
     markChoreDone,
     undoChore,
   };
