@@ -1,41 +1,49 @@
 # Project Todo List
 
+## Feature Ideas
+- #feature-idea Add a "stats" dashboard with calculated scores for each chore based on factors like completion rate, on-time ratio, and adjustment frequency. This will provide insights into chore management patterns and help optimize scheduling.
+
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
 
 ### High Priority
 <!-- Critical bugs and important features -->
 
-- #bug Fix GitHub Actions tests that fail consistently
-- #feature Set up authentication using Dex with the k3s-config repo for proper user login/identity management
-- #feature The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
-- #bug Fix push notifications not firing - implementation appears incomplete
-- #feature Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
-- #feature Move notifications settings to server side storage instead of local storage for cross-device consistency
-- #documentation Overhaul PRD.md and README.md to reflect current project state and goals
-- #feature Add a light theme to the app with a toggle switch in the settings menu
-- #bug Fix external links in about dialog being too long on small viewports causing dialog overflow
-- #ui Add buttons on either end of each chore card for non-mobile devices (done on left, edit on right) and hide them on mobile devices
-- #feature Implement smart scheduling suggestions for frequently completed chores. basically, if you do a chore a few times before its due, the app will suggest to adjust the interval for example. stuff like that. brainstorm ideas for this
-- #feature Add comprehensive multi-language support
+- #bug [Agent] Fix GitHub Actions tests that fail consistently
+- #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
+- #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
+- #bug [Agent] Fix push notifications not firing - implementation appears incomplete
+- #feature [Agent] Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
+- #feature [Agent] Move notifications settings to server side storage instead of local storage for cross-device consistency
+- #documentation [Edit] Overhaul PRD.md and README.md to reflect current project state and goals
+- #feature [Edit] Add a light theme to the app with a toggle switch in the settings menu
+- #bug [Edit] Fix external links in about dialog being too long on small viewports causing dialog overflow
+- #feature [Agent] Implement smart scheduling suggestions that analyze when chores are completed ahead of schedule and recommend interval adjustments
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
-- #ui Improve filter pills to make it clearer which ones are active
-- #ui Remove the "archived" filter pill and hide a functionality to manage archived items in the upcoming header menu
-- #ui Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
-- #maintenance Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
-- #ci Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
-- #ui Overhaul animations throughout the app, especially focusing on return animations
-- #documentation Add API documentation
+- #ui [Edit] Improve filter pills to make it clearer which ones are active
+- #ui [Edit] Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
+- #maintenance [Agent] Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
+- #ci [Agent] Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
+- #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
+- #documentation [Edit] Add API documentation
+- #feature [Agent] Add comprehensive multi-language support
+- #feature [Edit] Add pagination to the chores list view for better performance with many chores
+- #feature [Edit] Implement a dark/light theme toggle in the user settings
+- #ui [Edit] Add visual indicators for private chores that are more intuitive than the current lock icon
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
-- #feature Re-implement AI assistant with proper functionality
+- #feature [Agent] Re-implement AI assistant with proper functionality
+- #feature [Edit] Add keyboard shortcuts for common actions
+- #ui [Edit] Create custom illustrations for empty states (no chores, no archived chores, etc.)
+- #feature [Agent] Create a mobile companion app or make the current UI more responsive for small screens
+- #feature [Edit] Add ability to assign chores to specific users (in preparation for future multi-user functionality)
 
 ## In Progress
 <!-- Tasks currently being worked on -->
-- #bug Add specific path for /reset.html in Traefik ingress to prevent redirection back to the app
+- #bug [Agent] Add specific path for /reset.html in Traefik ingress to prevent redirection back to the app
 
 ## Completed
 <!-- Finished tasks -->
@@ -48,3 +56,4 @@
 - #ui Change label on notification settings modal from "Save Changes" to just "Save"
 - #bug the page refreshes once per second in the staging environment but not in the local development setup - investigate and fix
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
+- #ui Remove the "archived" filter pill and add functionality to manage archived items in the header menu
