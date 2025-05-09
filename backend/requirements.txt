@@ -7,4 +7,11 @@ httpx
 python-multipart
 authlib
 itsdangerous
-jwt
+PyJWT
+pydantic
+starlette
+sqlalchemy
+alembic
+passlib[bcrypt]
+python-dotenv
+requests
