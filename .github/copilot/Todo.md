@@ -38,9 +38,7 @@
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
 - #feature [Agent] Re-implement AI assistant with proper functionality
-- #feature [Edit] Add keyboard shortcuts for common actions
 - #feature [Agent] Create a mobile companion app or make the current UI more responsive for small screens
-- #feature [Edit] Add ability to assign chores to specific users (in preparation for future multi-user functionality)
 
 ## In Progress
 <!-- Tasks currently being worked on -->
