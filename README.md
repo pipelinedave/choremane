@@ -25,15 +25,42 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    git clone https://github.com/pipelinedave/choremane.git
    cd choremane
    ```
-2. Start the development environment using devcontainers:
+
+2. Using VS Code Tasks (recommended):
+   - Open the project in VS Code
+   - Press `Ctrl+Shift+P` and select `Tasks: Run Task`
+   - Choose `Start Development Environment` to start PostgreSQL, backend, and frontend
+   - Individual tasks are also available:
+     - `Start PostgreSQL`: Starts the PostgreSQL database container
+     - `Run Backend Dev Server`: Starts the FastAPI backend
+     - `Run Frontend Dev Server`: Starts the Vue frontend
+
+3. Using VS Code Debugging:
+   - Open the Debug panel in VS Code (`Ctrl+Shift+D`)
+   - Select `Full Stack Debug` from the dropdown
+   - Click the green play button to start PostgreSQL, backend, and frontend with debugging
+
+4. Manual startup:
    ```bash
-   code .
-   ```
-   This launches VSCode with the configured devcontainer.
-3. Ensure the frontend and backend services are running:
-   ```bash
-   npm run dev # Frontend
-   uvicorn main:app --reload # Backend
+   # Terminal 1: Start PostgreSQL
+   docker-compose up -d postgres
+   
+   # Terminal 2: Run backend
+   cd /home/dave/src/choremane/backend
+   export OAUTH_CLIENT_ID=choremane
+   export OAUTH_CLIENT_SECRET=choremane-secret
+   export DEX_ISSUER_URL=https://dex.stillon.top
+   export SESSION_SECRET=local-dev-secret
+   export FRONTEND_URL=http://localhost:5000
+   export POSTGRES_HOST=localhost
+   export POSTGRES_DB=choresdb
+   export POSTGRES_USER=admin
+   export POSTGRES_PASSWORD=password
+   python -m uvicorn app.main:app --reload --port 8090
+   
+   # Terminal 3: Run frontend
+   cd /home/dave/src/choremane/frontend
+   npm run serve
    ```
 
 ## CI/CD Pipeline

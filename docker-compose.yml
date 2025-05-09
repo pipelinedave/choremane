@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:14
+    container_name: choremane-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=choresdb
+    volumes:
+      - choremane-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  choremane-postgres-data:

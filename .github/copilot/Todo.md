@@ -2,7 +2,6 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
-- #bug #high priority upon initial load, the list of chores is not scrollable (at least on mobile). after entering edit mode in one chore the list becomes scrollable. but thats also just sporadic. swiping to mark a chore as done seems to make the list switch between non scrollable or scrollable but no swipe actions work anymore. also applying filter pills seems to fuck with all of this too. 
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
@@ -22,6 +21,7 @@
 - #feature [Agent] Implement smart scheduling suggestions that analyze when chores are completed ahead of schedule and recommend interval adjustments
 - #bug [Agent] Fix update mechanism after redeployment - currently requires multiple manual refreshes to properly show the update banner and load the new version
 - #bug [UI] Fix modal dialogs that still allow scrolling of the background page
+- #bug [UI] Fix inconsistent scrolling behavior in chore list on mobile - list becomes unscrollable upon initial load and swipe actions become unreliable after applying filters or marking chores as done
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
