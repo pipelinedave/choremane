@@ -110,8 +110,9 @@ const pills = [
 
 // Reset pagination when filter changes
 watch(filter, () => {
-  currentPage.value = 1;
-  choreStore.fetchChores(1);
+  // Instead of fetching the entire first page again, just ensure we have updated counts
+  // This prevents visible chores from disappearing when switching filters
+  choreStore.fetchChoreCounts();
 });
 
 // Watch for scroll events to show/hide scroll to top button
@@ -133,6 +134,9 @@ const scrollToTop = () => {
 onMounted(async () => {
   // Initial fetch
   await choreStore.fetchChores(1);
+  
+  // Make sure we have accurate counts even if new filter is applied
+  await choreStore.fetchChoreCounts();
   
   // Set up intersection observer for infinite scrolling
   setupIntersectionObserver();
@@ -257,38 +261,19 @@ const pillsWithCounts = computed(() => {
     let count = 0;
     let color = pill.color;
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-    
-    // Non-archived chores
-    const nonArchivedChores = choreStore.sortedByUrgency.filter(c => !c.archived);
-    
+    // Use counts from the store if available, otherwise fallback to 0
     if (pill.value === 'all') {
-      count = nonArchivedChores.length;
+      count = choreStore.choreCounts.all || 0;
     } else if (pill.value === 'overdue') {
-      count = nonArchivedChores.filter(c => new Date(c.due_date) < today).length;
+      count = choreStore.choreCounts.overdue || 0;
     } else if (pill.value === 'today') {
-      count = nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === today.toDateString()).length;
+      count = choreStore.choreCounts.today || 0;
     } else if (pill.value === 'tomorrow') {
-      count = nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === tomorrow.toDateString()).length;
+      count = choreStore.choreCounts.tomorrow || 0;
     } else if (pill.value === 'thisWeek') {
-      count = nonArchivedChores.filter(c => {
-        const dueDate = new Date(c.due_date);
-        // Exclude today and tomorrow, but include the rest of the week
-        return dueDate > tomorrow && dueDate <= nextWeek;
-      }).length;
+      count = choreStore.choreCounts.thisWeek || 0;
     } else if (pill.value === 'upcoming') {
-      count = nonArchivedChores.filter(c => {
-        const dueDate = new Date(c.due_date);
-        // Only count chores due after next week
-        return dueDate > nextWeek;
-      }).length;
+      count = choreStore.choreCounts.upcoming || 0;
     }
     
     return {

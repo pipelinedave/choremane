@@ -2,7 +2,9 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
-- in modal dialogs you can still scroll the background page
+- in modal dialogs you can still scroll the background page, change that
+- refactor frontend code so we dont have so things are modular and we dont have big files with 1000 lines of code
+- do the same kind of refactoring for the backend code
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->

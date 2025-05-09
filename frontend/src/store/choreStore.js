@@ -12,6 +12,17 @@ export const useChoreStore = defineStore('chores', () => {
   const pageSize = ref(10); // Number of items per page
   const hasMoreChores = ref(true); // Whether there are more chores to load
   const hasMoreArchivedChores = ref(true); // Whether there are more archived chores to load
+  // Add total chore counts for each category
+  const choreCounts = ref({
+    all: 0,
+    overdue: 0,
+    today: 0,
+    tomorrow: 0,
+    thisWeek: 0,
+    upcoming: 0
+  });
+  // Flag to track if counts are being fetched
+  const fetchingCounts = ref(false);
 
   const isChoreDisabledToday = (chore) => {
     if (!chore?.due_date || !chore?.interval) return false;
@@ -66,6 +77,9 @@ export const useChoreStore = defineStore('chores', () => {
       // Reset for first page load
       chores.value = [];
       hasMoreChores.value = true;
+      
+      // Fetch the total counts when resetting the page
+      fetchChoreCounts();
     }
     
     if (!hasMoreChores.value && page > 1) return;
@@ -157,6 +171,48 @@ export const useChoreStore = defineStore('chores', () => {
     }
   };
 
+  const fetchChoreCounts = async () => {
+    fetchingCounts.value = true;
+    try {
+      const response = await api.get('/chores/count');
+      choreCounts.value = response.data;
+    } catch (err) {
+      console.error('Failed to fetch chore counts:', err);
+      // In case of error, fallback to calculating counts from loaded chores
+      updateLocalChoreCounts();
+    } finally {
+      fetchingCounts.value = false;
+    }
+  };
+  
+  // Calculate counts from loaded chores (as a fallback if API fails)
+  const updateLocalChoreCounts = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    // Non-archived chores
+    const nonArchivedChores = chores.value.filter(c => !c.archived);
+    
+    choreCounts.value.all = nonArchivedChores.length;
+    choreCounts.value.overdue = nonArchivedChores.filter(c => new Date(c.due_date) < today).length;
+    choreCounts.value.today = nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === today.toDateString()).length;
+    choreCounts.value.tomorrow = nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === tomorrow.toDateString()).length;
+    choreCounts.value.thisWeek = nonArchivedChores.filter(c => {
+      const dueDate = new Date(c.due_date);
+      return dueDate > tomorrow && dueDate <= nextWeek;
+    }).length;
+    choreCounts.value.upcoming = nonArchivedChores.filter(c => {
+      const dueDate = new Date(c.due_date);
+      return dueDate > nextWeek;
+    }).length;
+  };
+
   const markChoreDone = async (choreId) => {
     const chore = chores.value.find(c => c.id === choreId);
     if (isDoneToday(chore)) {
@@ -180,6 +236,10 @@ export const useChoreStore = defineStore('chores', () => {
       }
       const logStore = useLogStore();
       logStore.addLogEntry(`${chore.name} marked as done`);
+      
+      // Refresh chore counts after marking a chore as done
+      fetchChoreCounts();
+      
       return response.data;
     } catch (error) {
       console.error('Failed to mark chore as done:', error);
@@ -193,6 +253,9 @@ export const useChoreStore = defineStore('chores', () => {
       chore.done = false;
       const logStore = useLogStore();
       logStore.addLogEntry(`${chore.name} undone`);
+      
+      // Refresh counts when undoing a chore
+      fetchChoreCounts();
     }
   };
 
@@ -208,6 +271,10 @@ export const useChoreStore = defineStore('chores', () => {
         archived: false
       };
       chores.value.push(createdChore);
+      
+      // Refresh counts when adding a new chore
+      fetchChoreCounts();
+      
       return createdChore;
     } catch (error) {
       console.error('Failed to add chore:', error);
@@ -233,6 +300,10 @@ export const useChoreStore = defineStore('chores', () => {
         };
         chores.value = [...chores.value];  // Force reactivity update
       }
+      
+      // Refresh counts after updating a chore since due dates may have changed
+      fetchChoreCounts();
+      
       return response.data;
     } catch (error) {
       console.error('Failed to update chore:', error);
@@ -252,6 +323,10 @@ export const useChoreStore = defineStore('chores', () => {
         }
         chores.value.splice(index, 1); // Remove from active chores
       }
+      
+      // Refresh counts after archiving a chore
+      fetchChoreCounts();
+      
       return response.data;
     } catch (error) {
       console.error('Failed to archive chore:', error);
@@ -280,6 +355,9 @@ export const useChoreStore = defineStore('chores', () => {
         }
       }
       
+      // Refresh counts after unarchiving a chore
+      fetchChoreCounts();
+      
       return response.data;
     } catch (error) {
       console.error('Failed to unarchive chore:', error);
@@ -306,5 +384,8 @@ export const useChoreStore = defineStore('chores', () => {
     unarchiveChore,
     markChoreDone,
     undoChore,
+    choreCounts,
+    fetchChoreCounts,
+    fetchingCounts
   };
 });
