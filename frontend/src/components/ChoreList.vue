@@ -35,6 +35,41 @@
       </ul>
     </div>
     -->
+
+    <!-- Add EmptyState components for different empty cases -->
+    <EmptyState 
+      v-if="filteredChores.length === 0 && searchQuery" 
+      type="search" 
+      title="No matching chores found" 
+      message="Try adjusting your search terms or clear the search to see all chores."
+      buttonText="Clear Search"
+      buttonIcon="fas fa-times"
+      @action="clearSearch"
+    />
+    
+    <EmptyState 
+      v-else-if="filteredChores.length === 0 && filter !== 'all'" 
+      type="filtered" 
+      title="No chores match your filter" 
+      message="Try selecting a different filter or clear all filters to see all your chores."
+      buttonText="Clear Filters"
+      buttonIcon="fas fa-filter"
+      @action="clearFilters"
+    />
+    
+    <EmptyState 
+      v-else-if="choreStore.sortedByUrgency.length === 0" 
+      type="chores" 
+      title="No chores yet" 
+      message="Add your first chore to get started managing your tasks."
+      buttonText="Add New Chore" 
+      buttonIcon="fas fa-plus"
+      @action="addNewChore"
+    />
+    
+    <div v-else class="chore-cards">
+      <!-- Existing code with the chore cards -->
+    </div>
   </div>
 </template>
 
@@ -42,6 +77,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import ChoreCard from './ChoreCard.vue';
+import EmptyState from './EmptyState.vue';
 
 const choreStore = useChoreStore();
 
@@ -50,6 +86,7 @@ onMounted(() => {
 });
 
 const filter = ref('all');
+const searchQuery = ref('');
 const pills = [
   { label: 'All', value: 'all', color: '#3d3d3d' }, // Darker than surface-light
   { label: 'Overdue', value: 'overdue', color: 'var(--color-overdue)' },
@@ -164,6 +201,21 @@ const updateChore = async (updatedChore) => {
   } catch (error) {
     console.error('Failed to update chore:', error);
   }
+};
+
+// Add methods for the empty state actions
+const clearSearch = () => {
+  searchQuery.value = '';
+};
+
+const clearFilters = () => {
+  filter.value = 'all';
+};
+
+const addNewChore = () => {
+  // Emit an event to add a new chore
+  const event = new CustomEvent('showAddChoreForm');
+  window.dispatchEvent(event);
 };
 </script>
 

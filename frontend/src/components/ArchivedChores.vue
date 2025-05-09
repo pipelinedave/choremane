@@ -6,9 +6,14 @@
           <h2>Archived Chores</h2>
         </div>
         <div class="modal-body">
-          <div v-if="archivedChores.length === 0" class="no-archived">
-            <p>No archived chores found.</p>
-          </div>
+          <!-- Replace the no-archived div with EmptyState -->
+          <EmptyState 
+            v-if="archivedChores.length === 0" 
+            type="archived" 
+            title="No archived chores" 
+            message="Archived chores will appear here once you archive them from your active chores list."
+          />
+          
           <div v-else class="chore-cards-archived">
             <div v-for="chore in archivedChores" :key="chore.id" class="archived-chore-container">
               <ChoreCard
@@ -29,11 +34,6 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="neutral-button" @click="$emit('close')">
-            <i class="fas fa-check"></i> Done
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -43,6 +43,7 @@
 import { computed } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import ChoreCard from './ChoreCard.vue';
+import EmptyState from './EmptyState.vue';
 
 defineEmits(['close']);
 

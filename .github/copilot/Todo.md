@@ -39,7 +39,6 @@
 <!-- Nice-to-haves and maintenance tasks -->
 - #feature [Agent] Re-implement AI assistant with proper functionality
 - #feature [Edit] Add keyboard shortcuts for common actions
-- #ui [Edit] Create custom illustrations for empty states (no chores, no archived chores, etc.)
 - #feature [Agent] Create a mobile companion app or make the current UI more responsive for small screens
 - #feature [Edit] Add ability to assign chores to specific users (in preparation for future multi-user functionality)
 
@@ -49,6 +48,7 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #ui [Edit] Create custom illustrations for empty states (no chores, no archived chores, etc.)
 - #ui Make chore card actions "marking done" and "enter edit mode" use material swipe-to-reveal action pattern
 - #feature Add new filter pills for "due tomorrow" and "due this week" using similar logic to the "due today" pill
 - #ui Add a menu to the header to contain about, notifications and import/export buttons
