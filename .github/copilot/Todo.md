@@ -1,7 +1,7 @@
 # Project Todo List
 
 ## Feature Ideas
-- #feature-idea Add a "stats" dashboard with calculated scores for each chore based on factors like completion rate, on-time ratio, and adjustment frequency. This will provide insights into chore management patterns and help optimize scheduling.
+<!-- Place for dumping unorganized ideas -->
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
@@ -10,6 +10,7 @@
 <!-- Critical bugs and important features -->
 
 - #bug [Agent] Fix GitHub Actions tests that fail consistently
+- #feature [Edit] Improve swipe detection on chore cards to require a minimum swipe distance before triggering actions, preventing accidental activation during scrolling
 - #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
 - #bug [Agent] Fix push notifications not firing - implementation appears incomplete
@@ -24,6 +25,7 @@
 <!-- Enhancements and improvements -->
 - #ui [Edit] Improve filter pills to make it clearer which ones are active
 - #ui [Edit] Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
+- #feature [Agent] Add stats dashboard with calculated scores for each chore based on completion rate, on-time ratio, and adjustment frequency to provide insights into chore management patterns
 - #maintenance [Agent] Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
 - #ci [Agent] Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
 - #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
