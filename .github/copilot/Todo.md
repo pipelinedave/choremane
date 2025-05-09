@@ -1,6 +1,6 @@
 # Project Todo List
 
-## Feature Ideas
+## Idea Dump
 <!-- Place for dumping unorganized ideas -->
 
 ## Organized Tasks
@@ -20,6 +20,7 @@
 - #feature [Edit] Add a light theme to the app with a toggle switch in the settings menu
 - #bug [Edit] Fix external links in about dialog being too long on small viewports causing dialog overflow
 - #feature [Agent] Implement smart scheduling suggestions that analyze when chores are completed ahead of schedule and recommend interval adjustments
+- #bug [Agent] Fix update mechanism after redeployment - currently requires multiple manual refreshes to properly show the update banner and load the new version
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
