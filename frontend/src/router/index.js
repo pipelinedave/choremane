@@ -1,13 +1,30 @@
 ﻿import { createRouter, createWebHistory } from 'vue-router'
-import Login from '@/components/Login.vue'
 import ChoreList from '@/components/ChoreList.vue'
+import Login from '@/views/Login.vue'
+import AuthCallback from '@/views/AuthCallback.vue'
+import { useAuthStore } from '@/store/authStore'
 
 const routes = [
   {
     path: '/',
     name: 'ChoreList',
     component: ChoreList,
-    meta: { title: "Chores" },
+    meta: { 
+      title: "Chores",
+      requiresAuth: true 
+    },
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login,
+    meta: { title: "Login" }
+  },
+  {
+    path: '/auth-callback',
+    name: 'AuthCallback',
+    component: AuthCallback,
+    meta: { title: "Authentication" }
   },
   {
     path: '/:catchAll(.*)',
@@ -22,7 +39,17 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || "CHOREMANE";
-  next();
+  
+  const authStore = useAuthStore();
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  
+  if (requiresAuth && !authStore.isAuthenticated) {
+    next('/login');
+  } else if (to.path === '/login' && authStore.isAuthenticated) {
+    next('/');
+  } else {
+    next();
+  }
 });
 
 export default router

@@ -2,6 +2,7 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
+- #bug #high priority upon initial load, the list of chores is not scrollable (at least on mobile). after entering edit mode in one chore the list becomes scrollable. but thats also just sporadic. swiping to mark a chore as done seems to make the list switch between non scrollable or scrollable but no swipe actions work anymore. also applying filter pills seems to fuck with all of this too. 
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->

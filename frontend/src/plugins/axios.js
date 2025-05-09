@@ -13,24 +13,97 @@ const api = axios.create({
   retryDelay: 1000
 })
 
+// Flag to prevent multiple refresh token requests
+let isRefreshing = false;
+// Store pending requests that should be retried after token refresh
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 api.interceptors.request.use(
   (config) => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStore();
     if (authStore.token) {
-      config.headers.Authorization = `Bearer ${authStore.token}`
+      config.headers.Authorization = `Bearer ${authStore.token}`;
     }
-    if (authStore.username) {
-      config.headers['X-User-Email'] = authStore.username
+    if (authStore.userEmail) {
+      config.headers['X-User-Email'] = authStore.userEmail;
     }
-    return config
+    return config;
   },
   (error) => Promise.reject(error)
-)
+);
 
 api.interceptors.response.use(
   response => response,
-  error => {
+  async error => {
     const { config, response } = error;
+    const authStore = useAuthStore();
+    
+    // Skip if retry is undefined or this is a refresh token request
+    if (!config || config.url.includes('/auth/refresh') || config._retry) {
+      return Promise.reject(error);
+    }
+    
+    // Handle 401 Unauthorized errors - token might be expired
+    if (response && response.status === 401) {
+      // Check if token refresh is needed and possible
+      if (authStore.isTokenExpired && authStore.refreshToken) {
+        // If already refreshing, queue this request
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(token => {
+              config.headers.Authorization = `Bearer ${token}`;
+              return api(config);
+            })
+            .catch(err => {
+              return Promise.reject(err);
+            });
+        }
+        
+        config._retry = true;
+        isRefreshing = true;
+        
+        return authStore.refreshAccessToken()
+          .then(success => {
+            if (success) {
+              processQueue(null, authStore.token);
+              config.headers.Authorization = `Bearer ${authStore.token}`;
+              return api(config);
+            } else {
+              processQueue(new Error('Failed to refresh token'));
+              authStore.logout();
+              window.location.href = '/login';
+              return Promise.reject(error);
+            }
+          })
+          .catch(refreshError => {
+            processQueue(refreshError);
+            authStore.logout();
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+          })
+          .finally(() => {
+            isRefreshing = false;
+          });
+      } else {
+        // No refresh token or other 401 error - redirect to login
+        console.warn('Authentication error. Redirecting to login.');
+        authStore.logout();
+        window.location.href = '/login';
+      }
+    }
     
     // Handle network errors that might occur during deployment/redeployment
     if (!response && error.message.includes('Network Error')) {
@@ -75,16 +148,8 @@ api.interceptors.response.use(
     
     // Handle specific HTTP error statuses
     if (response) {
-      // Handle auth errors
-      if (response.status === 401) {
-        console.warn('Authentication error. Redirecting to login.');
-        const authStore = useAuthStore();
-        authStore.logout();
-        window.location.href = '/login';
-      }
-      
       // Handle not found errors
-      else if (response.status === 404) {
+      if (response.status === 404) {
         console.warn('Resource not found:', config.url);
       }
       
@@ -97,8 +162,13 @@ api.interceptors.response.use(
           console.error('Version endpoint error. Likely deployment in progress.');
         }
       }
-      else {
-        console.error('API Error:', error.message);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+export default api;
       }
     } else {
       console.error('Unhandled API error:', error.message);

@@ -2,3 +2,7 @@
 uvicorn[standard]
 psycopg2-binary
 fastapi-mcp>=0.3.3
+python-jose[cryptography]
+httpx
+python-multipart
+authlib

@@ -14,3 +14,16 @@ class Chore(BaseModel):
 
 class UndoRequest(BaseModel):
     log_id: int
+
+class User(BaseModel):
+    email: str
+    name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: Optional[str] = None
+    id_token: Optional[str] = None
