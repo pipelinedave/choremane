@@ -1,10 +1,12 @@
 ﻿<template>
   <div id="app">
     <ErrorBoundary>
-      <Header @addChore="handleAddChore" />
-      <!-- Removed duplicate ChoreList component -->
+      <!-- Only show Header and Log components when authenticated -->
+      <template v-if="isAuthenticated">
+        <Header @addChore="handleAddChore" />
+        <Log />
+      </template>
       <router-view></router-view>
-      <Log />
       <!-- AI Assistant button hidden temporarily -->
       <!-- <CopilotButton /> -->
       <VersionChecker />
@@ -24,10 +26,15 @@ import Log from '@/components/Log.vue'
 // import CopilotButton from '@/components/CopilotButton.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import VersionChecker from '@/components/VersionChecker.vue'
+import { useAuthStore } from '@/store/authStore'
 
 const versionInfo = ref(null)
 const choreStore = useChoreStore()
+const authStore = useAuthStore()
 const isVersionMismatch = ref(false)
+
+// Computed property to check if user is authenticated
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 // Function to check if localStorage needs to be cleared
 async function checkVersionConsistency() {
