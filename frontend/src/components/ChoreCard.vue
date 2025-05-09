@@ -114,6 +114,10 @@ const editMode = ref(false);
 const editableChore = ref({ ...props.chore });
 let hammer = null;
 let isRevealingAction = false;
+let initialY = 0; // Track initial Y position for detecting vertical scrolls
+let isScrolling = false; // Flag to determine if user is scrolling
+const MIN_SWIPE_DISTANCE = 40; // Minimum distance in pixels before triggering swipe action
+const SCROLL_DETECTION_THRESHOLD = 15; // Pixel threshold to detect vertical scrolling
 
 const handleDblClick = () => {
   if (choreStore.isDoneToday(props.chore) || props.isArchivedView) return;
@@ -135,10 +139,11 @@ const markDone = () => {
 
 const resetSwipeState = (card) => {
   // Reset all swipe-related classes
-  card.classList.remove('swipe-left', 'swipe-right', 'swipe-reveal-left', 'swipe-reveal-right');
+  card.classList.remove('swipe-left', 'swipe-right', 'swipe-reveal-left', 'swipe-reveal-right', 'swiping', 'returning');
   // Reset inline style transform
   card.style.transform = '';
   isRevealingAction = false;
+  isScrolling = false;
 };
 
 onMounted(() => {
@@ -149,58 +154,94 @@ onMounted(() => {
     return;
   }
   
-  // Initialize Hammer.js
+  // Initialize Hammer.js with vertical recognition to detect scrolling
   hammer = new Hammer(card);
-  hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL });
+  hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 5 });
   
-  // Pan (swipe with position feedback) - better for reveal pattern
-  hammer.on('panstart', () => {
+  // Pan start - capture initial position and reset state
+  hammer.on('panstart', (event) => {
     if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    
+    // Store initial Y position to detect scrolling direction
+    initialY = event.center.y;
+    isScrolling = false;
     card.classList.add('swiping');
   });
   
+  // Handle panning to left (for edit)
   hammer.on('panleft', (event) => {
     if (choreStore.isDoneToday(props.chore) || editMode.value) return;
     
-    // Apply a transform effect to the card during panning
-    const translateX = Math.min(0, event.deltaX);
-    card.style.transform = `translateX(${translateX}px)`;
+    // Check if user is scrolling vertically
+    const verticalDistance = Math.abs(event.center.y - initialY);
+    if (verticalDistance > SCROLL_DETECTION_THRESHOLD) {
+      isScrolling = true;
+      resetSwipeState(card);
+      return;
+    }
     
-    const percentage = Math.min(100, Math.abs(event.deltaX) / 2);
-    if (percentage > 25) { // Reduced threshold for easier activation
-      card.classList.add('swipe-reveal-left');
-      isRevealingAction = true;
-    } else {
-      card.classList.remove('swipe-reveal-left');
-      isRevealingAction = false;
+    // If not scrolling, handle horizontal swipe
+    if (!isScrolling) {
+      // Apply a transform effect to the card during panning
+      const translateX = Math.min(0, event.deltaX);
+      card.style.transform = `translateX(${translateX}px)`;
+      
+      // Only reveal action if swipe distance exceeds minimum threshold
+      if (Math.abs(event.deltaX) >= MIN_SWIPE_DISTANCE) {
+        card.classList.add('swipe-reveal-left');
+        isRevealingAction = true;
+      } else {
+        card.classList.remove('swipe-reveal-left');
+        isRevealingAction = false;
+      }
     }
   });
   
+  // Handle panning to right (for done)
   hammer.on('panright', (event) => {
     if (choreStore.isDoneToday(props.chore) || editMode.value) return;
     
-    // Apply a transform effect to the card during panning
-    const translateX = Math.max(0, event.deltaX);
-    card.style.transform = `translateX(${translateX}px)`;
+    // Check if user is scrolling vertically
+    const verticalDistance = Math.abs(event.center.y - initialY);
+    if (verticalDistance > SCROLL_DETECTION_THRESHOLD) {
+      isScrolling = true;
+      resetSwipeState(card);
+      return;
+    }
     
-    const percentage = Math.min(100, Math.abs(event.deltaX) / 2);
-    if (percentage > 25) { // Reduced threshold for easier activation
-      card.classList.add('swipe-reveal-right');
-      isRevealingAction = true;
-    } else {
-      card.classList.remove('swipe-reveal-right');
-      isRevealingAction = false;
+    // If not scrolling, handle horizontal swipe
+    if (!isScrolling) {
+      // Apply a transform effect to the card during panning
+      const translateX = Math.max(0, event.deltaX);
+      card.style.transform = `translateX(${translateX}px)`;
+      
+      // Only reveal action if swipe distance exceeds minimum threshold
+      if (Math.abs(event.deltaX) >= MIN_SWIPE_DISTANCE) {
+        card.classList.add('swipe-reveal-right');
+        isRevealingAction = true;
+      } else {
+        card.classList.remove('swipe-reveal-right');
+        isRevealingAction = false;
+      }
     }
   });
   
+  // Handle end of panning gesture
   hammer.on('panend', (event) => {
     if (choreStore.isDoneToday(props.chore) || editMode.value) return;
     
     card.classList.remove('swiping');
-    card.style.transform = ''; // Reset inline transform
     
-    // If revealing action and swipe was significant
-    if (isRevealingAction) {
+    // If detected as a scroll, abort swipe action
+    if (isScrolling) {
+      resetSwipeState(card);
+      return;
+    }
+    
+    // Only trigger action if swipe was deliberate (exceeds threshold)
+    const swipeDistance = Math.abs(event.deltaX);
+    
+    if (isRevealingAction && swipeDistance >= MIN_SWIPE_DISTANCE) {
       if (card.classList.contains('swipe-reveal-left')) {
         // For left swipe (Edit)
         card.classList.add('swipe-left');
@@ -225,12 +266,21 @@ onMounted(() => {
       }, 300);
     }
   });
+  
+  // Add a handler for regular touch events to reset swipe state
+  // when the user starts scrolling
+  document.addEventListener('scroll', () => {
+    if (!editMode.value && card && isRevealingAction) {
+      resetSwipeState(card);
+    }
+  }, { passive: true });
 
   onBeforeUnmount(() => {
     if (hammer) {
       hammer.destroy();
       hammer = null;
     }
+    document.removeEventListener('scroll', () => {});
   });
 });
 
@@ -795,6 +845,44 @@ const friendlyDueDate = (due_date) => {
     color: rgba(255, 255, 255, 0.7);
     font-size: 1.2rem;
     width: 24px;
+  }
+}
+
+/* Visual hint for mobile swipe */
+@media (max-width: 767px) {
+  .chore-card:not(.done-today):not(.edit-mode):active::before {
+    content: '⟺';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.2rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s forwards;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  /* Make the returning animation more pronounced */
+  .chore-card.returning {
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  
+  /* Add resistance effect to swiping */
+  .chore-card.swiping {
+    transition: transform 0.1s cubic-bezier(0.1, 0.7, 0.7, 1);
   }
 }
 

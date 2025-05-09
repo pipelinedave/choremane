@@ -2,9 +2,6 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
-- in modal dialogs you can still scroll the background page, change that
-- refactor frontend code so we dont have so things are modular and we dont have big files with 1000 lines of code
-- do the same kind of refactoring for the backend code
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
@@ -13,7 +10,6 @@
 <!-- Critical bugs and important features -->
 
 - #bug [Agent] Fix GitHub Actions tests that fail consistently
-- #feature [Edit] Improve swipe detection on chore cards to require a minimum swipe distance before triggering actions, preventing accidental activation during scrolling
 - #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
 - #bug [Agent] Fix push notifications not firing - implementation appears incomplete
@@ -24,6 +20,7 @@
 - #bug [Edit] Fix external links in about dialog being too long on small viewports causing dialog overflow
 - #feature [Agent] Implement smart scheduling suggestions that analyze when chores are completed ahead of schedule and recommend interval adjustments
 - #bug [Agent] Fix update mechanism after redeployment - currently requires multiple manual refreshes to properly show the update banner and load the new version
+- #bug [UI] Fix modal dialogs that still allow scrolling of the background page
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -37,11 +34,13 @@
 - #feature [Agent] Add comprehensive multi-language support
 - #feature [Edit] Implement a dark/light theme toggle in the user settings
 - #ui [Edit] Add visual indicators for private chores that are more intuitive than the current lock icon
+- #refactor [Full] Restructure frontend code to be more modular and avoid large monolithic files
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
 - #feature [Agent] Re-implement AI assistant with proper functionality
 - #feature [Agent] Create a mobile companion app or make the current UI more responsive for small screens
+- #refactor [Full] Apply the same modular code restructuring approach to the backend codebase
 
 ## In Progress
 <!-- Tasks currently being worked on -->
@@ -49,6 +48,7 @@
 
 ## Completed
 <!-- Finished tasks -->
+- #feature [Edit] Improve swipe detection on chore cards to require a minimum swipe distance before triggering actions, preventing accidental activation during scrolling
 - #ui [Edit] Create custom illustrations for empty states (no chores, no archived chores, etc.)
 - #ui Make chore card actions "marking done" and "enter edit mode" use material swipe-to-reveal action pattern
 - #feature Add new filter pills for "due tomorrow" and "due this week" using similar logic to the "due today" pill
