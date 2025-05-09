@@ -46,6 +46,39 @@ The frontend uses Pinia for state management and Vue Router for navigation:
    - Token is included in all API requests
    - Refresh token is used to obtain new tokens when needed
 
+## Local Development Authentication
+
+Starting from May 2025, a mock authentication system has been implemented for local development due to issues with the external Dex OIDC provider. This allows developers to sign in with test credentials without requiring access to the production authentication service.
+
+### How it works
+
+1. The backend checks for the `USE_MOCK_AUTH` environment variable
+2. When `USE_MOCK_AUTH=true`, authentication requests are redirected to an internal mock login page
+3. Developers can enter test credentials and receive valid JWT tokens
+4. These tokens work the same as production tokens for local development
+
+### Usage
+
+The VS Code task "Run Backend Dev Server" automatically includes the `USE_MOCK_AUTH=true` environment variable. When you navigate to the login page in your local environment, you'll be presented with a simple form instead of being redirected to the Dex provider.
+
+### Troubleshooting
+
+If you encounter authentication issues in local development:
+
+1. Verify that the backend is running with `USE_MOCK_AUTH=true`
+2. Check that the frontend is correctly redirecting to `http://localhost:8090/auth/login`
+3. Ensure the `FRONTEND_URL` environment variable is correctly set to match your frontend URL (default: `http://localhost:5000`)
+4. Check the browser console for any error messages during the authentication process
+5. Look at the backend logs for detailed information about the authentication flow
+
+### Reverting to Real Authentication
+
+If you need to test with the actual Dex authentication:
+
+1. Ensure the Dex server is operational (check with your team lead)
+2. Edit the VS Code task to remove the `USE_MOCK_AUTH=true` environment variable
+3. Restart the backend server
+
 ## Testing
 
 1. Local development:
@@ -56,7 +89,8 @@ The frontend uses Pinia for state management and Vue Router for navigation:
    export OAUTH_CLIENT_SECRET=choremane-secret
    export DEX_ISSUER_URL=https://dex.stillon.top
    export SESSION_SECRET=local-dev-secret
-   export FRONTEND_URL=http://localhost:8080
+   export FRONTEND_URL=http://localhost:5000
+   export USE_MOCK_AUTH=true  # Enable mock authentication for local development
    uvicorn app.main:app --reload --port 8090
    
    # Terminal 2: Run frontend

@@ -6,6 +6,18 @@ import httpx
 
 auth_router = APIRouter(prefix="/auth")
 
+# Check if we should use mock auth for development
+USE_MOCK_AUTH = os.getenv("USE_MOCK_AUTH", "false").lower() == "true"
+
+# Import mock_refresh function - will be imported at runtime
+mock_refresh = None
+if USE_MOCK_AUTH:
+    try:
+        from app.mock_auth import mock_refresh
+        logging.info("Mock auth refresh function imported")
+    except ImportError:
+        logging.error("Failed to import mock_refresh function")
+
 @auth_router.post("/refresh")
 async def refresh_token(request: Request):
     """Refresh an expired access token using a refresh token."""
@@ -18,6 +30,11 @@ async def refresh_token(request: Request):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Refresh token is required"
             )
+        
+        # Use mock refresh in development mode
+        if USE_MOCK_AUTH and mock_refresh:
+            logging.info("Using mock token refresh")
+            return await mock_refresh(refresh_token)
         
         # Get Dex configuration
         client_id = os.getenv("OAUTH_CLIENT_ID", "choremane")

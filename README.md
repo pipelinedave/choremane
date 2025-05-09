@@ -29,11 +29,14 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
 2. Using VS Code Tasks (recommended):
    - Open the project in VS Code
    - Press `Ctrl+Shift+P` and select `Tasks: Run Task`
-   - Choose `Start Development Environment` to start PostgreSQL, backend, and frontend
-   - Individual tasks are also available:
-     - `Start PostgreSQL`: Starts the PostgreSQL database container
-     - `Run Backend Dev Server`: Starts the FastAPI backend
-     - `Run Frontend Dev Server`: Starts the Vue frontend
+   - Select `Start PostgreSQL` to start the database
+   - Select `Run Backend Dev Server` to start the API server
+   - Select `Run Frontend Dev Server` to start the UI
+
+   > **Note:** For local development, a mock authentication system is used by default (since May 2025) 
+   > due to issues with the external Dex OIDC provider. This allows you to sign in with test credentials
+   > without requiring access to the production authentication service. See [AUTH_README.md](AUTH_README.md) 
+   > for more details.
 
 3. Using VS Code Debugging:
    - Open the Debug panel in VS Code (`Ctrl+Shift+D`)

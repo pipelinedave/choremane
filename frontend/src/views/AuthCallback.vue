@@ -34,11 +34,19 @@ export default {
       const refreshToken = query.get('refresh_token');
       const expiresIn = query.get('expires_in');
       
+      console.log("Auth callback received: ", {
+        hasToken: !!token,
+        hasIdToken: !!idToken,
+        hasRefreshToken: !!refreshToken,
+        expiresIn
+      });
+      
       const authStore = useAuthStore();
       const router = useRouter();
       
       if (token && idToken) {
         try {
+          console.log("Processing successful authentication");
           authStore.login({
             token,
             id_token: idToken,
@@ -49,6 +57,7 @@ export default {
           // Redirect to home page
           setTimeout(() => {
             this.loading = false;
+            console.log("Redirecting to home page after successful auth");
             router.push('/');
           }, 1000);
         } catch (error) {
@@ -57,6 +66,10 @@ export default {
           this.error = 'Authentication failed. Please try again.';
         }
       } else {
+        console.error('Invalid auth callback: Missing token data', { 
+          search: window.location.search,
+          query: Object.fromEntries(query.entries())
+        });
         this.loading = false;
         this.error = 'Invalid authentication response. Missing token data.';
       }

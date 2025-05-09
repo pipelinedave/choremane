@@ -71,7 +71,14 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async loginWithDex() {
-      window.location.href = '/api/auth/login'
+      // Use the actual base URL without /api suffix
+      if (process.env.NODE_ENV === "development") {
+        console.log("Redirecting to DEX login in development mode")
+        window.location.href = 'http://localhost:8090/auth/login'
+      } else {
+        console.log("Redirecting to DEX login in production mode")
+        window.location.href = '/api/auth/login'
+      }
     },
     
     async refreshAccessToken() {

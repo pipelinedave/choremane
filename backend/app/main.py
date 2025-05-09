@@ -77,15 +77,31 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "su
 
 # Configure OAuth client
 oauth = OAuth()
-oauth.register(
-    name="dex",
-    client_id=os.getenv("OAUTH_CLIENT_ID", "choremane"),
-    client_secret=os.getenv("OAUTH_CLIENT_SECRET", "choremane-secret"),
-    server_metadata_url=f"{os.getenv('DEX_ISSUER_URL', 'https://dex.stillon.top')}/.well-known/openid-configuration",
-    client_kwargs={
-        "scope": "openid email profile"
-    }
-)
+
+# Check if we should use mock auth for development
+USE_MOCK_AUTH = os.getenv("USE_MOCK_AUTH", "false").lower() == "true"
+DEX_ISSUER_URL = os.getenv("DEX_ISSUER_URL", "https://dex.stillon.top")
+
+if not USE_MOCK_AUTH:
+    try:
+        oauth.register(
+            name="dex",
+            client_id=os.getenv("OAUTH_CLIENT_ID", "choremane"),
+            client_secret=os.getenv("OAUTH_CLIENT_SECRET", "choremane-secret"),
+            server_metadata_url=f"{DEX_ISSUER_URL}/.well-known/openid-configuration",
+            client_kwargs={
+                "scope": "openid email profile"
+            }
+        )
+        logging.info(f"OAuth client registered: client_id={os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
+        logging.info(f"DEX issuer URL: {DEX_ISSUER_URL}")
+    except Exception as e:
+        logging.error(f"Error registering OAuth client: {e}")
+        logging.warning("Falling back to mock authentication for development")
+        USE_MOCK_AUTH = True
+
+logging.info(f"Using mock authentication: {USE_MOCK_AUTH}")
+logging.info(f"Frontend URL: {os.getenv('FRONTEND_URL', 'https://chores.stillon.top')}")
 
 # Add CORS middleware
 app.add_middleware(
@@ -101,16 +117,40 @@ app.include_router(api_router)
 app.include_router(mcp_router)
 app.include_router(auth_router)
 
+# Import mock auth
+from app.mock_auth import mock_login, mock_login_page, mock_callback, mock_refresh
+
+# Add route for mock login page 
+@app.get("/auth/mock-login-page")
+async def mock_login_page_route(request: Request):
+    return await mock_login_page(request)
+
+# Add route for mock callback
+@app.post("/auth/mock-callback")
+async def mock_callback_route(request: Request):
+    return await mock_callback(request)
+
 # OAuth login route
 @app.get("/auth/login")
 async def login(request: Request):
+    if USE_MOCK_AUTH:
+        return await mock_login(request)
+    
     redirect_uri = request.url_for("auth_callback")
+    logging.info(f"Login redirect URI: {redirect_uri}")
+    logging.info(f"DEX_ISSUER_URL: {DEX_ISSUER_URL}")
+    logging.info(f"OAUTH_CLIENT_ID: {os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
     return await oauth.dex.authorize_redirect(request, redirect_uri)
 
 # OAuth callback route
 @app.get("/auth/callback")
 async def auth_callback(request: Request):
     try:
+        if USE_MOCK_AUTH:
+            # This shouldn't be called in mock mode, but just in case
+            logging.warning("OAuth callback called in mock auth mode")
+            return await mock_callback(request)
+            
         token = await oauth.dex.authorize_access_token(request)
         user_info = await oauth.dex.parse_id_token(request, token)
         
@@ -146,12 +186,12 @@ async def auth_callback(request: Request):
         
         # Return tokens to frontend
         frontend_redirect_url = os.getenv("FRONTEND_URL", "https://chores.stillon.top")
-        if "localhost" in str(request.base_url):
-            frontend_redirect_url = "http://localhost:8080"
             
         redirect_url = f"{frontend_redirect_url}/auth-callback?token={token['access_token']}&id_token={token['id_token']}&expires_in={token['expires_in']}"
         if 'refresh_token' in token:
             redirect_url += f"&refresh_token={token['refresh_token']}"
+        
+        logging.info(f"Redirecting to: {frontend_redirect_url}/auth-callback")
         
         return RedirectResponse(url=redirect_url)
     except Exception as e:
