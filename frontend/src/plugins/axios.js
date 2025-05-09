@@ -169,13 +169,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-      }
-    } else {
-      console.error('Unhandled API error:', error.message);
-    }
-    
-    return Promise.reject(error);
-  }
-)
-
-export default api
