@@ -2,6 +2,7 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
+- in modal dialogs you can still scroll the background page
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
