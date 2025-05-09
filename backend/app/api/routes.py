@@ -62,14 +62,20 @@ def get_logs():
     ]
 
 @api_router.get("/chores", response_model=List[Chore])
-def get_chores(request: Request):
+def get_chores(request: Request, page: int = 1, limit: int = 10):
     """
     Fetch chores visible to the current user:
     - All shared chores (is_private = false)
     - Private chores owned by the user (is_private = true and owner_email = user)
+    
+    Supports pagination with page and limit parameters.
     """
     user_email = request.headers.get("X-User-Email")  # In production, extract from auth/session
-    logging.info(f"Fetching chores for user: {user_email}")
+    logging.info(f"Fetching chores for user: {user_email}, page: {page}, limit: {limit}")
+    
+    # Calculate offset based on page and limit
+    offset = (page - 1) * limit
+    
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -79,8 +85,9 @@ def get_chores(request: Request):
             FROM chores
             WHERE archived = FALSE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
             ORDER BY due_date ASC
+            LIMIT %s OFFSET %s
             """,
-            (user_email,)
+            (user_email, limit, offset)
         )
         rows = cur.fetchall()
         chores = [

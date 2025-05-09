@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="chore-list">
+  <div class="chore-list" ref="choreListContainer">
     <div class="filter-pills">
       <button
         v-for="pill in pillsWithCounts"
@@ -13,10 +13,12 @@
         {{ pill.label }}
       </button>
     </div>
+    
+    <!-- Transition group for chore cards -->
     <transition-group name="list" tag="div" class="chore-cards">
       <ChoreCard
-        v-for="chore in filteredChores"
-        :key="chore.id"
+        v-for="(chore, index) in filteredChores"
+        :key="`chore-${chore.id}-${index}`"
         :chore="chore"
         @markAsDone="markAsDone"
         @archiveChore="archiveChore"
@@ -24,19 +26,19 @@
       />
     </transition-group>
 
-    <!-- Activity Log is hidden for now -->
-    <!--
-    <div class="log-section">
-      <h2>Activity Log</h2>
-      <ul>
-        <li v-for="log in recentLogs" :key="log.id">
-          <strong>{{ log.action_type }}</strong>: {{ log.action_details || 'No details available' }}
-        </li>
-      </ul>
+    <!-- Loading indicator that shows when loading more chores -->
+    <div 
+      :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
+      aria-hidden="!isLoading && !choreStore.loading"
+    >
+      <div v-if="isLoading || choreStore.loading" class="loading-spinner"></div>
+      <span v-if="isLoading || choreStore.loading">Loading chores...</span>
     </div>
-    -->
 
-    <!-- Add EmptyState components for different empty cases -->
+    <!-- Element for intersection observer to detect when user scrolls to bottom -->
+    <div ref="loadMoreTrigger" class="load-more-trigger"></div>
+
+    <!-- Empty States -->
     <EmptyState 
       v-if="filteredChores.length === 0 && searchQuery" 
       type="search" 
@@ -67,24 +69,34 @@
       @action="addNewChore"
     />
     
-    <div v-else class="chore-cards">
-      <!-- Existing code with the chore cards -->
-    </div>
+    <!-- Scroll to top button -->
+    <button 
+      v-show="showScrollToTop" 
+      class="scroll-to-top-button" 
+      @click="scrollToTop"
+      aria-label="Scroll to top"
+    >
+      <i class="fas fa-arrow-up"></i>
+    </button>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch, nextTick, onUnmounted } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import ChoreCard from './ChoreCard.vue';
 import EmptyState from './EmptyState.vue';
 
 const choreStore = useChoreStore();
+const choreListContainer = ref(null);
+const loadMoreTrigger = ref(null);
+const currentPage = ref(1);
+const showScrollToTop = ref(false);
+const observer = ref(null);
+const isLoading = ref(false); // Track loading state locally
+const loadingTimeout = ref(null); // For debouncing
 
-onMounted(() => {
-  choreStore.fetchChores();
-});
-
+// Reactive states
 const filter = ref('all');
 const searchQuery = ref('');
 const pills = [
@@ -95,6 +107,111 @@ const pills = [
   { label: 'Due This Week', value: 'thisWeek', color: 'var(--color-due-7-days)' },
   { label: 'Later', value: 'upcoming', color: '#4db6ac' }, // Using the due-far-future teal color
 ];
+
+// Reset pagination when filter changes
+watch(filter, () => {
+  currentPage.value = 1;
+  choreStore.fetchChores(1);
+});
+
+// Watch for scroll events to show/hide scroll to top button
+const handleScroll = () => {
+  if (choreListContainer.value) {
+    showScrollToTop.value = window.scrollY > 300;
+  }
+};
+
+// Scroll back to top function
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+};
+
+// Initial data loading
+onMounted(async () => {
+  // Initial fetch
+  await choreStore.fetchChores(1);
+  
+  // Set up intersection observer for infinite scrolling
+  setupIntersectionObserver();
+  
+  // Add scroll event listener for scroll-to-top button
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+  // Clean up event listeners and observers
+  window.removeEventListener('scroll', handleScroll);
+  if (observer.value) {
+    observer.value.disconnect();
+  }
+  // Clear any pending timeouts
+  if (loadingTimeout.value) {
+    clearTimeout(loadingTimeout.value);
+  }
+});
+
+// Setup intersection observer for infinite scrolling
+const setupIntersectionObserver = () => {
+  // Check if IntersectionObserver is available
+  if ('IntersectionObserver' in window && loadMoreTrigger.value) {
+    // Disconnect existing observer if any
+    if (observer.value) {
+      observer.value.disconnect();
+    }
+    
+    // Create a new observer
+    observer.value = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      // Load more when the trigger element is visible and we have more to load
+      if (entry.isIntersecting && choreStore.hasMoreChores && !isLoading.value) {
+        loadMoreChores();
+      }
+    }, {
+      root: null, // Use viewport as root
+      rootMargin: '150px', // Increased margin to load more before reaching the end
+      threshold: 0.1 // Trigger when at least 10% of the element is visible
+    });
+    
+    // Start observing the trigger element
+    observer.value.observe(loadMoreTrigger.value);
+  }
+};
+
+// Function to load more chores for infinite scrolling
+const loadMoreChores = async () => {
+  // Prevent multiple concurrent loading requests
+  if (isLoading.value || !choreStore.hasMoreChores) return;
+  
+  // Set local loading state to prevent multiple triggers
+  isLoading.value = true;
+  
+  // Clear any existing timeout
+  if (loadingTimeout.value) {
+    clearTimeout(loadingTimeout.value);
+  }
+  
+  // Debounce the loading operation with a 400ms delay to prevent rapid re-triggering
+  loadingTimeout.value = setTimeout(async () => {
+    try {
+      currentPage.value++;
+      await choreStore.fetchChores(currentPage.value);
+      
+      // Re-setup observer after content changes
+      nextTick(() => {
+        setupIntersectionObserver();
+      });
+    } finally {
+      // Reset loading state after a longer cooldown period to prevent too frequent loading
+      setTimeout(() => {
+        isLoading.value = false;
+        loadingTimeout.value = null;
+      }, 700); // Longer cooldown to prevent rapid re-triggering
+    }
+  }, 400); // Slightly longer debounce for smoother experience
+};
 
 const filteredChores = computed(() => {
   const today = new Date();
@@ -131,6 +248,9 @@ const filteredChores = computed(() => {
   }
   return nonArchivedChores;
 });
+
+// Computed property for loading state from store
+const loading = computed(() => choreStore.loading);
 
 const pillsWithCounts = computed(() => {
   return pills.map(pill => {
@@ -226,6 +346,8 @@ const addNewChore = () => {
   max-width: 1200px;
   margin: 0 auto;
   color: rgba(255, 255, 255, 0.95);
+  position: relative; /* Needed for absolute positioning of scroll-to-top button */
+  min-height: 80vh; /* Ensure we have space even when few chores */
 }
 
 /* Enhance text styling for headers */
@@ -378,5 +500,84 @@ h2 {
 .pill.active .pill-count {
   background: rgba(255, 255, 255, 0.25);
   color: rgba(0, 0, 0, 0.8);
+}
+
+/* Add styling for scroll to top button */
+.scroll-to-top-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: rgba(74, 85, 104, 0.9);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 9999; /* Very high z-index to ensure it's above all content */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.scroll-to-top-button:hover {
+  background-color: rgba(74, 85, 104, 1);
+  transform: translateY(-2px);
+}
+
+.scroll-to-top-button i {
+  font-size: 1.2rem;
+}
+
+/* Add styling for infinite scroll loading indicator */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  height: 90px; /* Increased fixed height to prevent layout shifts */
+  margin-bottom: 20px; /* Increased margin for more space */
+  opacity: 1;
+  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+  visibility: visible;
+}
+
+/* Hidden state that maintains layout */
+.loading-indicator-hidden {
+  height: 90px; /* Same height as visible state */
+  visibility: hidden;
+  opacity: 0;
+  margin-bottom: 20px; /* Same margin as visible state */
+  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 0.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  flex-shrink: 0; /* Prevent spinner from shrinking */
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.load-more-trigger {
+  height: 100px; /* Increase height to create more buffer room */
+  margin-top: 20px;
+  margin-bottom: 20px;
+  visibility: hidden; /* Hide it but keep it in the layout */
+  width: 100%; /* Ensure it takes full width */
+  display: block;
+  position: relative;
 }
 </style>

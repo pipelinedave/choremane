@@ -32,7 +32,6 @@
 - #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
 - #documentation [Edit] Add API documentation
 - #feature [Agent] Add comprehensive multi-language support
-- #feature [Edit] Add pagination to the chores list view for better performance with many chores
 - #feature [Edit] Implement a dark/light theme toggle in the user settings
 - #ui [Edit] Add visual indicators for private chores that are more intuitive than the current lock icon
 
@@ -58,3 +57,4 @@
 - #bug the page refreshes once per second in the staging environment but not in the local development setup - investigate and fix
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #ui Remove the "archived" filter pill and add functionality to manage archived items in the header menu
+- #feature [Edit] Add pagination to the chores list view and archived chores view with infinite scroll and a scroll-to-top button

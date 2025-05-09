@@ -1,12 +1,30 @@
+import json
+import logging
+from datetime import datetime, timedelta, date
+
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
+from typing import List
+
+from app.database import get_db_connection
+from app.models import Chore
+from app.api.routes import api_router
+
 @api_router.get("/chores/archived", response_model=List[Chore])
-def get_archived_chores(request: Request):
+def get_archived_chores(request: Request, page: int = 1, limit: int = 10):
     """
     Fetch archived chores visible to the current user:
     - All shared archived chores (is_private = false, archived = true)
     - Private archived chores owned by the user (is_private = true, archived = true, and owner_email = user)
+    
+    Supports pagination with page and limit parameters.
     """
     user_email = request.headers.get("X-User-Email")  # In production, extract from auth/session
-    logging.info(f"Fetching archived chores for user: {user_email}")
+    logging.info(f"Fetching archived chores for user: {user_email}, page: {page}, limit: {limit}")
+    
+    # Calculate offset based on page and limit
+    offset = (page - 1) * limit
+    
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -16,8 +34,9 @@ def get_archived_chores(request: Request):
             FROM chores
             WHERE archived = TRUE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
             ORDER BY due_date ASC
+            LIMIT %s OFFSET %s
             """,
-            (user_email,)
+            (user_email, limit, offset)
         )
         rows = cur.fetchall()
         chores = [

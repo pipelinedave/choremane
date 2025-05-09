@@ -8,6 +8,10 @@ export const useChoreStore = defineStore('chores', () => {
   const archivedChores = ref([]); // Separate ref for archived chores
   const loading = ref(false);
   const error = ref(null);
+  // Add pagination states
+  const pageSize = ref(10); // Number of items per page
+  const hasMoreChores = ref(true); // Whether there are more chores to load
+  const hasMoreArchivedChores = ref(true); // Whether there are more archived chores to load
 
   const isChoreDisabledToday = (chore) => {
     if (!chore?.due_date || !chore?.interval) return false;
@@ -57,26 +61,97 @@ export const useChoreStore = defineStore('chores', () => {
     return today.getTime() === lastDone.getTime();
   };
 
-  const fetchChores = async () => {
+  const fetchChores = async (page = 1) => {
+    if (page === 1) {
+      // Reset for first page load
+      chores.value = [];
+      hasMoreChores.value = true;
+    }
+    
+    if (!hasMoreChores.value && page > 1) return;
+    
     loading.value = true;
     error.value = null;
     try {
-      // First fetch active chores
-      const response = await api.get('/chores');
-      chores.value = response.data.map(chore => ({
+      // Fetch active chores with pagination
+      const response = await api.get('/chores', {
+        params: {
+          page,
+          limit: pageSize.value
+        }
+      });
+      
+      const newChores = response.data.map(chore => ({
         ...chore,
         disabled: isChoreDisabledToday(chore)
       }));
       
-      // Then fetch archived chores
-      const archivedResponse = await api.get('/chores/archived');
-      archivedChores.value = archivedResponse.data.map(chore => ({
-        ...chore,
-        disabled: isChoreDisabledToday(chore)
-      }));
+      // Append new chores to existing ones for infinite scrolling
+      if (page === 1) {
+        chores.value = newChores;
+      } else {
+        // Filter out any duplicates before appending
+        const existingIds = new Set(chores.value.map(c => c.id));
+        const uniqueNewChores = newChores.filter(chore => !existingIds.has(chore.id));
+        chores.value = [...chores.value, ...uniqueNewChores];
+      }
+      
+      // Check if there are more chores to load
+      if (newChores.length < pageSize.value) {
+        hasMoreChores.value = false;
+      }
+      
     } catch (err) {
       error.value = 'Failed to fetch chores. Please try again later.';
       console.error('Failed to fetch chores:', err);
+    } finally {
+      loading.value = false;
+    }
+  };
+  
+  const fetchArchivedChores = async (page = 1) => {
+    if (page === 1) {
+      // Reset for first page load
+      archivedChores.value = [];
+      hasMoreArchivedChores.value = true;
+    }
+    
+    if (!hasMoreArchivedChores.value && page > 1) return;
+    
+    loading.value = true;
+    error.value = null;
+    try {
+      // Fetch archived chores with pagination
+      const archivedResponse = await api.get('/chores/archived', {
+        params: {
+          page,
+          limit: pageSize.value
+        }
+      });
+      
+      const newArchivedChores = archivedResponse.data.map(chore => ({
+        ...chore,
+        disabled: isChoreDisabledToday(chore)
+      }));
+      
+      // Append new archived chores to existing ones for infinite scrolling
+      if (page === 1) {
+        archivedChores.value = newArchivedChores;
+      } else {
+        // Filter out any duplicates before appending
+        const existingIds = new Set(archivedChores.value.map(c => c.id));
+        const uniqueNewArchivedChores = newArchivedChores.filter(chore => !existingIds.has(chore.id));
+        archivedChores.value = [...archivedChores.value, ...uniqueNewArchivedChores];
+      }
+      
+      // Check if there are more archived chores to load
+      if (newArchivedChores.length < pageSize.value) {
+        hasMoreArchivedChores.value = false;
+      }
+      
+    } catch (err) {
+      error.value = 'Failed to fetch archived chores. Please try again later.';
+      console.error('Failed to fetch archived chores:', err);
     } finally {
       loading.value = false;
     }
@@ -170,7 +245,11 @@ export const useChoreStore = defineStore('chores', () => {
       const response = await api.put(`/chores/${choreId}/archive`);
       const index = chores.value.findIndex(c => c.id === choreId);
       if (index !== -1) {
-        archivedChores.value.push(chores.value[index]); // Add to archived chores
+        // Check if this chore already exists in archived chores to avoid duplicates
+        const existsInArchived = archivedChores.value.some(c => c.id === choreId);
+        if (!existsInArchived) {
+          archivedChores.value.push({...chores.value[index], archived: true}); // Add to archived chores
+        }
         chores.value.splice(index, 1); // Remove from active chores
       }
       return response.data;
@@ -193,8 +272,12 @@ export const useChoreStore = defineStore('chores', () => {
         const unarchived = { ...archivedChores.value[index], archived: false };
         archivedChores.value.splice(index, 1);
         
-        // Add to active chores
-        chores.value.push(unarchived);
+        // Check if this chore already exists in active chores to avoid duplicates
+        const existsInActive = chores.value.some(c => c.id === choreId);
+        if (!existsInActive) {
+          // Add to active chores
+          chores.value.push(unarchived);
+        }
       }
       
       return response.data;
@@ -206,17 +289,21 @@ export const useChoreStore = defineStore('chores', () => {
 
   return {
     chores,
-    archivedChores, // Expose archived chores
+    archivedChores,
     loading,
     error,
     sortedByUrgency,
-    sortedArchivedChores, // Expose sorted archived chores
+    sortedArchivedChores,
     isDoneToday,
     fetchChores,
+    fetchArchivedChores,
+    hasMoreChores,
+    hasMoreArchivedChores,
+    pageSize,
     addChore,
     updateChore,
     archiveChore,
-    unarchiveChore, // Export the new unarchive method
+    unarchiveChore,
     markChoreDone,
     undoChore,
   };

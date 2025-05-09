@@ -5,7 +5,7 @@
         <div class="modal-header">
           <h2>Archived Chores</h2>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" ref="modalBody">
           <!-- Replace the no-archived div with EmptyState -->
           <EmptyState 
             v-if="archivedChores.length === 0" 
@@ -15,7 +15,7 @@
           />
           
           <div v-else class="chore-cards-archived">
-            <div v-for="chore in archivedChores" :key="chore.id" class="archived-chore-container">
+            <div v-for="(chore, index) in archivedChores" :key="`archived-chore-${chore.id}-${index}`" class="archived-chore-container">
               <ChoreCard
                 :chore="chore"
                 :isArchivedView="true"
@@ -33,6 +33,28 @@
               </button>
             </div>
           </div>
+          
+          <!-- Loading indicator that shows when loading more chores -->
+          <div 
+            :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
+            aria-hidden="!isLoading && !choreStore.loading"
+          >
+            <div v-if="isLoading || choreStore.loading" class="loading-spinner"></div>
+            <span v-if="isLoading || choreStore.loading">Loading chores...</span>
+          </div>
+          
+          <!-- Element for intersection observer to detect when user scrolls to bottom -->
+          <div ref="loadMoreTrigger" class="load-more-trigger"></div>
+          
+          <!-- Scroll to top button -->
+          <button 
+            v-show="showScrollToTop" 
+            class="scroll-to-top-button" 
+            @click="scrollToTop"
+            aria-label="Scroll to top"
+          >
+            <i class="fas fa-arrow-up"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -40,7 +62,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import ChoreCard from './ChoreCard.vue';
 import EmptyState from './EmptyState.vue';
@@ -48,11 +70,126 @@ import EmptyState from './EmptyState.vue';
 defineEmits(['close']);
 
 const choreStore = useChoreStore();
+const modalBody = ref(null);
+const loadMoreTrigger = ref(null);
+const currentPage = ref(1);
+const showScrollToTop = ref(false);
+const observer = ref(null);
+const isLoading = ref(false); // Track loading state locally
+const loadingTimeout = ref(null); // For debouncing
 
 // Get only archived chores
 const archivedChores = computed(() => {
   return choreStore.sortedArchivedChores;
 });
+
+// Computed property for loading state from store
+const loading = computed(() => choreStore.loading);
+
+// Watch for scroll events to show/hide scroll to top button
+const handleScroll = () => {
+  if (modalBody.value) {
+    showScrollToTop.value = modalBody.value.scrollTop > 300;
+  }
+};
+
+// Scroll back to top function
+const scrollToTop = () => {
+  if (modalBody.value) {
+    modalBody.value.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+};
+
+// Initial data loading
+onMounted(async () => {
+  // Initial fetch of archived chores
+  await choreStore.fetchArchivedChores(1);
+  
+  // Set up intersection observer for infinite scrolling
+  setupIntersectionObserver();
+  
+  // Add scroll event listener for scroll-to-top button
+  if (modalBody.value) {
+    modalBody.value.addEventListener('scroll', handleScroll);
+  }
+});
+
+onUnmounted(() => {
+  // Clean up event listeners and observers
+  if (modalBody.value) {
+    modalBody.value.removeEventListener('scroll', handleScroll);
+  }
+  if (observer.value) {
+    observer.value.disconnect();
+  }
+  // Clear any pending timeouts
+  if (loadingTimeout.value) {
+    clearTimeout(loadingTimeout.value);
+  }
+});
+
+// Setup intersection observer for infinite scrolling
+const setupIntersectionObserver = () => {
+  // Check if IntersectionObserver is available
+  if ('IntersectionObserver' in window && loadMoreTrigger.value) {
+    // Disconnect existing observer if any
+    if (observer.value) {
+      observer.value.disconnect();
+    }
+    
+    // Create a new observer
+    observer.value = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      // Load more when the trigger element is visible and we have more to load
+      if (entry.isIntersecting && choreStore.hasMoreArchivedChores && !isLoading.value) {
+        loadMoreArchivedChores();
+      }
+    }, {
+      root: modalBody.value, // Use modal body as root
+      rootMargin: '150px', // Increased margin to load more before reaching the end
+      threshold: 0.1 // Trigger when at least 10% of the element is visible
+    });
+    
+    // Start observing the trigger element
+    observer.value.observe(loadMoreTrigger.value);
+  }
+};
+
+// Function to load more archived chores for infinite scrolling
+const loadMoreArchivedChores = async () => {
+  // Prevent multiple concurrent loading requests
+  if (isLoading.value || !choreStore.hasMoreArchivedChores) return;
+  
+  // Set local loading state to prevent multiple triggers
+  isLoading.value = true;
+  
+  // Clear any existing timeout
+  if (loadingTimeout.value) {
+    clearTimeout(loadingTimeout.value);
+  }
+  
+  // Debounce the loading operation with a 400ms delay to prevent rapid re-triggering
+  loadingTimeout.value = setTimeout(async () => {
+    try {
+      currentPage.value++;
+      await choreStore.fetchArchivedChores(currentPage.value);
+      
+      // Re-setup observer after content changes
+      nextTick(() => {
+        setupIntersectionObserver();
+      });
+    } finally {
+      // Reset loading state after a longer cooldown period to prevent too frequent loading
+      setTimeout(() => {
+        isLoading.value = false;
+        loadingTimeout.value = null;
+      }, 700); // Longer cooldown to prevent rapid re-triggering
+    }
+  }, 400); // Slightly longer debounce for smoother experience
+};
 
 const markAsDone = async (choreId) => {
   try {
@@ -141,6 +278,7 @@ const unarchiveChore = async (choreId) => {
   overflow-y: auto;
   flex-grow: 1;
   max-height: 60vh; /* Limit height to prevent oversized modal */
+  position: relative; /* For positioning the scroll-to-top button */
 }
 
 .no-archived {
@@ -227,5 +365,84 @@ const unarchiveChore = async (choreId) => {
 
 .neutral-button:hover {
   background-color: #5a5a5a;
+}
+
+/* Add styling for scroll to top button */
+.scroll-to-top-button {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(74, 85, 104, 0.8);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000; /* Higher z-index to ensure it's above all content */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.scroll-to-top-button:hover {
+  background-color: rgba(74, 85, 104, 1);
+  transform: translateY(-2px);
+}
+
+.scroll-to-top-button i {
+  font-size: 1rem;
+}
+
+/* Add styling for infinite scroll loading indicator */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  height: 80px; /* Fixed height to prevent layout shifts */
+  margin-bottom: 20px; /* Increased margin for more space */
+  opacity: 1;
+  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+  visibility: visible;
+}
+
+/* Hidden state that maintains layout */
+.loading-indicator-hidden {
+  height: 80px; /* Same height as visible state */
+  visibility: hidden;
+  opacity: 0;
+  margin-bottom: 20px; /* Same margin as visible state */
+  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 0.5rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  flex-shrink: 0; /* Prevent spinner from shrinking */
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.load-more-trigger {
+  height: 100px; /* Increase height to create more buffer room */
+  margin-top: 20px;
+  margin-bottom: 20px;
+  visibility: hidden; /* Hide it but keep it in the layout */
+  width: 100%; /* Ensure it takes full width */
+  display: block;
+  position: relative;
 }
 </style>
