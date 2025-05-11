@@ -153,6 +153,18 @@ window.addEventListener('beforeinstallprompt', (e) => {
   showInstallButton.value = true
 })
 
+// Add listener for the custom event to show add chore form
+onMounted(() => {
+  window.addEventListener('showAddChoreForm:trigger', () => {
+    addMode.value = true;
+  });
+});
+
+// Clean up event listener
+onUnmounted(() => {
+  window.removeEventListener('showAddChoreForm:trigger', () => {});
+});
+
 window.addEventListener('appinstalled', () => {
   deferredPrompt.value = null
   showInstallButton.value = false

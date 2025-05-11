@@ -100,6 +100,12 @@ async function resetLocalStorage() {
 }
 
 onMounted(async () => {
+  // Add event listener for the showAddChoreForm event
+  window.addEventListener('showAddChoreForm', () => {
+    // Trigger the add chore form by calling the header's button action
+    handleAddChore();
+  });
+  
   // Check if we need to clean up version data to fix persistent notification issues
   const persistentVersionFix = async () => {
     try {
@@ -172,7 +178,14 @@ const frontendImageLink = computed(() => {
 
 const handleAddChore = async (newChore) => {
   try {
-    await choreStore.addChore(newChore)
+    // If newChore is provided, add it to the store
+    if (newChore) {
+      await choreStore.addChore(newChore)
+    } else {
+      // Otherwise, we just want to show the add chore form
+      // Send a custom event to the Header component to show the form
+      window.dispatchEvent(new CustomEvent('showAddChoreForm:trigger'));
+    }
   } catch (error) {
     console.error('Failed to add chore:', error)
   }
