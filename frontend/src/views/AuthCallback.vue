@@ -34,7 +34,8 @@ export default {
       const refreshToken = query.get('refresh_token');
       const expiresIn = query.get('expires_in');
       
-      console.log("Auth callback received: ", {
+      console.log("Auth callback received with URL: ", window.location.href);
+      console.log("Auth callback received with query params: ", {
         hasToken: !!token,
         hasIdToken: !!idToken,
         hasRefreshToken: !!refreshToken,
