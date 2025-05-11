@@ -79,9 +79,24 @@ If you need to test with the actual Dex authentication:
 2. Edit the VS Code task to remove the `USE_MOCK_AUTH=true` environment variable
 3. Restart the backend server
 
+### Updates (May 9, 2025)
+
+The mock authentication system has been improved to handle the login flow more reliably:
+
+1. Instead of relying on server-side sessions to store the redirect URI:
+   - The redirect URI is now passed as a query parameter to the login page
+   - The login page includes the redirect URI as a hidden form field
+   - The callback handler retrieves the redirect URI from the form data
+
+2. More detailed logging has been added to assist with troubleshooting:
+   - Login initiation is logged with the redirect URI
+   - Form submission details are logged
+   - Redirect destination is logged
+
 ## Testing
 
 1. Local development:
+
    ```bash
    # Terminal 1: Run backend
    cd /home/dave/src/choremane/backend
@@ -99,9 +114,9 @@ If you need to test with the actual Dex authentication:
    ```
 
 2. Kubernetes:
-   - Frontend: https://chores.stillon.top
-   - Backend: https://chores.stillon.top/api
-   - Dex: https://dex.stillon.top
+   - Frontend: <https://chores.stillon.top>
+   - Backend: <https://chores.stillon.top/api>
+   - Dex: <https://dex.stillon.top>
 
 ## Security Considerations
 

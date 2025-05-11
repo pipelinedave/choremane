@@ -3,6 +3,7 @@
 Choremane is a Progressive Web App (PWA) designed to simplify household chore management. It allows users to organize, assign, and track chores efficiently with a clean and modern interface.
 
 ## Features
+
 - 📅 **Smart Chore Scheduling** - Automatically assigns due dates based on intervals
 - 🔒 **Authentication** - Login with GitHub and Google via Dex
 - 🎨 **Customizable UI** - Material You design with dynamic theming
@@ -17,10 +18,13 @@ Choremane is a Progressive Web App (PWA) designed to simplify household chore ma
 - 🔄 **Offline Support** - Full functionality without internet
 
 ## Deployment
+
 Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s cluster. The backend uses FastAPI with PostgreSQL, while the frontend is a Vue 3 PWA.
 
 ### Local Development
+
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/pipelinedave/choremane.git
    cd choremane
@@ -33,10 +37,13 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    - Select `Run Backend Dev Server` to start the API server
    - Select `Run Frontend Dev Server` to start the UI
 
-   > **Note:** For local development, a mock authentication system is used by default (since May 2025) 
+   > **Note:** For local development, a mock authentication system is used by default (since May 2025)
    > due to issues with the external Dex OIDC provider. This allows you to sign in with test credentials
-   > without requiring access to the production authentication service. See [AUTH_README.md](AUTH_README.md) 
+   > without requiring access to the production authentication service. See [AUTH_README.md](AUTH_README.md)
    > for more details.
+   >
+   > If you encounter any authentication issues, check the backend logs for detailed information
+   > and refer to the troubleshooting section in [AUTH_README.md](AUTH_README.md).
 
 3. Using VS Code Debugging:
    - Open the Debug panel in VS Code (`Ctrl+Shift+D`)
@@ -44,6 +51,7 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    - Click the green play button to start PostgreSQL, backend, and frontend with debugging
 
 4. Manual startup:
+
    ```bash
    # Terminal 1: Start PostgreSQL
    docker-compose up -d postgres
@@ -67,11 +75,13 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    ```
 
 ## CI/CD Pipeline
+
 - **Staging Deployment**: Auto-deploys on commits to the main branch
 - **Production Deployment**: Triggered by `choremane/prod/v.*` tags
 - **Environment Separation**: Distinct staging and production namespaces
 
 ## Roadmap
+
 - ✅ **Basic chore management**
 - ✅ **GitHub Actions CI/CD**
 - ✅ **PWA core features**
@@ -82,4 +92,5 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
 - 🔄 **Performance optimizations**
 
 ## Contributing
+
 Contributions welcome! Please read our contributing guidelines and submit PRs for review.
