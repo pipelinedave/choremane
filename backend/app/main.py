@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi_mcp import FastApiMCP
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
+import httpx
 
 from app.api.routes import api_router
 from app.api.mcp_routes import router as mcp_router
@@ -162,8 +163,9 @@ async def mock_login_page_route(request: Request):
 async def mock_callback_route(request: Request):
     return await mock_callback(request)
 
-# OAuth login route
+# OAuth login route - support both /auth/login and /api/auth/login paths
 @app.get("/auth/login")
+@app.get("/api/auth/login")
 async def login(request: Request):
     if USE_MOCK_AUTH:
         return await mock_login(request)
@@ -174,8 +176,9 @@ async def login(request: Request):
     logging.info(f"OAUTH_CLIENT_ID: {os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
     return await oauth.dex.authorize_redirect(request, redirect_uri)
 
-# OAuth callback route
+# OAuth callback route - support both /auth/callback and /api/auth/callback paths
 @app.get("/auth/callback")
+@app.get("/api/auth/callback")
 async def auth_callback(request: Request):
     try:
         if USE_MOCK_AUTH:
@@ -234,8 +237,61 @@ async def auth_callback(request: Request):
         )
 
 @app.get("/auth/user", response_model=User)
+@app.get("/api/auth/user", response_model=User)
 async def get_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+# Add proxy route for the /api/auth/refresh path
+@app.post("/api/auth/refresh")
+async def api_auth_refresh(request: Request):
+    """Proxy for the /auth/refresh endpoint to support /api/auth/refresh path"""
+    try:
+        payload = await request.json()
+        refresh_token = payload.get("refresh_token")
+        
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refresh token is required"
+            )
+        
+        # Use mock refresh in development mode
+        if USE_MOCK_AUTH and 'mock_refresh' in globals():
+            logging.info("Using mock token refresh")
+            return await mock_refresh(refresh_token)
+        
+        # Get Dex configuration
+        client_id = os.getenv("OAUTH_CLIENT_ID", "choremane")
+        client_secret = os.getenv("OAUTH_CLIENT_SECRET", "choremane-secret")
+        token_url = f"{os.getenv('DEX_ISSUER_URL', 'https://dex.stillon.top')}/token"
+        
+        # Prepare the token request
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret
+        }
+        
+        # Make the token request to Dex
+        async with httpx.AsyncClient() as client:
+            response = await client.post(token_url, data=data)
+            
+            if response.status_code != 200:
+                logging.error(f"Failed to refresh token: {response.text}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Failed to refresh token"
+                )
+            
+            # Return the new tokens
+            return response.json()
+    except Exception as e:
+        logging.error(f"Token refresh error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Token refresh failed: {str(e)}"
+        )
 
 # Initialize and mount FastAPI-MCP
 mcp = FastApiMCP(app)
