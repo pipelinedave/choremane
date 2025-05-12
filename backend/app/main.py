@@ -209,8 +209,12 @@ async def auth_callback(request: Request):
             return await mock_callback(request)
             
         token = await oauth.dex.authorize_access_token(request)
-        logging.info(f"Received token object from Dex: {token}") # Logging the token object
-        user_info = await oauth.dex.parse_id_token(request, token)
+        logging.info(f"Received token object from Dex (before parse_id_token): {token}")
+
+        logging.info("Attempting to parse id_token...")
+        user_info = await oauth.dex.parse_id_token(request, token) # This internally calls token.update(user_info_claims)
+        logging.info(f"Successfully parsed id_token. User info claims: {user_info}")
+        logging.info(f"Token object AFTER parse_id_token (and potential token.update()): {token}")
         
         # Save user info to database
         conn = get_db_connection()
@@ -249,7 +253,21 @@ async def auth_callback(request: Request):
         in_production = os.getenv("ENV", "production").lower() != "development"
         if in_production and frontend_url.startswith("http://"):
             frontend_url = "https://" + frontend_url[7:]  # Replace http:// with https://
-            
+        
+        logging.info("Attempting to construct redirect_url...")
+        missing_keys_for_redirect = []
+        if 'access_token' not in token: missing_keys_for_redirect.append('access_token')
+        if 'id_token' not in token: missing_keys_for_redirect.append('id_token') # This is the key check
+        if 'expires_in' not in token: missing_keys_for_redirect.append('expires_in')
+
+        if missing_keys_for_redirect:
+            logging.error(
+                f"Keys missing in token before redirect_url construction: {', '.join(missing_keys_for_redirect)}. "
+                f"Current token state: {token}"
+            )
+            # If 'id_token' is missing, the next line will raise the KeyError,
+            # which will be caught by the existing except block.
+
         redirect_url = f"{frontend_url}/auth-callback?token={token['access_token']}&id_token={token['id_token']}&expires_in={token['expires_in']}"
         if 'refresh_token' in token:
             redirect_url += f"&refresh_token={token['refresh_token']}"
