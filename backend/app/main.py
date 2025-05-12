@@ -14,7 +14,6 @@ from app.api.auth_routes import auth_router
 from app.database import get_db_connection
 from app.auth import get_current_user
 from app.models import User, Token
-from authlib.oauth2.rfc6749.errors import MissingTokenError # Import this
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
