@@ -170,10 +170,19 @@ async def login(request: Request):
     if USE_MOCK_AUTH:
         return await mock_login(request)
     
-    redirect_uri = request.url_for("auth_callback")
+    # Get the environment (staging or production)
+    is_staging = "staging" in os.getenv("FRONTEND_URL", "")
+    
+    # Hard-code the exact redirect URI that is registered in Dex config
+    if is_staging:
+        redirect_uri = "https://chores-staging.stillon.top/api/auth/callback"
+    else:
+        redirect_uri = "https://chores.stillon.top/api/auth/callback"
+    
     logging.info(f"Login redirect URI: {redirect_uri}")
     logging.info(f"DEX_ISSUER_URL: {DEX_ISSUER_URL}")
     logging.info(f"OAUTH_CLIENT_ID: {os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
+    
     return await oauth.dex.authorize_redirect(request, redirect_uri)
 
 # OAuth callback route - support both /auth/callback and /api/auth/callback paths
@@ -220,13 +229,18 @@ async def auth_callback(request: Request):
             conn.close()
         
         # Return tokens to frontend
-        frontend_redirect_url = os.getenv("FRONTEND_URL", "https://chores.stillon.top")
+        frontend_url = os.getenv("FRONTEND_URL", "https://chores.stillon.top")
+        
+        # Ensure HTTPS in production
+        in_production = os.getenv("ENV", "production").lower() != "development"
+        if in_production and frontend_url.startswith("http://"):
+            frontend_url = "https://" + frontend_url[7:]  # Replace http:// with https://
             
-        redirect_url = f"{frontend_redirect_url}/auth-callback?token={token['access_token']}&id_token={token['id_token']}&expires_in={token['expires_in']}"
+        redirect_url = f"{frontend_url}/auth-callback?token={token['access_token']}&id_token={token['id_token']}&expires_in={token['expires_in']}"
         if 'refresh_token' in token:
             redirect_url += f"&refresh_token={token['refresh_token']}"
         
-        logging.info(f"Redirecting to: {frontend_redirect_url}/auth-callback")
+        logging.info(f"Redirecting to: {frontend_url}/auth-callback")
         
         return RedirectResponse(url=redirect_url)
     except Exception as e:
