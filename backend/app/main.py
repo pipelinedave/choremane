@@ -209,6 +209,7 @@ async def auth_callback(request: Request):
             return await mock_callback(request)
             
         token = await oauth.dex.authorize_access_token(request)
+        logging.info(f"Received token object from Dex: {token}") # Logging the token object
         user_info = await oauth.dex.parse_id_token(request, token)
         
         # Save user info to database
