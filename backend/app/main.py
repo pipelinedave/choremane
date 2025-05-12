@@ -14,6 +14,7 @@ from app.api.auth_routes import auth_router
 from app.database import get_db_connection
 from app.auth import get_current_user
 from app.models import User, Token
+from authlib.oauth2.rfc6749.errors import MissingTokenError # Import this
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -202,19 +203,29 @@ async def login(request: Request):
 @app.get("/auth/callback")
 @app.get("/api/auth/callback")
 async def auth_callback(request: Request):
+    token_data = None # Initialize to ensure it's available in except blocks
+    original_id_token_string = None # To store id_token before parsing
     try:
         if USE_MOCK_AUTH:
             # This shouldn't be called in mock mode, but just in case
             logging.warning("OAuth callback called in mock auth mode")
             return await mock_callback(request)
             
-        token = await oauth.dex.authorize_access_token(request)
-        logging.info(f"Received token object from Dex (before parse_id_token): {token}")
+        token_data = await oauth.dex.authorize_access_token(request)
+        logging.info(f"Received token object from Dex (before parse_id_token): {token_data}")
+
+        if 'id_token' not in token_data:
+            logging.error(f"CRITICAL: 'id_token' missing from token_data received from Dex: {token_data}")
+            raise KeyError("'id_token' not found in initial token response from Dex")
+        
+        original_id_token_string = token_data['id_token'] # Store it before it's potentially removed/modified
 
         logging.info("Attempting to parse id_token...")
-        user_info = await oauth.dex.parse_id_token(request, token) # This internally calls token.update(user_info_claims)
+        # The parse_id_token method might modify token_data in-place (e.g., by adding claims and removing the original id_token string)
+        # It returns the user_info (claims from the id_token)
+        user_info = await oauth.dex.parse_id_token(request, token_data) 
         logging.info(f"Successfully parsed id_token. User info claims: {user_info}")
-        logging.info(f"Token object AFTER parse_id_token (and potential token.update()): {token}")
+        logging.info(f"Token object AFTER parse_id_token (and potential token_data.update()): {token_data}")
         
         # Save user info to database
         conn = get_db_connection()
@@ -239,8 +250,8 @@ async def auth_callback(request: Request):
                 )
             )
             conn.commit()
-        except Exception as e:
-            logging.error(f"Error saving user: {e}")
+        except Exception as e_db:
+            logging.error(f"Error saving user: {e_db}")
             conn.rollback()
         finally:
             cur.close()
@@ -252,34 +263,59 @@ async def auth_callback(request: Request):
         # Ensure HTTPS in production
         in_production = os.getenv("ENV", "production").lower() != "development"
         if in_production and frontend_url.startswith("http://"):
-            frontend_url = "https://" + frontend_url[7:]  # Replace http:// with https://
-        
+            frontend_url = "https://" + frontend_url[7:]
+            
         logging.info("Attempting to construct redirect_url...")
+        
+        # Check for essential keys in token_data needed for the redirect URL (access_token, expires_in)
+        # We will use original_id_token_string for the id_token part.
         missing_keys_for_redirect = []
-        if 'access_token' not in token: missing_keys_for_redirect.append('access_token')
-        if 'id_token' not in token: missing_keys_for_redirect.append('id_token') # This is the key check
-        if 'expires_in' not in token: missing_keys_for_redirect.append('expires_in')
+        if 'access_token' not in token_data: missing_keys_for_redirect.append('access_token')
+        if 'expires_in' not in token_data: missing_keys_for_redirect.append('expires_in')
+        if not original_id_token_string: missing_keys_for_redirect.append('original_id_token_string (was None or empty)')
+
 
         if missing_keys_for_redirect:
             logging.error(
-                f"Keys missing in token before redirect_url construction: {', '.join(missing_keys_for_redirect)}. "
-                f"Current token state: {token}"
+                f"Keys missing before redirect_url construction: {', '.join(missing_keys_for_redirect)}. "
+                f"Current token_data state: {token_data}. Original id_token was: {'present' if original_id_token_string else 'MISSING/EMPTY'}"
             )
-            # If 'id_token' is missing, the next line will raise the KeyError,
-            # which will be caught by the existing except block.
+            # This will likely lead to a KeyError or other error in the next step, caught by the generic Exception.
+            # Or, if original_id_token_string is the issue, it might pass a 'None' string.
 
-        redirect_url = f"{frontend_url}/auth-callback?token={token['access_token']}&id_token={token['id_token']}&expires_in={token['expires_in']}"
-        if 'refresh_token' in token:
-            redirect_url += f"&refresh_token={token['refresh_token']}"
+        # Use the original_id_token_string that we saved.
+        redirect_url = f"{frontend_url}/auth-callback?token={token_data['access_token']}&id_token={original_id_token_string}&expires_in={token_data['expires_in']}"
         
-        logging.info(f"Redirecting to: {frontend_url}/auth-callback")
+        if 'refresh_token' in token_data: # refresh_token is optional
+            redirect_url += f"&refresh_token={token_data['refresh_token']}"
+        
+        logging.info(f"Redirecting to: {frontend_url}/auth-callback (params will be in browser)")
         
         return RedirectResponse(url=redirect_url)
-    except Exception as e:
-        logging.error(f"Auth callback error: {e}")
+    except KeyError as ke:
+        logging.error(f"Auth callback error: Caught KeyError: {ke}")
+        logging.error(f"Details: Key '{ke}' was not found.")
+        if token_data is not None:
+            logging.error(f"Token_data object state when KeyError occurred: {token_data}")
+        if original_id_token_string is not None:
+            logging.error(f"Original id_token string state: {'present and not empty' if original_id_token_string else 'empty or None'}")
+        else:
+            logging.error("Original id_token string was None (meaning it was likely missing from initial Dex response).")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Authentication failed"}
+            content={"detail": f"Authentication failed: Key Error - {ke}"}
+        )
+    except Exception as e:
+        logging.error(f"Auth callback error: Caught generic Exception: {type(e).__name__} - {e}")
+        if token_data is not None:
+             logging.error(f"Token_data object state at time of generic exception: {token_data}")
+        else:
+             logging.error("Token_data object not available at time of generic exception (was None or not assigned).")
+        if original_id_token_string is not None:
+            logging.error(f"Original id_token string state: {'present and not empty' if original_id_token_string else 'empty or None'}")
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "Authentication failed due to an unexpected error."}
         )
 
 @app.get("/auth/user", response_model=User)
