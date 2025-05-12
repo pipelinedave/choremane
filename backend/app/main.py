@@ -171,14 +171,27 @@ async def login(request: Request):
         return await mock_login(request)
     
     # Get the environment (staging or production)
-    is_staging = "staging" in os.getenv("FRONTEND_URL", "")
+    frontend_url = os.getenv("FRONTEND_URL", "")
+    is_staging = "staging" in frontend_url
+    
+    # Determine if request is using HTTP or HTTPS
+    is_https = request.url.scheme == "https" or (
+        "x-forwarded-proto" in request.headers and 
+        request.headers["x-forwarded-proto"] == "https"
+    )
     
     # Hard-code the exact redirect URI that is registered in Dex config
-    if is_staging:
-        redirect_uri = "https://chores-staging.stillon.top/api/auth/callback"
-    else:
-        redirect_uri = "https://chores.stillon.top/api/auth/callback"
+    # Use the same scheme (HTTP/HTTPS) that the request came in on
+    scheme = "https" if is_https else "http"
     
+    if is_staging:
+        redirect_uri = f"{scheme}://chores-staging.stillon.top/api/auth/callback"
+    else:
+        redirect_uri = f"{scheme}://chores.stillon.top/api/auth/callback"
+    
+    logging.info(f"Request scheme: {request.url.scheme}")
+    logging.info(f"X-Forwarded-Proto: {request.headers.get('x-forwarded-proto', 'not set')}")
+    logging.info(f"Using scheme: {scheme}")
     logging.info(f"Login redirect URI: {redirect_uri}")
     logging.info(f"DEX_ISSUER_URL: {DEX_ISSUER_URL}")
     logging.info(f"OAUTH_CLIENT_ID: {os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
