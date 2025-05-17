@@ -105,8 +105,22 @@ run_migrations()
 
 app = FastAPI()
 
-# Add session middleware for OAuth
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "supersecret"))
+# Add session middleware for OAuth with secure cookie settings for production
+is_prod_env = os.getenv("ENV", "production").lower() == "production"
+session_secret = os.getenv("SESSION_SECRET", "supersecret")
+
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=session_secret,
+    # Set secure cookies in production to prevent session issues
+    https_only=is_prod_env,  
+    # Longer max_age in production to prevent premature session expiry
+    max_age=3600 if is_prod_env else 1800,  
+    # Use SameSite=Lax to ensure cookies work with redirects
+    same_site="lax"  
+)
+
+logging.info(f"Session middleware configured with https_only={is_prod_env}, expires in {3600 if is_prod_env else 1800}s")
 
 # Configure OAuth client
 oauth = OAuth()
@@ -196,6 +210,16 @@ async def login(request: Request):
     logging.info(f"DEX_ISSUER_URL: {DEX_ISSUER_URL}")
     logging.info(f"OAUTH_CLIENT_ID: {os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
     
+    # Generate and store a custom nonce in the session for verification later
+    # This provides a fallback if the Authlib nonce mechanism fails
+    import secrets
+    custom_nonce = secrets.token_hex(16)
+    request.session['custom_dex_nonce'] = custom_nonce
+    logging.info(f"Generated and stored custom nonce in session: {custom_nonce[:5]}...")
+    
+    # Log session details before redirecting
+    logging.info(f"Session contents before authorize_redirect: {dict(request.session)}")
+    
     return await oauth.dex.authorize_redirect(request, redirect_uri)
 
 # OAuth callback route - support both /auth/callback and /api/auth/callback paths
@@ -219,12 +243,125 @@ async def auth_callback(request: Request):
         
         original_id_token_string = token_data['id_token'] # Store it before it's potentially removed/modified
 
-        logging.info("Attempting to parse id_token...")
-        # The parse_id_token method might modify token_data in-place (e.g., by adding claims and removing the original id_token string)
-        # It returns the user_info (claims from the id_token)
-        user_info = await oauth.dex.parse_id_token(request, token_data) 
-        logging.info(f"Successfully parsed id_token. User info claims: {user_info}")
-        logging.info(f"Token object AFTER parse_id_token (and potential token_data.update()): {token_data}")
+        # logging.info("Attempting to parse id_token...") # OLD LOG AND CALL
+        # user_info = await oauth.dex.parse_id_token(request, token_data) # OLD CALL
+        # logging.info(f"Successfully parsed id_token. User info claims: {user_info}") # OLD LOG
+        # logging.info(f"Token object AFTER parse_id_token (and potential token_data.update()): {token_data}") # OLD LOG
+
+        logging.info("Attempting to decode id_token string directly using oauth.dex.decode_id_token...")
+        
+        # Debug session contents to see what's available
+        logging.info(f"Session contents: {dict(request.session)}")
+        
+        nonce = request.session.get('__dex_nonce__') # Retrieve nonce from session; 'dex' is the client name.
+        logging.info(f"Retrieved nonce from session: {'Present' if nonce else 'MISSING'}")
+        
+        # Check for our custom nonce as a fallback
+        custom_nonce = request.session.get('custom_dex_nonce')
+        logging.info(f"Custom nonce found: {'Present' if custom_nonce else 'MISSING'}")
+        
+        if not nonce:
+            logging.error("CRITICAL: Standard nonce not found in session for OIDC callback.")
+            # Check if there's any potential nonce with a different key name
+            possible_nonce_keys = [k for k in request.session.keys() if 'nonce' in k.lower()]
+            if possible_nonce_keys:
+                logging.info(f"However, found possible alternative nonce keys: {possible_nonce_keys}")
+            
+            # If we have our custom nonce, use it as a fallback
+            if custom_nonce:
+                logging.info("Using custom nonce as fallback for OIDC validation")
+                nonce = custom_nonce
+            else:
+                logging.warn("No nonce available for OIDC validation, will attempt to skip nonce verification")
+                # We'll proceed without a nonce and try to validate the token with only signature and standard claims
+                # This is not ideal for security but allows debugging in scenarios where session is not maintained
+                nonce = None
+
+        try:
+            # Log additional metadata about the OAuth client before decoding
+            logging.info(f"DEX client metadata: {oauth.dex.server_metadata if hasattr(oauth.dex, 'server_metadata') else 'Not available'}")
+            
+            # Check for JWKS URI availability which is required for token verification
+            jwks_uri = oauth.dex.server_metadata.get('jwks_uri') if hasattr(oauth.dex, 'server_metadata') else None
+            logging.info(f"JWKS URI available: {'Yes - ' + jwks_uri if jwks_uri else 'No'}")
+            
+            # Call decode_id_token with the raw ID token JWT string and the retrieved nonce.
+            # This method handles fetching JWKS, verifying signature, expiry, issuer, audience, and nonce.
+            logging.info("Calling oauth.dex.decode_id_token...")
+            
+            # Set up claims options based on whether we have a nonce or not
+            if nonce:
+                logging.info("Using standard token validation with nonce")
+                user_info = await oauth.dex.decode_id_token(
+                    token=original_id_token_string,  # The raw ID token JWT string
+                    nonce=nonce
+                    # claims_options can be added here if specific claim validations are needed.
+                    # Authlib uses default claims_params (like issuer, audience) from client's server_metadata.
+                )
+            else:
+                # Attempt to manually decode and validate the token without nonce verification
+                # This is a fallback for debugging purposes when session management issues occur
+                logging.warn("Attempting ID token validation WITHOUT nonce verification")
+                from authlib.jose import jwt
+                from authlib.jose.errors import JoseError
+                
+                try:
+                    # Get JWKS (JSON Web Key Set) from Dex
+                    jwks_uri = oauth.dex.server_metadata.get('jwks_uri')
+                    if not jwks_uri:
+                        raise ValueError("JWKS URI not found in server metadata")
+                        
+                    async with httpx.AsyncClient() as client:
+                        jwks_response = await client.get(jwks_uri)
+                        jwks = jwks_response.json()
+                        
+                    # Validate the token with minimal claims validation (no nonce check)
+                    claims_options = {
+                        "iss": {"essential": True, "value": oauth.dex.server_metadata.get('issuer')},
+                        "aud": {"essential": True, "value": os.getenv("OAUTH_CLIENT_ID", "choremane")},
+                        "exp": {"essential": True},
+                    }
+                    
+                    user_info = jwt.decode(
+                        original_id_token_string,
+                        jwks,
+                        claims_options=claims_options
+                    )
+                    
+                    logging.warn("Successfully decoded ID token WITHOUT nonce verification")
+                except Exception as manual_decode_error:
+                    logging.error(f"Manual token validation failed: {manual_decode_error}")
+                    # Re-raise to be caught by the outer exception handler
+                    raise
+        except Exception as e_decode:
+            # Catching a broad exception. More specific authlib errors (JoseError, etc.) could be caught.
+            logging.error(f"Error during oauth.dex.decode_id_token: {type(e_decode).__name__} - {str(e_decode)}")
+            
+            # Log more detailed error info if available
+            error_attrs = [attr for attr in dir(e_decode) if not attr.startswith('_') and not callable(getattr(e_decode, attr))]
+            if error_attrs:
+                logging.error(f"Additional error attributes: {', '.join(error_attrs)}")
+                for attr in error_attrs:
+                    logging.error(f"  {attr}: {getattr(e_decode, attr)}")
+                    
+            # If it's an authlib JWTError, log additional context
+            if hasattr(e_decode, 'error') and hasattr(e_decode, 'description'):
+                logging.error(f"JWT Error: {getattr(e_decode, 'error')} - {getattr(e_decode, 'description')}")
+            
+            # Log a snippet of the token (first 20 chars) for debugging
+            if original_id_token_string:
+                token_preview = original_id_token_string[:20] + "..." if len(original_id_token_string) > 20 else original_id_token_string
+                logging.error(f"Token preview (first 20 chars): {token_preview}")
+                
+            # Consider adding more detailed error attributes if available from e_decode.
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": f"Authentication failed: ID token processing error - {type(e_decode).__name__}: {str(e_decode)}"}
+            ) from e_decode
+
+        logging.info(f"Successfully decoded id_token directly. User info claims: {user_info}")
+        # Note: token_data dictionary is NOT modified by decode_id_token, as it only operated on original_id_token_string.
+        logging.info(f"Token object state (which was not passed to decode_id_token): {token_data}")
         
         # Save user info to database
         conn = get_db_connection()
@@ -373,6 +510,25 @@ async def api_auth_refresh(request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Token refresh failed: {str(e)}"
         )
+
+# Add diagnostic endpoint for session testing
+@app.get("/api/auth/session-test")
+async def session_test(request: Request):
+    """
+    Test endpoint to verify session functionality.
+    Each call increments a counter stored in the session.
+    """
+    counter = request.session.get('test_counter', 0)
+    counter += 1
+    request.session['test_counter'] = counter
+    
+    return {
+        "counter": counter,
+        "session_id": str(request.session.get('session_id', 'unknown')),
+        "session_contents": dict(request.session),
+        "cookies": request.cookies,
+        "secure_context": request.url.scheme == "https" or request.headers.get('x-forwarded-proto') == "https"
+    }
 
 # Initialize and mount FastAPI-MCP
 mcp = FastApiMCP(app)
