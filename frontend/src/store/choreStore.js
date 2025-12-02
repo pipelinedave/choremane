@@ -25,6 +25,11 @@ export const useChoreStore = defineStore('chores', () => {
   const fetchingCounts = ref(false);
   const editingChoreId = ref(null);
 
+  const normalizeToLocalDate = (dateValue) => {
+    const parsed = new Date(dateValue);
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  };
+
   const setEditingChore = (choreId) => {
     editingChoreId.value = choreId;
   };
@@ -36,11 +41,8 @@ export const useChoreStore = defineStore('chores', () => {
   const isChoreDisabledToday = (chore) => {
     if (!chore?.due_date || !chore?.interval) return false;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const dueDate = new Date(chore.due_date);
-    dueDate.setHours(0, 0, 0, 0);
+    const today = normalizeToLocalDate(new Date());
+    const dueDate = normalizeToLocalDate(chore.due_date);
 
     return today.getTime() === dueDate.getTime();
   };
@@ -50,8 +52,8 @@ export const useChoreStore = defineStore('chores', () => {
       ...chore,
       disabled: isChoreDisabledToday(chore)
     })).sort((a, b) => {
-      const dateA = new Date(a.due_date);
-      const dateB = new Date(b.due_date);
+      const dateA = normalizeToLocalDate(a.due_date);
+      const dateB = normalizeToLocalDate(b.due_date);
       return dateA - dateB;
     });
   });
@@ -62,8 +64,8 @@ export const useChoreStore = defineStore('chores', () => {
       ...chore,
       disabled: isChoreDisabledToday(chore)
     })).sort((a, b) => {
-      const dateA = new Date(a.due_date);
-      const dateB = new Date(b.due_date);
+      const dateA = normalizeToLocalDate(a.due_date);
+      const dateB = normalizeToLocalDate(b.due_date);
       return dateA - dateB;
     });
   });
@@ -196,12 +198,11 @@ export const useChoreStore = defineStore('chores', () => {
   
   // Calculate counts from loaded chores (as a fallback if API fails)
   const updateLocalChoreCounts = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    const today = normalizeToLocalDate(new Date());
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const nextWeek = new Date(today);
     nextWeek.setDate(today.getDate() + 7);
     
@@ -209,15 +210,15 @@ export const useChoreStore = defineStore('chores', () => {
     const nonArchivedChores = chores.value.filter(c => !c.archived);
     
     choreCounts.value.all = nonArchivedChores.length;
-    choreCounts.value.overdue = nonArchivedChores.filter(c => new Date(c.due_date) < today).length;
-    choreCounts.value.today = nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === today.toDateString()).length;
-    choreCounts.value.tomorrow = nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === tomorrow.toDateString()).length;
+    choreCounts.value.overdue = nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date) < today).length;
+    choreCounts.value.today = nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === today.toDateString()).length;
+    choreCounts.value.tomorrow = nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === tomorrow.toDateString()).length;
     choreCounts.value.thisWeek = nonArchivedChores.filter(c => {
-      const dueDate = new Date(c.due_date);
+      const dueDate = normalizeToLocalDate(c.due_date);
       return dueDate > tomorrow && dueDate <= nextWeek;
     }).length;
     choreCounts.value.upcoming = nonArchivedChores.filter(c => {
-      const dueDate = new Date(c.due_date);
+      const dueDate = normalizeToLocalDate(c.due_date);
       return dueDate > nextWeek;
     }).length;
   };

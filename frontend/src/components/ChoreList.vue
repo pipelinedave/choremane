@@ -108,6 +108,11 @@ const pills = [
   { label: 'Later', value: 'upcoming', color: '#4db6ac' }, // Using the due-far-future teal color
 ];
 
+const normalizeToLocalDate = (value) => {
+  const parsed = new Date(value);
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+};
+
 // Reset pagination when filter changes
 watch(filter, () => {
   // Instead of fetching the entire first page again, just ensure we have updated counts
@@ -218,12 +223,11 @@ const loadMoreChores = async () => {
 };
 
 const filteredChores = computed(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
+  const today = normalizeToLocalDate(new Date());
+
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  
+
   const nextWeek = new Date(today);
   nextWeek.setDate(today.getDate() + 7);
   
@@ -231,21 +235,21 @@ const filteredChores = computed(() => {
   const nonArchivedChores = choreStore.sortedByUrgency.filter(c => !c.archived);
   
   if (filter.value === 'all') return nonArchivedChores;
-  if (filter.value === 'overdue') return nonArchivedChores.filter(c => new Date(c.due_date) < today);
-  if (filter.value === 'today') return nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === today.toDateString());
+  if (filter.value === 'overdue') return nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date) < today);
+  if (filter.value === 'today') return nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === today.toDateString());
   if (filter.value === 'tomorrow') {
-    return nonArchivedChores.filter(c => new Date(c.due_date).toDateString() === tomorrow.toDateString());
+    return nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === tomorrow.toDateString());
   }
   if (filter.value === 'thisWeek') {
     return nonArchivedChores.filter(c => {
-      const dueDate = new Date(c.due_date);
+      const dueDate = normalizeToLocalDate(c.due_date);
       // Exclude today and tomorrow, but include the rest of the week
       return dueDate > tomorrow && dueDate <= nextWeek;
     });
   }
   if (filter.value === 'upcoming') {
     return nonArchivedChores.filter(c => {
-      const dueDate = new Date(c.due_date);
+      const dueDate = normalizeToLocalDate(c.due_date);
       // Only show chores due after next week
       return dueDate > nextWeek;
     });
