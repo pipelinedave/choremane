@@ -15,7 +15,7 @@
 
 ### High Priority
 <!-- Critical bugs and important features -->
-- #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
+
 - #bug [UI] the filter pills amounts displayed is false sometimes. for example it might show "8 Due this week" while there are only 4 chores in that filter category
 - #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
 - #bug [UI] Fix private toggle in edit mode so setting a chore to private or public actually updates the chore state.
@@ -68,3 +68,4 @@
 - #feature [Edit] Add pagination to the chores list view and archived chores view with infinite scroll and a scroll-to-top button
 - #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - there is no "done" or "close" button in the "archived chores" modal dialog. it can only be closed by clicking in the background. this is inconsistent with the other dialogs and should be brought in line.
+- #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
