@@ -1,10 +1,9 @@
 ﻿<template>
   <div id="app">
     <ErrorBoundary>
-      <!-- Only show Header and Log components when authenticated -->
+      <!-- Only show Header when authenticated; Log is temporarily disabled -->
       <template v-if="isAuthenticated">
         <Header @addChore="handleAddChore" />
-        <Log />
       </template>
       <router-view></router-view>
       <!-- AI Assistant button hidden temporarily -->
@@ -21,7 +20,6 @@ import api from '@/plugins/axios'
 import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
-import Log from '@/components/Log.vue'
 // Commented out AI assistant import
 // import CopilotButton from '@/components/CopilotButton.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
