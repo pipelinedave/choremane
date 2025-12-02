@@ -188,9 +188,9 @@ onMounted(() => {
     return;
   }
   
-  // Initialize Hammer.js with vertical recognition to detect scrolling
-  hammer = new Hammer(card);
-  hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 5 });
+  // Initialize Hammer.js with horizontal swipes while preserving vertical scrolling
+  hammer = new Hammer(card, { touchAction: 'pan-y' });
+  hammer.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
   
   // Pan start - capture initial position and reset state
   hammer.on('panstart', (event) => {
@@ -416,6 +416,8 @@ const friendlyDueDate = (due_date) => {
   margin-bottom: var(--space-xxs); /* Reduced from xs to xxs */
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
+  touch-action: pan-y;
+  -ms-touch-action: pan-y;
   color: rgba(255, 255, 255, 0.95); /* Base text color for all cards */
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); /* Subtle text shadow for better contrast */
   position: relative;
