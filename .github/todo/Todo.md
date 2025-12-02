@@ -2,6 +2,7 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
+- #bug trying to unprivate a private chore in the edit mode seems to do nothing. same when trying to private a not yet private chore.
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->

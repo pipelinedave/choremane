@@ -11,6 +11,7 @@
       }
     ]"
     :id="`chore-card-${chore.id}`"
+    ref="cardRef"
     @dblclick="handleDblClick"
     role="listitem"
     tabindex="0"
@@ -114,6 +115,8 @@ const editMode = ref(false);
 const editableChore = ref({ ...props.chore });
 let hammer = null;
 let isRevealingAction = false;
+const cardRef = ref(null);
+let scrollHandler = null;
 let initialY = 0; // Track initial Y position for detecting vertical scrolls
 let isScrolling = false; // Flag to determine if user is scrolling
 const MIN_SWIPE_DISTANCE = 40; // Minimum distance in pixels before triggering swipe action
@@ -147,8 +150,8 @@ const resetSwipeState = (card) => {
 };
 
 onMounted(() => {
-  const card = document.getElementById(`chore-card-${props.chore.id}`);
-  
+  const card = cardRef.value;
+
   // Skip initializing Hammer.js for archived chores view
   if (props.isArchivedView) {
     return;
@@ -269,19 +272,24 @@ onMounted(() => {
   
   // Add a handler for regular touch events to reset swipe state
   // when the user starts scrolling
-  document.addEventListener('scroll', () => {
+  scrollHandler = () => {
     if (!editMode.value && card && isRevealingAction) {
       resetSwipeState(card);
     }
-  }, { passive: true });
+  };
 
-  onBeforeUnmount(() => {
-    if (hammer) {
-      hammer.destroy();
-      hammer = null;
-    }
-    document.removeEventListener('scroll', () => {});
-  });
+  document.addEventListener('scroll', scrollHandler, { passive: true });
+});
+
+onBeforeUnmount(() => {
+  if (hammer) {
+    hammer.destroy();
+    hammer = null;
+  }
+
+  if (scrollHandler) {
+    document.removeEventListener('scroll', scrollHandler);
+  }
 });
 
 const saveChore = async () => {
