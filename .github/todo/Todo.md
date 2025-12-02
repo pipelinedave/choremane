@@ -3,9 +3,9 @@
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
 <!-- No pending items here; move processed ideas into Organized Tasks -->
-- there is no "done" or "close" button in the "archived chores" modal dialog. it can only be closed by clicking in the background. this is inconsistent with the other dialogs and should be brought in line.
-- #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
-- #bug [UI] the filter pills amounts displayed is false sometimes. for example it might show "8 Due this week" while there are only 4 chores in that filter category
+
+
+
 
 ## Inbox
 <!-- Place for new ideas before processing -->
@@ -15,7 +15,9 @@
 
 ### High Priority
 <!-- Critical bugs and important features -->
-
+- #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
+- #bug [UI] the filter pills amounts displayed is false sometimes. for example it might show "8 Due this week" while there are only 4 chores in that filter category
+- #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
 - #bug [UI] Fix private toggle in edit mode so setting a chore to private or public actually updates the chore state.
 - #bug [Agent] Preserve “done today” status after refresh by keeping the server/client state consistent when the last completion date is today.
 - #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
@@ -37,21 +39,16 @@
 - #feature [Agent] Add stats dashboard with calculated scores for each chore based on completion rate, on-time ratio, and adjustment frequency to provide insights into chore management patterns
 - #maintenance [Agent] Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.
 - #ci [Agent] Optimize GitHub workflows to trigger builds and deployments only when necessary (exclude changes to docs, todo lists, etc.)
-- #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
 - #documentation [Edit] Add API documentation
 - #feature [Agent] Add comprehensive multi-language support
 - #ui [Edit] Add visual indicators for private chores that are more intuitive than the current lock icon
-- #refactor [Full] Restructure frontend code to be more modular and avoid large monolithic files
 
 ### Low Priority
 <!-- Nice-to-haves and maintenance tasks -->
 - #feature [Agent] Re-implement AI assistant with proper functionality
-- #feature [Agent] Create a mobile companion app or make the current UI more responsive for small screens
-- #refactor [Full] Apply the same modular code restructuring approach to the backend codebase
 
 ## In Progress
 <!-- Tasks currently being worked on -->
-- #bug [Agent] Add specific path for /reset.html in Traefik ingress to prevent redirection back to the app
 - #ci [Agent] Temporarily disabled GitHub Actions tests that fail consistently - need to be fixed later
 
 ## Completed
@@ -70,3 +67,4 @@
 - #ui Remove the "archived" filter pill and add functionality to manage archived items in the header menu
 - #feature [Edit] Add pagination to the chores list view and archived chores view with infinite scroll and a scroll-to-top button
 - #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
+- there is no "done" or "close" button in the "archived chores" modal dialog. it can only be closed by clicking in the background. this is inconsistent with the other dialogs and should be brought in line.
