@@ -63,6 +63,7 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    export DEX_ISSUER_URL=https://dex.stillon.top
    export SESSION_SECRET=local-dev-secret
    export FRONTEND_URL=http://localhost:5000
+   export USE_MOCK_AUTH=true  # Use the built-in mock auth flow for local dev
    export POSTGRES_HOST=localhost
    export POSTGRES_DB=choresdb
    export POSTGRES_USER=admin
