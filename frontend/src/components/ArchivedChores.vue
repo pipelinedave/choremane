@@ -59,7 +59,7 @@
             @click="$emit('close')"
             aria-label="Close archived chores dialog"
           >
-            Done
+            Close
           </button>
         </div>
       </div>
