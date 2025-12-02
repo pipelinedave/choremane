@@ -20,9 +20,16 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 def run_migrations():
     """Run database migrations on startup"""
     logging.info("Running database migrations...")
-    conn = get_db_connection()
-    cur = conn.cursor()
+    conn = None
+    cur = None
     try:
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+        except Exception as e:
+            logging.error(f"Skipping migrations: unable to connect to database ({e})")
+            return
+
         # Create chores table if it doesn't exist
         cur.execute("""
             CREATE TABLE IF NOT EXISTS chores (
@@ -39,7 +46,7 @@ def run_migrations():
         """)
         conn.commit()
         logging.info("Chores table created or already exists")
-        
+
         # Create chore_logs table if it doesn't exist
         cur.execute("""
             CREATE TABLE IF NOT EXISTS chore_logs (
@@ -54,11 +61,11 @@ def run_migrations():
         """)
         conn.commit()
         logging.info("Chore logs table created or already exists")
-        
+
         # Check if chore_logs.chore_id allows NULL values
         cur.execute("""
-            SELECT is_nullable 
-            FROM information_schema.columns 
+            SELECT is_nullable
+            FROM information_schema.columns
             WHERE table_name = 'chore_logs' AND column_name = 'chore_id'
         """)
         result = cur.fetchone()
@@ -69,16 +76,16 @@ def run_migrations():
             logging.info("Migration completed successfully")
         else:
             logging.info("Migration already applied or not needed")
-            
+
         # Check if users table exists
         cur.execute("""
             SELECT EXISTS (
-                SELECT FROM information_schema.tables 
+                SELECT FROM information_schema.tables
                 WHERE table_name = 'users'
             )
         """)
         table_exists = cur.fetchone()[0]
-        
+
         if not table_exists:
             logging.info("Creating users table")
             cur.execute("""
@@ -95,10 +102,13 @@ def run_migrations():
             logging.info("Users table created successfully")
     except Exception as e:
         logging.error(f"Migration failed: {e}")
-        conn.rollback()
+        if conn:
+            conn.rollback()
     finally:
-        cur.close()
-        conn.close()
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 # Run migrations on startup
 run_migrations()
