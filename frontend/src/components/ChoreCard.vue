@@ -102,14 +102,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import Hammer from 'hammerjs';
 import { useChoreStore } from '@/store/choreStore';
+import { useAuthStore } from '@/store/authStore';
 
 const props = defineProps(['chore', 'isArchivedView']);
 const emit = defineEmits(['markAsDone', 'updateChore', 'archiveChore']);
 
 const choreStore = useChoreStore();
+const authStore = useAuthStore();
 
 const editMode = ref(false);
 const editableChore = ref({ ...props.chore });
@@ -122,14 +124,43 @@ let isScrolling = false; // Flag to determine if user is scrolling
 const MIN_SWIPE_DISTANCE = 40; // Minimum distance in pixels before triggering swipe action
 const SCROLL_DETECTION_THRESHOLD = 15; // Pixel threshold to detect vertical scrolling
 
+watch(
+  () => choreStore.editingChoreId,
+  (currentId, previousId) => {
+    const nowEditingThis = currentId === props.chore.id;
+    const wasEditingThis = previousId === props.chore.id;
+
+    if (nowEditingThis) {
+      editableChore.value = { ...props.chore };
+      editMode.value = true;
+    } else if (wasEditingThis) {
+      editMode.value = false;
+      editableChore.value = { ...props.chore };
+    }
+  }
+);
+
+watch(
+  () => props.chore,
+  (latestChore) => {
+    if (choreStore.editingChoreId !== props.chore.id) {
+      editableChore.value = { ...latestChore };
+    }
+  },
+  { deep: true }
+);
+
+const isEditModeActive = () => choreStore.editingChoreId === props.chore.id || editMode.value;
+
 const handleDblClick = () => {
   if (choreStore.isDoneToday(props.chore) || props.isArchivedView) return;
-  editMode.value = true;
+  enterEditMode();
 };
 
 const enterEditMode = () => {
   if (choreStore.isDoneToday(props.chore) || props.isArchivedView) return;
-  editMode.value = true;
+  if (choreStore.editingChoreId === props.chore.id) return;
+  choreStore.setEditingChore(props.chore.id);
 };
 
 const markDone = () => {
@@ -163,7 +194,7 @@ onMounted(() => {
   
   // Pan start - capture initial position and reset state
   hammer.on('panstart', (event) => {
-    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
     
     // Store initial Y position to detect scrolling direction
     initialY = event.center.y;
@@ -173,7 +204,7 @@ onMounted(() => {
   
   // Handle panning to left (for edit)
   hammer.on('panleft', (event) => {
-    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
     
     // Check if user is scrolling vertically
     const verticalDistance = Math.abs(event.center.y - initialY);
@@ -202,7 +233,7 @@ onMounted(() => {
   
   // Handle panning to right (for done)
   hammer.on('panright', (event) => {
-    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
     
     // Check if user is scrolling vertically
     const verticalDistance = Math.abs(event.center.y - initialY);
@@ -231,7 +262,7 @@ onMounted(() => {
   
   // Handle end of panning gesture
   hammer.on('panend', (event) => {
-    if (choreStore.isDoneToday(props.chore) || editMode.value) return;
+    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
     
     card.classList.remove('swiping');
     
@@ -273,7 +304,7 @@ onMounted(() => {
   // Add a handler for regular touch events to reset swipe state
   // when the user starts scrolling
   scrollHandler = () => {
-    if (!editMode.value && card && isRevealingAction) {
+    if (!isEditModeActive() && card && isRevealingAction) {
       resetSwipeState(card);
     }
   };
@@ -300,12 +331,15 @@ const saveChore = async () => {
       due_date: new Date(editableChore.value.due_date).toISOString(), // Ensure date format
       interval_days: editableChore.value.interval_days, // Ensure interval_days is updated
       is_private: editableChore.value.is_private,
-      owner_email: editableChore.value.is_private ? editableChore.value.owner_email : null
+      // Persist which user owns this chore when it is private, otherwise clear it.
+      owner_email: editableChore.value.is_private
+        ? editableChore.value.owner_email || authStore.userEmail || authStore.username || null
+        : null
     };
     console.log("Saving Chore Data:", choreData);
     await choreStore.updateChore(props.chore.id, choreData);
     emit('updateChore', choreData);
-    editMode.value = false;
+    choreStore.clearEditingChore();
   } catch (error) {
     console.error('Error saving chore:', error);
   }
@@ -329,7 +363,9 @@ const archiveChore = async () => {
 
 const cancelEditMode = () => {
   editableChore.value = { ...props.chore };
-  editMode.value = false;
+  if (choreStore.editingChoreId === props.chore.id) {
+    choreStore.clearEditingChore();
+  }
 };
 
 const choreClass = (chore) => {

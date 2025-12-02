@@ -23,6 +23,15 @@ export const useChoreStore = defineStore('chores', () => {
   });
   // Flag to track if counts are being fetched
   const fetchingCounts = ref(false);
+  const editingChoreId = ref(null);
+
+  const setEditingChore = (choreId) => {
+    editingChoreId.value = choreId;
+  };
+
+  const clearEditingChore = () => {
+    editingChoreId.value = null;
+  };
 
   const isChoreDisabledToday = (chore) => {
     if (!chore?.due_date || !chore?.interval) return false;
@@ -386,6 +395,9 @@ export const useChoreStore = defineStore('chores', () => {
     undoChore,
     choreCounts,
     fetchChoreCounts,
-    fetchingCounts
+    fetchingCounts,
+    editingChoreId,
+    setEditingChore,
+    clearEditingChore
   };
 });

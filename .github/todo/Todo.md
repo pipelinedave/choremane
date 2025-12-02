@@ -2,7 +2,12 @@
 
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
-- #bug trying to unprivate a private chore in the edit mode seems to do nothing. same when trying to private a not yet private chore.
+<!-- No pending items here; move processed ideas into Organized Tasks -->
+- #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
+- #bug [UI] the filter pills amounts displayed is false sometimes. for example it might show "8 Due this week" while there are only 4 chores in that filter category
+
+## Inbox
+<!-- Place for new ideas before processing -->
 
 ## Organized Tasks
 <!-- Copilot will maintain this section -->
@@ -10,7 +15,8 @@
 ### High Priority
 <!-- Critical bugs and important features -->
 
-- #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
+- #bug [UI] Fix private toggle in edit mode so setting a chore to private or public actually updates the chore state.
+- #bug [Agent] Preserve “done today” status after refresh by keeping the server/client state consistent when the last completion date is today.
 - #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
 - #bug [Agent] Fix push notifications not firing - implementation appears incomplete
 - #feature [Agent] Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
@@ -63,3 +69,4 @@
 - #bug Fix persistent issue where app breaks after redeployment (staging/prod) with non-descriptive error - currently requires clearing browser local storage as workaround
 - #ui Remove the "archived" filter pill and add functionality to manage archived items in the header menu
 - #feature [Edit] Add pagination to the chores list view and archived chores view with infinite scroll and a scroll-to-top button
+- #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
