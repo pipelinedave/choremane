@@ -40,7 +40,6 @@
 - #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
 - #documentation [Edit] Add API documentation
 - #feature [Agent] Add comprehensive multi-language support
-- #feature [Edit] Implement a dark/light theme toggle in the user settings
 - #ui [Edit] Add visual indicators for private chores that are more intuitive than the current lock icon
 - #refactor [Full] Restructure frontend code to be more modular and avoid large monolithic files
 

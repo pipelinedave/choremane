@@ -13,7 +13,6 @@
             title="No archived chores" 
             message="Archived chores will appear here once you archive them from your active chores list."
           />
-          
           <div v-else class="chore-cards-archived">
             <div v-for="(chore, index) in archivedChores" :key="`archived-chore-${chore.id}-${index}`" class="archived-chore-container">
               <ChoreCard
@@ -33,7 +32,6 @@
               </button>
             </div>
           </div>
-          
           <!-- Loading indicator that shows when loading more chores -->
           <div 
             :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
@@ -42,10 +40,8 @@
             <div v-if="isLoading || choreStore.loading" class="loading-spinner"></div>
             <span v-if="isLoading || choreStore.loading">Loading chores...</span>
           </div>
-          
           <!-- Element for intersection observer to detect when user scrolls to bottom -->
           <div ref="loadMoreTrigger" class="load-more-trigger"></div>
-          
           <!-- Scroll to top button -->
           <button 
             v-show="showScrollToTop" 
@@ -54,6 +50,16 @@
             aria-label="Scroll to top"
           >
             <i class="fas fa-arrow-up"></i>
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="neutral-button"
+            @click="$emit('close')"
+            aria-label="Close archived chores dialog"
+          >
+            Done
           </button>
         </div>
       </div>
