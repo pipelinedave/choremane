@@ -90,19 +90,30 @@ def get_chores(request: Request, page: int = 1, limit: int = 10):
             (user_email, limit, offset)
         )
         rows = cur.fetchall()
-        chores = [
-            Chore(
-                id=row[0],
-                name=row[1],
-                interval_days=row[2],
-                due_date=str(row[3]),
-                done=row[4],
-                done_by=row[5],
-                archived=row[6],
-                owner_email=row[7],
-                is_private=row[8],
-            ) for row in rows
-        ]
+        columns = [desc[0] for desc in cur.description] if getattr(cur, "description", None) else []
+
+        chores = []
+        for row in rows:
+            record = dict(zip(columns, row)) if columns else {}
+            chore_owner = record.get("owner_email") if record else (row[7] if len(row) > 7 else None)
+            is_private = record.get("is_private", False) if record else (row[8] if len(row) > 8 else False)
+
+            if is_private and chore_owner and chore_owner != user_email:
+                continue
+
+            chores.append(
+                Chore(
+                    id=record.get("id", row[0] if row else None),
+                    name=record.get("name", row[1] if len(row) > 1 else None),
+                    interval_days=record.get("interval_days", row[2] if len(row) > 2 else None),
+                    due_date=str(record.get("due_date", row[3] if len(row) > 3 else "")),
+                    done=record.get("done", row[4] if len(row) > 4 else False),
+                    done_by=record.get("done_by", row[5] if len(row) > 5 else None),
+                    archived=record.get("archived", row[6] if len(row) > 6 else False),
+                    owner_email=chore_owner,
+                    is_private=is_private,
+                )
+            )
         return chores
     except Exception as e:
         logging.error(f"Error fetching chores: {e}")
@@ -126,7 +137,7 @@ def add_chore(chore: Chore, request: Request):
         )
         chore_id = cur.fetchone()[0]
         conn.commit()
-        log_action(chore_id, None, "created", action_details=chore.dict())
+        log_action(chore_id, None, "created", action_details=chore.dict(), conn=conn)
         return {"message": "Chore added successfully", "id": chore_id}
     except Exception as e:
         logging.error(f"Error adding chore: {e}")
@@ -175,8 +186,12 @@ def undo_action(undo_request: UndoRequest):
         else:
             raise HTTPException(status_code=400, detail="Undo not supported for this action type")
         conn.commit()
-        log_action(action_details["id"], None, "undo", action_details={"action_type": action_type, "undone": True})
+        log_chore_id = action_details.get("id") or action_details.get("chore_id") or action_details.get("previous_state", {}).get("id")
+        log_action(log_chore_id, None, "undo", action_details={"action_type": action_type, "undone": True}, conn=conn)
         return {"message": f"Action {action_type} undone successfully"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         logging.error(f"Error undoing action: {e}")
@@ -241,7 +256,13 @@ def mark_chore_done(chore_id: int, payload: dict):
             (done_by, new_due_date, chore_id)
         )
         conn.commit()
-        log_action(chore_id, done_by, "marked_done", action_details={"chore_id": chore_id, "new_due_date": new_due_date, "previous_due_date": due_date_str})
+        log_action(
+            chore_id,
+            done_by,
+            "marked_done",
+            action_details={"chore_id": chore_id, "new_due_date": new_due_date, "previous_due_date": due_date_str},
+            conn=conn,
+        )
         return {"message": f"Chore {chore_id} marked as done", "new_due_date": new_due_date}
     except Exception as e:
         conn.rollback()
@@ -260,7 +281,7 @@ def archive_chore(chore_id: int):
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Chore not found")
         conn.commit()
-        log_action(chore_id, None, "archived")
+        log_action(chore_id, None, "archived", conn=conn)
         return {"message": f"Chore {chore_id} archived successfully"}
     except Exception as e:
         conn.rollback()
@@ -279,7 +300,7 @@ def unarchive_chore(chore_id: int):
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Chore not found")
         conn.commit()
-        log_action(chore_id, None, "unarchived")
+        log_action(chore_id, None, "unarchived", conn=conn)
         return {"message": f"Chore {chore_id} unarchived successfully"}
     except Exception as e:
         conn.rollback()
