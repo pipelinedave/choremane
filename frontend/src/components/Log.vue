@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useLogStore } from '@/store/logStore';
 import api from '@/plugins/axios';
 import { useChoreStore } from '@/store/choreStore';
@@ -38,18 +38,23 @@ const toggleExpand = () => {
   expanded.value = !expanded.value;
 };
 
+onMounted(() => {
+  logStore.fetchLogs();
+});
+
 const logEntries = computed(() => logStore.logEntries);
 const latestLog = computed(() => (logStore.logEntries[0] ? logStore.logEntries[0].message : 'No actions yet'));
 
 const handleLogClick = async (entry) => {
-  if (!entry.id) return;
+  if (!entry.id || entry.id.toString().startsWith('local-')) return;
   try {
     await api.post('/undo', { log_id: entry.id });
     // After undo, refresh chores
     await choreStore.fetchChores();
-    logStore.addLogEntry(`Undid action for log #${entry.id}`);
+    await logStore.fetchLogs();
+    logStore.addLocalLogEntry(`Undid action for log #${entry.id}`, 'undo');
   } catch (e) {
-    logStore.addLogEntry(`Failed to undo action for log #${entry.id}`);
+    logStore.addLocalLogEntry(`Failed to undo action for log #${entry.id}`);
   }
 };
 </script>

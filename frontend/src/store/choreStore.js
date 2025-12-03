@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import api from '@/plugins/axios';
 import { useLogStore } from '@/store/logStore';
+import { useAuthStore } from '@/store/authStore';
 import { bucketChores, normalizeToLocalDate } from '@/utils/choreBuckets';
 
 export const useChoreStore = defineStore('chores', () => {
@@ -168,11 +169,13 @@ export const useChoreStore = defineStore('chores', () => {
   };
 
   const markChoreDone = async (choreId) => {
+    const authStore = useAuthStore();
+    const logStore = useLogStore();
     const chore = chores.value.find(c => c.id === choreId);
     error.value = null;
     try {
       const response = await api.put(`/chores/${choreId}/done`, {
-        done_by: 'user' // TODO: Get actual user from auth store
+        done_by: authStore.userEmail || 'user'
       });
       const serverLastDone = response.data?.last_done || new Date().toISOString();
 
@@ -186,8 +189,7 @@ export const useChoreStore = defineStore('chores', () => {
           done_by: response.data?.done_by ?? chores.value[index].done_by
         };
       }
-      const logStore = useLogStore();
-      logStore.addLogEntry(`${chore.name} marked as done`);
+      await logStore.fetchLogs();
 
       return response.data;
     } catch (err) {
@@ -205,12 +207,13 @@ export const useChoreStore = defineStore('chores', () => {
     }
   };
 
-  const undoChore = (choreId) => {
+  const undoChore = async (choreId) => {
+    const logStore = useLogStore();
     const chore = chores.value.find(c => c.id === choreId);
     if (chore) {
       chore.done = false;
-      const logStore = useLogStore();
-      logStore.addLogEntry(`${chore.name} undone`);
+      await logStore.fetchLogs();
+      logStore.addLocalLogEntry(`${chore.name} undone`, 'undo');
     }
   };
 
@@ -226,6 +229,8 @@ export const useChoreStore = defineStore('chores', () => {
         archived: false
       };
       chores.value.push(createdChore);
+      const logStore = useLogStore();
+      await logStore.fetchLogs();
 
       return createdChore;
     } catch (error) {
@@ -253,6 +258,9 @@ export const useChoreStore = defineStore('chores', () => {
         chores.value = [...chores.value];  // Force reactivity update
       }
 
+      const logStore = useLogStore();
+      await logStore.fetchLogs();
+
       return response.data;
     } catch (error) {
       console.error('Failed to update chore:', error);
@@ -272,6 +280,9 @@ export const useChoreStore = defineStore('chores', () => {
         }
         chores.value.splice(index, 1); // Remove from active chores
       }
+
+      const logStore = useLogStore();
+      await logStore.fetchLogs();
 
       return response.data;
     } catch (error) {
@@ -300,6 +311,9 @@ export const useChoreStore = defineStore('chores', () => {
           chores.value.push(unarchived);
         }
       }
+
+      const logStore = useLogStore();
+      await logStore.fetchLogs();
 
       return response.data;
     } catch (error) {

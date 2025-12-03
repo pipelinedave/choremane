@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/plugins/axios';
 import { useLogStore } from '@/store/logStore';
+import { useAuthStore } from '@/store/authStore';
 
 export const useChoreStore = defineStore('chores', () => {
   const chores = ref([]);
@@ -87,11 +88,13 @@ export const useChoreStore = defineStore('chores', () => {
 
   const markChoreDone = async (choreId) => {
     const chore = chores.value.find(c => c.id === choreId);
+    const authStore = useAuthStore();
+    const logStore = useLogStore();
     error.value = null;
 
     try {
       const response = await api.put(`/chores/${choreId}/done`, {
-        done_by: 'user' // TODO: Get actual user from auth store
+        done_by: authStore.userEmail || 'user'
       });
       const serverLastDone = response.data?.last_done || new Date().toISOString();
 
@@ -104,8 +107,7 @@ export const useChoreStore = defineStore('chores', () => {
           last_done: serverLastDone
         };
       }
-      const logStore = useLogStore();
-      logStore.addLogEntry(`${chore.name} marked as done`);
+      await logStore.fetchLogs();
       return response.data;
     } catch (err) {
       if (err.response?.status === 409) {
@@ -122,12 +124,13 @@ export const useChoreStore = defineStore('chores', () => {
     }
   };
 
-  const undoChore = (choreId) => {
+  const undoChore = async (choreId) => {
     const chore = chores.value.find(c => c.id === choreId);
+    const logStore = useLogStore();
     if (chore) {
       chore.done = false;
-      const logStore = useLogStore();
-      logStore.addLogEntry(`${chore.name} undone`);
+      await logStore.fetchLogs();
+      logStore.addLocalLogEntry(`${chore.name} undone`, 'undo');
     }
   };
 
@@ -143,6 +146,8 @@ export const useChoreStore = defineStore('chores', () => {
         archived: false
       };
       chores.value.push(createdChore);
+      const logStore = useLogStore();
+      await logStore.fetchLogs();
       return createdChore;
     } catch (error) {
       console.error('Failed to add chore:', error);
@@ -184,6 +189,8 @@ export const useChoreStore = defineStore('chores', () => {
         chores.value[index] = { ...chores.value[index], archived: true };
         chores.value = [...chores.value];  // Force reactivity update
       }
+      const logStore = useLogStore();
+      await logStore.fetchLogs();
       return response.data;
     } catch (error) {
       console.error('Failed to archive chore:', error);

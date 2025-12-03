@@ -67,22 +67,25 @@ const importData = (event) => {
   reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result)
-      if (!Array.isArray(data.chores) || !Array.isArray(data.logs)) {
+      if (!Array.isArray(data.chores)) {
         throw new Error('Invalid file structure')
       }
       
-      // Save logs to localStorage
-      logStore.logEntries = data.logs
-      localStorage.setItem('logEntries', JSON.stringify(data.logs))
+      const payload = { chores: data.chores }
+      if (Array.isArray(data.logs)) {
+        payload.logs = data.logs
+      }
       
-      // Send chores to the backend import API
-      const response = await api.post('/import', { chores: data.chores })
+      // Send payload to the backend import API so chores/logs are shared across users
+      const response = await api.post('/import', payload)
       
-      // Refresh the chore list from the server
+      // Refresh the chore list and log list from the server
       await choreStore.fetchChores()
+      await logStore.fetchLogs()
       
       // Show import results to user
-      importError.value = `Import successful! ${response.data.imported_chores} chores imported.`
+      const logCount = response.data?.imported_logs ?? (payload.logs ? payload.logs.length : 0)
+      importError.value = `Import successful! ${response.data.imported_chores} chores and ${logCount} logs imported.`
     } catch (err) {
       console.error('Import error:', err)
       importError.value = `Import failed: ${err.message}`

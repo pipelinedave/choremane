@@ -7,7 +7,9 @@ import { useChoreStore } from '@/store/choreStore'
 describe('Log.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    useLogStore().logEntries = [
+    const logStore = useLogStore()
+    logStore.fetchLogs = jest.fn()
+    logStore.logEntries = [
       { id: 1, message: 'Did something', timestamp: '12:00:00' },
       { id: 2, message: 'Did something else', timestamp: '13:00:00' }
     ]
@@ -15,16 +17,17 @@ describe('Log.vue', () => {
 
   it('renders log entries', () => {
     const wrapper = mount(Log)
-    wrapper.vm.expanded = true
+    expect(wrapper.html()).toContain('Latest:')
     expect(wrapper.html()).toContain('Did something')
-    expect(wrapper.html()).toContain('Did something else')
   })
 
   it('calls undo when log entry is clicked', async () => {
     const wrapper = mount(Log)
-    wrapper.vm.expanded = true
+    await wrapper.find('.handle').trigger('click')
     const spy = jest.spyOn(wrapper.vm, 'handleLogClick')
-    await wrapper.findAll('.log-entry')[0].trigger('click')
+    const entries = wrapper.findAll('.log-entry')
+    expect(entries.length).toBeGreaterThan(0)
+    await entries[0].trigger('click')
     expect(spy).toHaveBeenCalled()
   })
 

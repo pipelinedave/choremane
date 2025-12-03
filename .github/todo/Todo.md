@@ -4,7 +4,9 @@
 <!-- Place for dumping unorganized ideas -->
 <!-- No pending items here; move processed ideas into Organized Tasks -->
 - blocked (marked as done) chores should still be editable. currently also the edit mode gets blocked...
-
+- we need to make it so the backend and frontend tests are run within github actions before the deployment to staging
+- we need to make sure backend tests and frontend tests have as much coverage as possible
+- remove the superfluous "Due" in the pill titles so its just "Today" and not "Due Today"
 
 
 ## Inbox
@@ -22,7 +24,6 @@
 - #feature [Agent] Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
 - #feature [Agent] Move notifications settings to server side storage instead of local storage for cross-device consistency
 - #documentation [Edit] Overhaul PRD.md and README.md to reflect current project state and goals
-- #feature [Edit] Add a light theme to the app with a toggle switch in the settings menu
 - #bug [Edit] Fix external links in about dialog being too long on small viewports causing dialog overflow
 - #feature [Agent] Implement smart scheduling suggestions that analyze when chores are completed ahead of schedule and recommend interval adjustments
 - #bug [Agent] Fix update mechanism after redeployment - currently requires multiple manual refreshes to properly show the update banner and load the new version
@@ -31,7 +32,6 @@
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
-- #ui [Edit] Improve filter pills to make it clearer which ones are active
 - #ui [Edit] Redesign chore card elements "due in" and "interval" to be more visually appealing and better utilize available space
 - #feature [Agent] Add stats dashboard with calculated scores for each chore based on completion rate, on-time ratio, and adjustment frequency to provide insights into chore management patterns
 - #maintenance [Agent] Perform "operation health" on current codebase - remove unused code, improve performance and readability, clean up dangling files, etc.

@@ -42,31 +42,66 @@ def status_check():
         return {"status": "ERROR", "message": "Backend or database connectivity issue"}
 
 @api_router.get("/logs")
-def get_logs():
-    logging.info("Fetching chore logs")
+def get_logs(request: Request):
+    """
+    Return logs visible to the current user. Logs for shared chores are always
+    included; logs for private chores are limited to the owner. System-level
+    logs without a chore_id are also returned.
+    """
+    user_email = request.headers.get("X-User-Email")
+    logging.info(f"Fetching chore logs for user: {user_email}")
+
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT id, chore_id, done_by, done_at, action_details
-        FROM chore_logs
-        ORDER BY done_at DESC
-    """)
-    logs = cur.fetchall()
-    if not logs:
-        logging.info("No logs found")
-        return []
-    cur.close()
-    conn.close()
-    return [
-        {
-            "id": row[0],
-            "chore_id": row[1],
-            "done_by": row[2],
-            "done_at": row[3].isoformat() if row[3] else None,
-            "details": json.loads(row[4]) if row[4] and isinstance(row[4], str) else "No details available"
-        }
-        for row in logs
-    ]
+    try:
+        cur.execute(
+            """
+            SELECT l.id, l.chore_id, l.done_by, l.done_at, l.action_details, l.action_type
+            FROM chore_logs l
+            LEFT JOIN chores c ON l.chore_id = c.id
+            WHERE c.id IS NULL
+               OR c.is_private = FALSE
+               OR (c.is_private = TRUE AND c.owner_email = %s)
+            ORDER BY l.done_at DESC
+            """,
+            (user_email,),
+        )
+        logs = cur.fetchall()
+        if not logs:
+            logging.info("No logs found")
+            return []
+
+        def parse_details(raw_details):
+            if raw_details is None:
+                return {}
+            if isinstance(raw_details, str):
+                try:
+                    return json.loads(raw_details)
+                except json.JSONDecodeError:
+                    logging.warning("Unable to decode action_details string; returning raw value")
+                    return raw_details
+            return raw_details
+
+        normalized_logs = []
+        for row in logs:
+            action_type = row[5] if len(row) > 5 else None
+            normalized_logs.append(
+                {
+                    "id": row[0],
+                    "chore_id": row[1],
+                    "done_by": row[2],
+                    "done_at": row[3].isoformat() if row[3] else None,
+                    "action_details": parse_details(row[4] if len(row) > 4 else None),
+                    "action_type": action_type,
+                }
+            )
+        return normalized_logs
+    except Exception as e:
+        logging.error(f"Error fetching logs: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch logs")
+    finally:
+        cur.close()
+        conn.close()
 
 @api_router.get("/chores", response_model=List[Chore])
 def get_chores(request: Request, page: int = 1, limit: int = 10):
@@ -416,7 +451,8 @@ async def import_data(request: Request):
     """
     Import data from a JSON file.
     Expects a JSON object with:
-    - 'chores': array of chore objects  
+    - 'chores': array of chore objects
+    - 'logs' (optional): array of chore log objects
     """
     try:
         import_data = await request.json()
@@ -477,14 +513,58 @@ async def import_data(request: Request):
             except Exception as e:
                 logging.error(f"Error importing chore {chore.get('name')}: {e}")
                 # Continue with next chore
+
+        imported_logs = []
+        logs_payload = import_data.get("logs", [])
+        for log in logs_payload:
+            try:
+                action_details = log.get("action_details") or log.get("details") or {}
+                if isinstance(action_details, str):
+                    try:
+                        action_details = json.loads(action_details)
+                    except json.JSONDecodeError:
+                        logging.warning("Received unparseable action_details string during import; storing raw value")
+                done_at = log.get("done_at")
+                if done_at:
+                    try:
+                        done_at = datetime.fromisoformat(done_at)
+                    except Exception:
+                        logging.warning(f"Invalid done_at format in imported log {log.get('id')}, using current time")
+                        done_at = datetime.utcnow()
+                cur.execute(
+                    """
+                    INSERT INTO chore_logs (chore_id, done_by, done_at, action_type, action_details)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (
+                        log.get("chore_id"),
+                        log.get("done_by") or user_email,
+                        done_at or datetime.utcnow(),
+                        log.get("action_type") or "imported",
+                        json.dumps(action_details),
+                    ),
+                )
+                imported_logs.append({"chore_id": log.get("chore_id"), "status": "created"})
+            except Exception as e:
+                logging.error(f"Error importing log entry {log.get('id')}: {e}")
+                # Continue with next log
         
         conn.commit()
-        log_action(None, user_email, "import", action_details={"imported_chores": imported_chores})
+        log_action(
+            None,
+            user_email,
+            "import",
+            action_details={
+                "imported_chores": imported_chores,
+                "imported_logs": len(imported_logs),
+            },
+        )
         
         return {
             "message": "Import successful",
             "imported_chores": len(imported_chores),
-            "details": imported_chores
+            "imported_logs": len(imported_logs),
+            "details": imported_chores,
         }
     except Exception as e:
         logging.error(f"Error during import: {e}")

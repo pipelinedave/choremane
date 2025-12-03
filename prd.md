@@ -45,6 +45,7 @@ Choremane is a Material You–styled PWA for chore management. It allows multipl
 - Clicking a log entry reverts the app state to that point.
 - Replaces traditional toast notifications.
 - Action details stored for complete state reconstruction
+- Log history persisted on the server and shared across authenticated users/devices (no localStorage reliance)
 - Log entry types: marked_done, created, updated, archived
 - Support for bulk operations logging
 
