@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import api from '@/plugins/axios';
 import { useLogStore } from '@/store/logStore';
+import { bucketChores, normalizeToLocalDate } from '@/utils/choreBuckets';
 
 export const useChoreStore = defineStore('chores', () => {
   const chores = ref([]);
@@ -12,23 +13,8 @@ export const useChoreStore = defineStore('chores', () => {
   const pageSize = ref(10); // Number of items per page
   const hasMoreChores = ref(true); // Whether there are more chores to load
   const hasMoreArchivedChores = ref(true); // Whether there are more archived chores to load
-  // Add total chore counts for each category
-  const choreCounts = ref({
-    all: 0,
-    overdue: 0,
-    today: 0,
-    tomorrow: 0,
-    thisWeek: 0,
-    upcoming: 0
-  });
-  // Flag to track if counts are being fetched
-  const fetchingCounts = ref(false);
+  const choreCounts = computed(() => bucketChores(chores.value).counts);
   const editingChoreId = ref(null);
-
-  const normalizeToLocalDate = (dateValue) => {
-    const parsed = new Date(dateValue);
-    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-  };
 
   const setEditingChore = (choreId) => {
     editingChoreId.value = choreId;
@@ -44,6 +30,8 @@ export const useChoreStore = defineStore('chores', () => {
     const today = normalizeToLocalDate(new Date());
     const dueDate = normalizeToLocalDate(chore.due_date);
 
+    if (!today || !dueDate) return false;
+
     return today.getTime() === dueDate.getTime();
   };
 
@@ -54,7 +42,7 @@ export const useChoreStore = defineStore('chores', () => {
     })).sort((a, b) => {
       const dateA = normalizeToLocalDate(a.due_date);
       const dateB = normalizeToLocalDate(b.due_date);
-      return dateA - dateB;
+      return (dateA?.getTime() ?? Infinity) - (dateB?.getTime() ?? Infinity);
     });
   });
 
@@ -66,7 +54,7 @@ export const useChoreStore = defineStore('chores', () => {
     })).sort((a, b) => {
       const dateA = normalizeToLocalDate(a.due_date);
       const dateB = normalizeToLocalDate(b.due_date);
-      return dateA - dateB;
+      return (dateA?.getTime() ?? Infinity) - (dateB?.getTime() ?? Infinity);
     });
   });
 
@@ -88,9 +76,6 @@ export const useChoreStore = defineStore('chores', () => {
       // Reset for first page load
       chores.value = [];
       hasMoreChores.value = true;
-      
-      // Fetch the total counts when resetting the page
-      fetchChoreCounts();
     }
     
     if (!hasMoreChores.value && page > 1) return;
@@ -182,47 +167,6 @@ export const useChoreStore = defineStore('chores', () => {
     }
   };
 
-  const fetchChoreCounts = async () => {
-    fetchingCounts.value = true;
-    try {
-      const response = await api.get('/chores/count');
-      choreCounts.value = response.data;
-    } catch (err) {
-      console.error('Failed to fetch chore counts:', err);
-      // In case of error, fallback to calculating counts from loaded chores
-      updateLocalChoreCounts();
-    } finally {
-      fetchingCounts.value = false;
-    }
-  };
-  
-  // Calculate counts from loaded chores (as a fallback if API fails)
-  const updateLocalChoreCounts = () => {
-    const today = normalizeToLocalDate(new Date());
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-    
-    // Non-archived chores
-    const nonArchivedChores = chores.value.filter(c => !c.archived);
-    
-    choreCounts.value.all = nonArchivedChores.length;
-    choreCounts.value.overdue = nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date) < today).length;
-    choreCounts.value.today = nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === today.toDateString()).length;
-    choreCounts.value.tomorrow = nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === tomorrow.toDateString()).length;
-    choreCounts.value.thisWeek = nonArchivedChores.filter(c => {
-      const dueDate = normalizeToLocalDate(c.due_date);
-      return dueDate > tomorrow && dueDate <= nextWeek;
-    }).length;
-    choreCounts.value.upcoming = nonArchivedChores.filter(c => {
-      const dueDate = normalizeToLocalDate(c.due_date);
-      return dueDate > nextWeek;
-    }).length;
-  };
-
   const markChoreDone = async (choreId) => {
     const chore = chores.value.find(c => c.id === choreId);
     error.value = null;
@@ -244,10 +188,7 @@ export const useChoreStore = defineStore('chores', () => {
       }
       const logStore = useLogStore();
       logStore.addLogEntry(`${chore.name} marked as done`);
-      
-      // Refresh chore counts after marking a chore as done
-      fetchChoreCounts();
-      
+
       return response.data;
     } catch (err) {
       if (err.response?.status === 409) {
@@ -270,9 +211,6 @@ export const useChoreStore = defineStore('chores', () => {
       chore.done = false;
       const logStore = useLogStore();
       logStore.addLogEntry(`${chore.name} undone`);
-      
-      // Refresh counts when undoing a chore
-      fetchChoreCounts();
     }
   };
 
@@ -288,10 +226,7 @@ export const useChoreStore = defineStore('chores', () => {
         archived: false
       };
       chores.value.push(createdChore);
-      
-      // Refresh counts when adding a new chore
-      fetchChoreCounts();
-      
+
       return createdChore;
     } catch (error) {
       console.error('Failed to add chore:', error);
@@ -317,10 +252,7 @@ export const useChoreStore = defineStore('chores', () => {
         };
         chores.value = [...chores.value];  // Force reactivity update
       }
-      
-      // Refresh counts after updating a chore since due dates may have changed
-      fetchChoreCounts();
-      
+
       return response.data;
     } catch (error) {
       console.error('Failed to update chore:', error);
@@ -340,10 +272,7 @@ export const useChoreStore = defineStore('chores', () => {
         }
         chores.value.splice(index, 1); // Remove from active chores
       }
-      
-      // Refresh counts after archiving a chore
-      fetchChoreCounts();
-      
+
       return response.data;
     } catch (error) {
       console.error('Failed to archive chore:', error);
@@ -371,10 +300,7 @@ export const useChoreStore = defineStore('chores', () => {
           chores.value.push(unarchived);
         }
       }
-      
-      // Refresh counts after unarchiving a chore
-      fetchChoreCounts();
-      
+
       return response.data;
     } catch (error) {
       console.error('Failed to unarchive chore:', error);
@@ -402,8 +328,6 @@ export const useChoreStore = defineStore('chores', () => {
     markChoreDone,
     undoChore,
     choreCounts,
-    fetchChoreCounts,
-    fetchingCounts,
     editingChoreId,
     setEditingChore,
     clearEditingChore

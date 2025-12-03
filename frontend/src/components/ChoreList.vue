@@ -82,8 +82,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch, nextTick, onUnmounted } from 'vue';
+import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
+import { bucketChores } from '@/utils/choreBuckets';
 import ChoreCard from './ChoreCard.vue';
 import EmptyState from './EmptyState.vue';
 
@@ -107,18 +108,8 @@ const pills = [
   { label: 'Due This Week', value: 'thisWeek', color: 'var(--color-due-7-days)' },
   { label: 'Later', value: 'upcoming', color: '#4db6ac' }, // Using the due-far-future teal color
 ];
-
-const normalizeToLocalDate = (value) => {
-  const parsed = new Date(value);
-  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-};
-
-// Reset pagination when filter changes
-watch(filter, () => {
-  // Instead of fetching the entire first page again, just ensure we have updated counts
-  // This prevents visible chores from disappearing when switching filters
-  choreStore.fetchChoreCounts();
-});
+// Keep filters and counts in sync by deriving both from the same bucketed set
+const bucketedChores = computed(() => bucketChores(choreStore.sortedByUrgency));
 
 // Watch for scroll events to show/hide scroll to top button
 const handleScroll = () => {
@@ -139,9 +130,6 @@ const scrollToTop = () => {
 onMounted(async () => {
   // Initial fetch
   await choreStore.fetchChores(1);
-  
-  // Make sure we have accurate counts even if new filter is applied
-  await choreStore.fetchChoreCounts();
   
   // Set up intersection observer for infinite scrolling
   setupIntersectionObserver();
@@ -223,69 +211,17 @@ const loadMoreChores = async () => {
 };
 
 const filteredChores = computed(() => {
-  const today = normalizeToLocalDate(new Date());
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const nextWeek = new Date(today);
-  nextWeek.setDate(today.getDate() + 7);
-  
-  // Apply non-archived filter to all views except if handled by ArchivedChores component
-  const nonArchivedChores = choreStore.sortedByUrgency.filter(c => !c.archived);
-  
-  if (filter.value === 'all') return nonArchivedChores;
-  if (filter.value === 'overdue') return nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date) < today);
-  if (filter.value === 'today') return nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === today.toDateString());
-  if (filter.value === 'tomorrow') {
-    return nonArchivedChores.filter(c => normalizeToLocalDate(c.due_date).toDateString() === tomorrow.toDateString());
-  }
-  if (filter.value === 'thisWeek') {
-    return nonArchivedChores.filter(c => {
-      const dueDate = normalizeToLocalDate(c.due_date);
-      // Exclude today and tomorrow, but include the rest of the week
-      return dueDate > tomorrow && dueDate <= nextWeek;
-    });
-  }
-  if (filter.value === 'upcoming') {
-    return nonArchivedChores.filter(c => {
-      const dueDate = normalizeToLocalDate(c.due_date);
-      // Only show chores due after next week
-      return dueDate > nextWeek;
-    });
-  }
-  return nonArchivedChores;
+  const buckets = bucketedChores.value.buckets;
+  return buckets[filter.value] || buckets.all;
 });
 
-// Computed property for loading state from store
-const loading = computed(() => choreStore.loading);
-
 const pillsWithCounts = computed(() => {
-  return pills.map(pill => {
-    let count = 0;
-    let color = pill.color;
-    
-    // Use counts from the store if available, otherwise fallback to 0
-    if (pill.value === 'all') {
-      count = choreStore.choreCounts.all || 0;
-    } else if (pill.value === 'overdue') {
-      count = choreStore.choreCounts.overdue || 0;
-    } else if (pill.value === 'today') {
-      count = choreStore.choreCounts.today || 0;
-    } else if (pill.value === 'tomorrow') {
-      count = choreStore.choreCounts.tomorrow || 0;
-    } else if (pill.value === 'thisWeek') {
-      count = choreStore.choreCounts.thisWeek || 0;
-    } else if (pill.value === 'upcoming') {
-      count = choreStore.choreCounts.upcoming || 0;
-    }
-    
-    return {
-      ...pill,
-      count,
-      color: pill.color
-    };
-  });
+  const counts = bucketedChores.value.counts;
+  return pills.map(pill => ({
+    ...pill,
+    count: counts[pill.value] || 0,
+    color: pill.color
+  }));
 });
 
 const markAsDone = async (choreId) => {
