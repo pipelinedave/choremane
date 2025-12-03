@@ -369,12 +369,22 @@ const addNewChore = () => {
 }
 
 /* Transition Group Animations */
-.list-enter-active, .list-leave-active {
-  transition: all 0.3s ease;
+.list-enter-active {
+  animation: card-rise 320ms var(--motion-soft);
 }
+
+.list-leave-active {
+  animation: card-fall 260ms var(--motion-emphasized) forwards;
+  position: relative;
+}
+
 .list-enter-from, .list-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(14px) scale(0.98);
+}
+
+.list-move {
+  transition: transform 320ms var(--motion-soft);
 }
 
 /* Add styling for scroll to top button */
@@ -430,6 +440,28 @@ const addNewChore = () => {
   opacity: 0;
   margin-bottom: 20px;
   transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+@keyframes card-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes card-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
 }
 
 .loading-spinner {

@@ -49,6 +49,11 @@
   --transition-fast: 150ms ease;
   --transition-normal: 260ms ease;
   --transition-slow: 420ms ease;
+  --motion-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-rubber: cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  --motion-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --swipe-return-duration: 480ms;
+  --swipe-return-highlight: rgba(255, 255, 255, 0.7);
 
   /* Border Radius */
   --radius-sm: 10px;

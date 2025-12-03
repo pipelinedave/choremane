@@ -119,10 +119,14 @@ let hammer = null;
 let isRevealingAction = false;
 const cardRef = ref(null);
 let scrollHandler = null;
+let returnTimer = null;
 let initialY = 0; // Track initial Y position for detecting vertical scrolls
 let isScrolling = false; // Flag to determine if user is scrolling
 const MIN_SWIPE_DISTANCE = 40; // Minimum distance in pixels before triggering swipe action
 const SCROLL_DETECTION_THRESHOLD = 15; // Pixel threshold to detect vertical scrolling
+const RETURN_ANIMATION_MS = 480;
+const MAX_RETURN_DISTANCE = 140;
+const MAX_RETURN_TILT = 8;
 
 watch(
   () => choreStore.editingChoreId,
@@ -172,12 +176,39 @@ const markDone = () => {
 };
 
 const resetSwipeState = (card) => {
+  if (returnTimer) {
+    clearTimeout(returnTimer);
+    returnTimer = null;
+  }
   // Reset all swipe-related classes
   card.classList.remove('swipe-left', 'swipe-right', 'swipe-reveal-left', 'swipe-reveal-right', 'swiping', 'returning');
   // Reset inline style transform
   card.style.transform = '';
+  card.style.removeProperty('--swipe-current-tilt');
+  card.style.removeProperty('--swipe-return-distance');
+  card.style.removeProperty('--swipe-return-tilt');
   isRevealingAction = false;
   isScrolling = false;
+};
+
+const applySwipeTransform = (card, deltaX) => {
+  const clampedDistance = Math.max(-MAX_RETURN_DISTANCE, Math.min(MAX_RETURN_DISTANCE, deltaX));
+  const tilt = Math.max(-MAX_RETURN_TILT, Math.min(MAX_RETURN_TILT, clampedDistance / 14));
+  card.style.setProperty('--swipe-current-tilt', `${tilt}deg`);
+  card.style.transform = `translateX(${clampedDistance}px) rotate(${tilt}deg)`;
+  return { clampedDistance, tilt };
+};
+
+const animateReturn = (card, deltaX) => {
+  const { clampedDistance, tilt } = applySwipeTransform(card, deltaX);
+  card.style.setProperty('--swipe-return-distance', `${clampedDistance}px`);
+  card.style.setProperty('--swipe-return-tilt', `${tilt}deg`);
+  card.classList.add('returning');
+
+  returnTimer = setTimeout(() => {
+    card.classList.remove('returning');
+    resetSwipeState(card);
+  }, RETURN_ANIMATION_MS);
 };
 
 onMounted(() => {
@@ -195,6 +226,9 @@ onMounted(() => {
   // Pan start - capture initial position and reset state
   hammer.on('panstart', (event) => {
     if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
+    
+    // Cancel any return animation before starting a fresh gesture
+    resetSwipeState(card);
     
     // Store initial Y position to detect scrolling direction
     initialY = event.center.y;
@@ -218,7 +252,7 @@ onMounted(() => {
     if (!isScrolling) {
       // Apply a transform effect to the card during panning
       const translateX = Math.min(0, event.deltaX);
-      card.style.transform = `translateX(${translateX}px)`;
+      applySwipeTransform(card, translateX);
       
       // Only reveal action if swipe distance exceeds minimum threshold
       if (Math.abs(event.deltaX) >= MIN_SWIPE_DISTANCE) {
@@ -247,7 +281,7 @@ onMounted(() => {
     if (!isScrolling) {
       // Apply a transform effect to the card during panning
       const translateX = Math.max(0, event.deltaX);
-      card.style.transform = `translateX(${translateX}px)`;
+      applySwipeTransform(card, translateX);
       
       // Only reveal action if swipe distance exceeds minimum threshold
       if (Math.abs(event.deltaX) >= MIN_SWIPE_DISTANCE) {
@@ -293,11 +327,7 @@ onMounted(() => {
       }
     } else {
       // For short swipes, return to original position with animation
-      card.classList.add('returning');
-      setTimeout(() => {
-        card.classList.remove('returning');
-        resetSwipeState(card);
-      }, 300);
+      animateReturn(card, event.deltaX);
     }
   });
   
@@ -320,6 +350,11 @@ onBeforeUnmount(() => {
 
   if (scrollHandler) {
     document.removeEventListener('scroll', scrollHandler);
+  }
+
+  if (returnTimer) {
+    clearTimeout(returnTimer);
+    returnTimer = null;
   }
 });
 
@@ -423,6 +458,7 @@ const friendlyDueDate = (due_date) => {
   overflow: hidden;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.6);
+  will-change: transform, filter;
 }
 
 .chore-card:hover {
@@ -440,7 +476,7 @@ const friendlyDueDate = (due_date) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s var(--motion-soft);
   box-shadow: 0 0 20px rgba(31, 45, 44, 0.15);
   z-index: 2;
 }
@@ -484,21 +520,34 @@ const friendlyDueDate = (due_date) => {
 .chore-card.swipe-left {
   transform: translateX(-100px);
   opacity: 0.9;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.32s var(--motion-emphasized), opacity 0.32s var(--motion-emphasized);
 }
 
 .chore-card.swipe-right {
   transform: translateX(100px);
   opacity: 0.9;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.32s var(--motion-emphasized), opacity 0.32s var(--motion-emphasized);
 }
 
 .chore-card.swiping {
-  transition: transform 0.1s;
+  transition: none;
+  box-shadow: var(--shadow-lg);
+  filter: saturate(1.05);
 }
 
 .chore-card.returning {
-  transition: transform 0.3s ease-out;
+  animation: return-snap var(--swipe-return-duration) var(--motion-rubber), return-glow 380ms ease;
+}
+
+.chore-card.returning::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, var(--swipe-return-highlight) 0%, transparent 55%);
+  opacity: 0.12;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: return-highlight var(--swipe-return-duration) ease;
 }
 
 .chore-content {
@@ -834,12 +883,56 @@ const friendlyDueDate = (due_date) => {
 
 /* Visual hint for mobile swipe */
 @media (max-width: 767px) {
-  .chore-card.returning {
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .chore-card {
+    --swipe-return-duration: 520ms;
   }
-  
+
   .chore-card.swiping {
-    transition: transform 0.1s cubic-bezier(0.1, 0.7, 0.7, 1);
+    filter: saturate(1.08);
+  }
+}
+
+@keyframes return-snap {
+  0% {
+    transform: translateX(var(--swipe-return-distance, 0px)) rotate(var(--swipe-return-tilt, 0deg));
+  }
+  60% {
+    transform: translateX(0) rotate(0deg);
+  }
+  78% {
+    transform: translateX(calc(var(--swipe-return-distance, 0px) * -0.16));
+  }
+  92% {
+    transform: translateX(calc(var(--swipe-return-distance, 0px) * 0.08));
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+@keyframes return-glow {
+  0% {
+    box-shadow: var(--shadow-lg);
+    filter: saturate(1.08);
+  }
+  100% {
+    box-shadow: var(--shadow-md);
+    filter: saturate(1);
+  }
+}
+
+@keyframes return-highlight {
+  0% {
+    opacity: 0.18;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0.06;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
   }
 }
 
