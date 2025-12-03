@@ -6,7 +6,7 @@ from app.main import app
 
 def run_migrations():
     # Simulate running migrations (in real projects, use Alembic or similar)
-    # Here, just check if required tables/columns exist
+    # Here, create the chores table if needed and check required columns
     conn = psycopg2.connect(
         host=os.getenv('POSTGRES_HOST', 'localhost'),
         database=os.getenv('POSTGRES_DB', 'choresdb'),
@@ -14,6 +14,23 @@ def run_migrations():
         password=os.getenv('POSTGRES_PASSWORD', 'password')
     )
     cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS chores (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            interval_days INT NOT NULL,
+            due_date DATE NOT NULL,
+            done BOOLEAN DEFAULT FALSE,
+            done_by VARCHAR(255),
+            last_done DATE,
+            owner_email VARCHAR(255),
+            is_private BOOLEAN DEFAULT FALSE,
+            archived BOOLEAN DEFAULT FALSE
+        )
+        """
+    )
+    conn.commit()
     cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='chores'")
     columns = [row[0] for row in cur.fetchall()]
     assert 'owner_email' in columns

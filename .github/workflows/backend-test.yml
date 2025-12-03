@@ -12,9 +12,12 @@ on:
 
 jobs:
   test:
-    # Temporarily disabled for now - will fix later
-    if: false
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: choresdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
     services:
       postgres:
         image: postgres:13

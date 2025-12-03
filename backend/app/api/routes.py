@@ -271,6 +271,9 @@ def update_chore(chore_id: int, updated_chore: Chore):
         conn.commit()
         log_action(chore_id, None, "updated", action_details={"previous_state": previous_state_dict})
         return {"message": f"Chore {chore_id} updated successfully"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         logging.error(f"Error updating chore: {e}")
@@ -363,6 +366,9 @@ def archive_chore(chore_id: int):
         conn.commit()
         log_action(chore_id, None, "archived", conn=conn)
         return {"message": f"Chore {chore_id} archived successfully"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         logging.error(f"Error archiving chore: {e}")
@@ -382,6 +388,9 @@ def unarchive_chore(chore_id: int):
         conn.commit()
         log_action(chore_id, None, "unarchived", conn=conn)
         return {"message": f"Chore {chore_id} unarchived successfully"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         logging.error(f"Error unarchiving chore: {e}")
@@ -566,6 +575,10 @@ async def import_data(request: Request):
             "imported_logs": len(imported_logs),
             "details": imported_chores,
         }
+    except HTTPException:
+        if "conn" in locals():
+            conn.rollback()
+        raise
     except Exception as e:
         logging.error(f"Error during import: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to import data: {str(e)}")

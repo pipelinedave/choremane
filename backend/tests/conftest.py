@@ -13,7 +13,8 @@ class FakeCursor:
     def execute(self, query, params=None):
         text = query.lower()
         if "information_schema.columns" in text and "table_name='chores'" in text:
-            self._rows = [("owner_email",), ("is_private",)]
+            # Ensure expected columns are present for schema checks
+            self._rows = [("owner_email",), ("is_private",), ("last_done",)]
             self.description = [("column_name",)]
         elif "select 1" in text:
             self._rows = [(1,)]

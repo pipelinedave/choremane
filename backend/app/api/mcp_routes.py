@@ -38,5 +38,7 @@ async def generate_suggestions(request: MCPRequest):
         # Return the suggestions as JSON string
         return {"content": json.dumps(suggestions)}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
