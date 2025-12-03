@@ -3,7 +3,7 @@
 ## Idea Dump
 <!-- Place for dumping unorganized ideas -->
 <!-- No pending items here; move processed ideas into Organized Tasks -->
-
+- visibility on chore titles is pretty bad
 
 
 
@@ -30,7 +30,7 @@
 - #feature [Agent] Implement smart scheduling suggestions that analyze when chores are completed ahead of schedule and recommend interval adjustments
 - #bug [Agent] Fix update mechanism after redeployment - currently requires multiple manual refreshes to properly show the update banner and load the new version
 - #bug [UI] Fix modal dialogs that still allow scrolling of the background page
-- #bug [UI] Fix inconsistent scrolling behavior in chore list on mobile - list becomes unscrollable upon initial load and swipe actions become unreliable after applying filters or marking chores as done
+
 
 ### Medium Priority
 <!-- Enhancements and improvements -->
@@ -69,3 +69,4 @@
 - #feature [Agent] Set up authentication using Dex with the k3s-config repo for proper user login/identity management
 - there is no "done" or "close" button in the "archived chores" modal dialog. it can only be closed by clicking in the background. this is inconsistent with the other dialogs and should be brought in line.
 - #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
+- #bug [UI] Fix inconsistent scrolling behavior in chore list on mobile - list becomes unscrollable upon initial load and swipe actions become unreliable after applying filters or marking chores as done

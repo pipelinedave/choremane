@@ -39,6 +39,7 @@ def run_migrations():
                 due_date DATE NOT NULL,
                 done BOOLEAN DEFAULT FALSE,
                 done_by VARCHAR(255),
+                last_done DATE,
                 owner_email VARCHAR(255),
                 is_private BOOLEAN DEFAULT FALSE,
                 archived BOOLEAN DEFAULT FALSE
@@ -76,6 +77,21 @@ def run_migrations():
             logging.info("Migration completed successfully")
         else:
             logging.info("Migration already applied or not needed")
+
+        # Ensure last_done column exists for chores table
+        cur.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'chores' AND column_name = 'last_done'
+        """)
+        has_last_done = cur.fetchone()
+        if not has_last_done:
+            logging.info("Applying migration: add last_done column to chores")
+            cur.execute("ALTER TABLE chores ADD COLUMN last_done DATE")
+            conn.commit()
+            logging.info("last_done column added to chores table")
+        else:
+            logging.info("last_done column already present on chores table")
 
         # Check if users table exists
         cur.execute("""

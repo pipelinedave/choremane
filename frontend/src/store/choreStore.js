@@ -225,15 +225,12 @@ export const useChoreStore = defineStore('chores', () => {
 
   const markChoreDone = async (choreId) => {
     const chore = chores.value.find(c => c.id === choreId);
-    if (isDoneToday(chore)) {
-      console.log('Chore already done today');
-      return null;
-    }
-
+    error.value = null;
     try {
       const response = await api.put(`/chores/${choreId}/done`, {
         done_by: 'user' // TODO: Get actual user from auth store
       });
+      const serverLastDone = response.data?.last_done || new Date().toISOString();
 
       const index = chores.value.findIndex(c => c.id === choreId);
       if (index !== -1) {
@@ -241,7 +238,8 @@ export const useChoreStore = defineStore('chores', () => {
           ...chores.value[index],
           done: true,
           due_date: response.data.new_due_date,
-          last_done: new Date().toISOString()
+          last_done: serverLastDone,
+          done_by: response.data?.done_by ?? chores.value[index].done_by
         };
       }
       const logStore = useLogStore();
@@ -251,9 +249,18 @@ export const useChoreStore = defineStore('chores', () => {
       fetchChoreCounts();
       
       return response.data;
-    } catch (error) {
-      console.error('Failed to mark chore as done:', error);
-      throw error;
+    } catch (err) {
+      if (err.response?.status === 409) {
+        const detail = err.response.data?.detail;
+        error.value = detail?.message || 'Chore already completed today';
+        if (chore && detail?.last_done) {
+          chore.last_done = detail.last_done;
+        }
+        return null;
+      }
+      error.value = 'Failed to mark chore as done. Please try again.';
+      console.error('Failed to mark chore as done:', err);
+      throw err;
     }
   };
 

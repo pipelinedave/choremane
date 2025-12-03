@@ -18,6 +18,7 @@ def run_migrations():
     columns = [row[0] for row in cur.fetchall()]
     assert 'owner_email' in columns
     assert 'is_private' in columns
+    assert 'last_done' in columns
     cur.close()
     conn.close()
 
@@ -31,8 +32,8 @@ def test_auth_flow(monkeypatch):
             def execute(self, *a, **k): pass
             def fetchall(self):
                 return [
-                    [1, "Shared Chore", 7, "2025-04-28", False, None, False, None, False],
-                    [2, "Private Chore", 3, "2025-04-28", False, None, False, "user@example.com", True]
+                    [1, "Shared Chore", 7, "2025-04-28", False, None, False, None, False, None],
+                    [2, "Private Chore", 3, "2025-04-28", False, None, False, "user@example.com", True, None]
                 ]
             def close(self): pass
         class DummyConn:

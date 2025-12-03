@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS chores (
     due_date DATE NOT NULL,
     done BOOLEAN DEFAULT FALSE,
     done_by VARCHAR(255),
+    last_done DATE,
     owner_email VARCHAR(255),
     is_private BOOLEAN DEFAULT FALSE,
     archived BOOLEAN DEFAULT FALSE

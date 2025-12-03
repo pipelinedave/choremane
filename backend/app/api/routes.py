@@ -17,6 +17,13 @@ api_router = APIRouter(prefix="/api")
 async def options_handler(path: str):
     return JSONResponse(content="OK", status_code=200)
 
+
+def _to_iso_date(value):
+    """Convert date/datetime values to ISO string without altering strings/None."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
+
 @api_router.post("/cors-test")
 def cors_test():
     return {"message": "CORS test successful"}
@@ -81,7 +88,7 @@ def get_chores(request: Request, page: int = 1, limit: int = 10):
     try:
         cur.execute(
             """
-            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private
+            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private, last_done
             FROM chores
             WHERE archived = FALSE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
             ORDER BY due_date ASC
@@ -106,10 +113,11 @@ def get_chores(request: Request, page: int = 1, limit: int = 10):
                     id=record.get("id", row[0] if row else None),
                     name=record.get("name", row[1] if len(row) > 1 else None),
                     interval_days=record.get("interval_days", row[2] if len(row) > 2 else None),
-                    due_date=str(record.get("due_date", row[3] if len(row) > 3 else "")),
+                    due_date=str(_to_iso_date(record.get("due_date", row[3] if len(row) > 3 else ""))),
                     done=record.get("done", row[4] if len(row) > 4 else False),
                     done_by=record.get("done_by", row[5] if len(row) > 5 else None),
                     archived=record.get("archived", row[6] if len(row) > 6 else False),
+                    last_done=_to_iso_date(record.get("last_done", row[9] if len(row) > 9 else None)),
                     owner_email=chore_owner,
                     is_private=is_private,
                 )
@@ -179,9 +187,10 @@ def undo_action(undo_request: UndoRequest):
         elif action_type == "marked_done":
             original_chore_id = action_details["chore_id"]
             original_due_date = action_details.get("previous_due_date", date.today().isoformat())
+            previous_last_done = action_details.get("previous_last_done")
             cur.execute(
-                "UPDATE chores SET done = FALSE, done_by = %s, due_date = %s WHERE id = %s",
-                (None, original_due_date, original_chore_id)
+                "UPDATE chores SET done = FALSE, done_by = %s, due_date = %s, last_done = %s WHERE id = %s",
+                (None, original_due_date, previous_last_done, original_chore_id)
             )
         else:
             raise HTTPException(status_code=400, detail="Undo not supported for this action type")
@@ -244,26 +253,62 @@ def mark_chore_done(chore_id: int, payload: dict):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT interval_days, due_date FROM chores WHERE id = %s", (chore_id,))
+        cur.execute("SELECT interval_days, due_date, last_done FROM chores WHERE id = %s", (chore_id,))
         result = cur.fetchone()
         if not result:
             raise HTTPException(status_code=404, detail="Chore not found or incomplete")
-        interval_days, due_date = result
+        interval_days, due_date, last_done = result
+
+        today_date = date.today()
+        last_done_date = None
+        if last_done:
+            if isinstance(last_done, datetime):
+                last_done_date = last_done.date()
+            elif isinstance(last_done, date):
+                last_done_date = last_done
+            elif isinstance(last_done, str):
+                last_done_date = datetime.fromisoformat(last_done).date()
+        if last_done_date == today_date:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "Chore already completed today",
+                    "last_done": today_date.isoformat(),
+                },
+            )
+
         due_date_str = due_date.isoformat() if isinstance(due_date, date) else due_date
-        new_due_date = (date.today() + timedelta(days=interval_days)).isoformat()
+        new_due_date = (today_date + timedelta(days=interval_days)).isoformat()
         cur.execute(
-            "UPDATE chores SET done = TRUE, done_by = %s, due_date = %s WHERE id = %s",
-            (done_by, new_due_date, chore_id)
+            """
+            UPDATE chores 
+            SET done = TRUE, done_by = %s, due_date = %s, last_done = %s 
+            WHERE id = %s
+            """,
+            (done_by, new_due_date, today_date, chore_id)
         )
         conn.commit()
         log_action(
             chore_id,
             done_by,
             "marked_done",
-            action_details={"chore_id": chore_id, "new_due_date": new_due_date, "previous_due_date": due_date_str},
+            action_details={
+                "chore_id": chore_id,
+                "new_due_date": new_due_date,
+                "previous_due_date": due_date_str,
+                "previous_last_done": _to_iso_date(last_done),
+            },
             conn=conn,
         )
-        return {"message": f"Chore {chore_id} marked as done", "new_due_date": new_due_date}
+        return {
+            "message": f"Chore {chore_id} marked as done",
+            "new_due_date": new_due_date,
+            "last_done": today_date.isoformat(),
+            "done_by": done_by,
+        }
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         logging.error(f"Error marking chore as done: {e}")
@@ -324,7 +369,7 @@ def get_archived_chores(request: Request):
     try:
         cur.execute(
             """
-            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private
+            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private, last_done
             FROM chores
             WHERE archived = TRUE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
             ORDER BY due_date ASC
@@ -337,12 +382,13 @@ def get_archived_chores(request: Request):
                 id=row[0],
                 name=row[1],
                 interval_days=row[2],
-                due_date=str(row[3]),
+                due_date=str(_to_iso_date(row[3])),
                 done=row[4],
                 done_by=row[5],
                 archived=row[6],
-                owner_email=row[7],
-                is_private=row[8],
+                owner_email=row[7] if len(row) > 7 else None,
+                is_private=row[8] if len(row) > 8 else False,
+                last_done=_to_iso_date(row[9] if len(row) > 9 else None),
             ) for row in rows
         ]
         return chores
@@ -394,7 +440,7 @@ async def import_data(request: Request):
                             """
                             UPDATE chores 
                             SET name = %s, interval_days = %s, due_date = %s, 
-                                is_private = %s, owner_email = %s
+                                is_private = %s, owner_email = %s, last_done = %s
                             WHERE id = %s
                             """,
                             (
@@ -403,6 +449,7 @@ async def import_data(request: Request):
                                 chore["due_date"],
                                 chore.get("is_private", False),
                                 user_email if chore.get("is_private", False) else None,
+                                chore.get("last_done"),
                                 chore["id"]
                             )
                         )
@@ -412,8 +459,8 @@ async def import_data(request: Request):
                 # Insert as new chore
                 cur.execute(
                     """
-                    INSERT INTO chores (name, interval_days, due_date, archived, owner_email, is_private)
-                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+                    INSERT INTO chores (name, interval_days, due_date, archived, owner_email, is_private, last_done)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
                     """,
                     (
                         chore["name"], 
@@ -421,7 +468,8 @@ async def import_data(request: Request):
                         chore["due_date"],
                         chore.get("archived", False),
                         user_email if chore.get("is_private", False) else None,
-                        chore.get("is_private", False)
+                        chore.get("is_private", False),
+                        chore.get("last_done"),
                     )
                 )
                 new_id = cur.fetchone()[0]
@@ -456,7 +504,7 @@ def export_data(request: Request):
         # Get chores (visible to this user)
         cur.execute(
             """
-            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private
+            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private, last_done
             FROM chores
             WHERE is_private = FALSE OR (is_private = TRUE AND owner_email = %s)
             """,
@@ -468,6 +516,8 @@ def export_data(request: Request):
             # Convert date objects to string
             if isinstance(chore["due_date"], (datetime, date)):
                 chore["due_date"] = chore["due_date"].isoformat()
+            if isinstance(chore.get("last_done"), (datetime, date)):
+                chore["last_done"] = chore["last_done"].isoformat()
             chores.append(chore)
         
         # Get logs

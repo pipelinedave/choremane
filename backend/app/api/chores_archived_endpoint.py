@@ -30,7 +30,7 @@ def get_archived_chores(request: Request, page: int = 1, limit: int = 10):
     try:
         cur.execute(
             """
-            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private
+            SELECT id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private, last_done
             FROM chores
             WHERE archived = TRUE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
             ORDER BY due_date ASC
@@ -50,6 +50,7 @@ def get_archived_chores(request: Request, page: int = 1, limit: int = 10):
                 archived=row[6],
                 owner_email=row[7],
                 is_private=row[8],
+                last_done=row[9] if len(row) > 9 else None,
             ) for row in rows
         ]
         return chores

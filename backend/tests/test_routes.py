@@ -62,12 +62,12 @@ def dummy_get_db_connection_for_logs():
 def dummy_get_db_connection_for_chores():
     # simulate two chore rows
     rows = [
-        [1, "Test Chore", 7, date.today(), False, None, False],
-        [2, "Another Chore", 3, date.today() + timedelta(days=3), False, None, False]
+        [1, "Test Chore", 7, date.today(), False, None, False, None, False, None],
+        [2, "Another Chore", 3, date.today() + timedelta(days=3), False, None, False, None, False, None]
     ]
     cursor = DummyCursor(
         rows=rows,
-        description=[("id",), ("name",), ("interval_days",), ("due_date",), ("done",), ("done_by",), ("archived",)]
+        description=[("id",), ("name",), ("interval_days",), ("due_date",), ("done",), ("done_by",), ("archived",), ("owner_email",), ("is_private",), ("last_done",)]
     )
     return DummyConnection(cursor)
 
@@ -134,8 +134,8 @@ def test_private_and_shared_chores(monkeypatch):
     def fake_get_db_connection():
         from datetime import date
         rows = [
-            [1, "Shared Chore", 7, date.today(), False, None, False, None, False],
-            [2, "Private Chore", 3, date.today(), False, None, False, "user@example.com", True]
+            [1, "Shared Chore", 7, date.today(), False, None, False, None, False, None],
+            [2, "Private Chore", 3, date.today(), False, None, False, "user@example.com", True, None]
         ]
         class DummyCursor:
             def execute(self, *a, **k): pass
@@ -190,6 +190,43 @@ def test_add_chore_with_privacy(monkeypatch):
     response = client.post("/api/chores", json=chore)
     assert response.status_code == 200
     assert response.json()["id"] == 123
+
+def test_mark_chore_done_prevents_duplicate_same_day(monkeypatch):
+    today = date.today()
+
+    class DummyCursor:
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, query, params=None):
+            self.calls.append(query)
+            if "SELECT interval_days" in query:
+                self._row = (3, today, today)  # interval_days, due_date, last_done=today
+
+        def fetchone(self):
+            return getattr(self, "_row", None)
+
+        def close(self):
+            pass
+
+    class DummyConn:
+        def cursor(self):
+            return DummyCursor()
+
+        def commit(self):
+            pass
+
+        def rollback(self):
+            pass
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
+    from app.main import app as fastapi_app
+    client = TestClient(fastapi_app)
+    response = client.put("/api/chores/1/done", json={"done_by": "tester"})
+    assert response.status_code == 409
 
 def test_undo_created_action(monkeypatch):
     # Simulate DB for undoing a 'created' action
