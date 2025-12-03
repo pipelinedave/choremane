@@ -244,10 +244,19 @@ const goToResetPage = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 28px;
   margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.header-content h1 {
+  letter-spacing: 0.08em;
+  font-size: 1.6rem;
+  color: var(--color-text);
 }
 
 .header-buttons {
@@ -258,26 +267,29 @@ const goToResetPage = () => {
 }
 
 .header-buttons button {
-  min-width: 36px;
-  min-height: 36px;
-  width: 36px;
-  height: 36px;
+  min-width: 42px;
+  min-height: 42px;
+  width: 42px;
+  height: 42px;
   padding: var(--space-xs);
-  background: var(--color-surface-light);
+  background: rgba(255, 255, 255, 0.85);
   color: var(--color-text);
-  border-radius: 50%;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s, transform 0.15s;
+  font-size: 1rem;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(12px);
 }
 
 .header-buttons button:hover {
-  background: var(--color-surface-lighter);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .header-buttons button:active {
@@ -293,8 +305,8 @@ const goToResetPage = () => {
   position: absolute;
   top: 60px;
   right: 10px;
-  background-color: var(--color-surface);
-  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 18px;
   box-shadow: var(--shadow-lg);
   z-index: 1000;
   overflow: hidden;
@@ -325,11 +337,11 @@ const goToResetPage = () => {
 }
 
 .settings-menu-item:hover {
-  background-color: var(--color-surface-light);
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
 .settings-menu-item:active {
-  background-color: var(--color-surface-lighter);
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .settings-menu-item i {
@@ -380,7 +392,7 @@ const goToResetPage = () => {
 .modal-content {
   background: var(--color-surface);
   color: var(--color-text);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   min-width: 280px;
   width: 100%;
   max-width: 500px;

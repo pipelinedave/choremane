@@ -4,6 +4,8 @@
 <!-- Place for dumping unorganized ideas -->
 <!-- No pending items here; move processed ideas into Organized Tasks -->
 - visibility on chore titles is pretty bad
+- blocked (marked as done) chores should still be editable. currently also the edit mode gets blocked...
+- perform the visual overhaul as per the design example
 
 
 
@@ -19,8 +21,6 @@
 - #bug [UI] the filter pills amounts displayed is false sometimes. for example it might show "8 Due this week" while there are only 4 chores in that filter category
 - #ui [Edit] Overhaul animations throughout the app, especially focusing on return animations
 - #bug [UI] Fix private toggle in edit mode so setting a chore to private or public actually updates the chore state.
-- #bug [Agent] Preserve “done today” status after refresh by keeping the server/client state consistent when the last completion date is today.
-- #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side
 - #bug [Agent] Fix push notifications not firing - implementation appears incomplete
 - #feature [Agent] Overhaul log functionality to be consistent across all users rather than using local storage - may require updating PRD documentation
 - #feature [Agent] Move notifications settings to server side storage instead of local storage for cross-device consistency
@@ -70,3 +70,5 @@
 - there is no "done" or "close" button in the "archived chores" modal dialog. it can only be closed by clicking in the background. this is inconsistent with the other dialogs and should be brought in line.
 - #bug [UI] its impossible to scroll on chorecards in a normal state using touch. you have to hit the margin left and right of the chorecards to scroll the page, or hit a chorecard thats in disabled state for the page to scroll. this is very unintuitive.
 - #bug [UI] Fix inconsistent scrolling behavior in chore list on mobile - list becomes unscrollable upon initial load and swipe actions become unreliable after applying filters or marking chores as done
+- #bug [Agent] Preserve “done today” status after refresh by keeping the server/client state consistent when the last completion date is today.
+- #feature [Agent] The system of chores being "done today" is flawed - frontend checking if a chore can be done again today fails. Redesign this approach and move checks to server side

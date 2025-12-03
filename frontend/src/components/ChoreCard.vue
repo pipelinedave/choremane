@@ -93,7 +93,7 @@
             {{ friendlyDueDate(chore.due_date) }}
           </span>
           <span class="chore-interval">
-            ⏳ {{ chore.interval_days }}
+            {{ chore.interval_days }}
           </span>
         </div>
       </div>
@@ -411,17 +411,24 @@ const friendlyDueDate = (due_date) => {
 .chore-card {
   display: flex;
   flex-direction: column;
-  padding: var(--space-xs) var(--space-md); /* Reduced vertical padding */
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-xxs); /* Reduced from xs to xxs */
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: 24px;
+  margin-bottom: var(--space-xxs);
   box-shadow: var(--shadow-md);
-  transition: all var(--transition-normal);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), filter var(--transition-normal);
   touch-action: pan-y;
   -ms-touch-action: pan-y;
-  color: rgba(255, 255, 255, 0.95); /* Base text color for all cards */
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2); /* Subtle text shadow for better contrast */
+  color: var(--color-text);
   position: relative;
-  overflow: hidden; /* Important for hiding the swipe actions */
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.chore-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  filter: saturate(1.02);
 }
 
 /* Swipe Action Containers */
@@ -429,67 +436,48 @@ const friendlyDueDate = (due_date) => {
   position: absolute;
   top: 0;
   height: 100%;
-  width: 80px; /* Increased width for better visibility */
+  width: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.3s ease;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); /* Add shadow for depth */
-  z-index: 2; /* Ensure actions appear above card content */
+  box-shadow: 0 0 20px rgba(31, 45, 44, 0.15);
+  z-index: 2;
 }
 
 .edit-action {
   right: 0;
-  background-color: #FF9800; /* Brighter orange for edit */
-  transform: translateX(100%); /* Hidden by default */
+  background: linear-gradient(135deg, #fde8d9, #f6c7ae);
+  transform: translateX(100%);
 }
 
 .done-action {
   left: 0;
-  background-color: #4CAF50; /* Brighter green for done */
-  transform: translateX(-100%); /* Hidden by default */
+  background: linear-gradient(135deg, #d5f1e5, #9edfc7);
+  transform: translateX(-100%);
 }
 
 /* Swipe Action Buttons */
 .done-button, .edit-button {
   border: none;
   background: transparent;
-  color: white;
-  font-size: 1.75rem; /* Larger icons */
+  color: #0f1b1a;
+  font-size: 1.5rem;
   cursor: pointer;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); /* Add text shadow for better contrast */
 }
 
 /* Reveal states */
 .chore-card.swipe-reveal-left .edit-action {
-  transform: translateX(0); /* Show edit action */
+  transform: translateX(0);
 }
 
 .chore-card.swipe-reveal-right .done-action {
-  transform: translateX(0); /* Show done action */
-}
-
-/* Add text labels to buttons */
-.done-button::after, .edit-button::after {
-  position: absolute;
-  font-size: 0.75rem;
-  font-weight: bold;
-  margin-top: 3.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.done-button::after {
-  content: "Done";
-}
-
-.edit-button::after {
-  content: "Edit";
+  transform: translateX(0);
 }
 
 /* Animation states */
@@ -518,26 +506,25 @@ const friendlyDueDate = (due_date) => {
   justify-content: space-between;
   align-items: center;
   gap: var(--space-sm);
-  min-height: 2.5rem;
+  min-height: 2.6rem;
   flex-wrap: wrap;
-  z-index: 1; /* Ensure content is above the swipe actions */
+  z-index: 1;
 }
 
-/* Rest of the original styles */
 .chore-title {
-  font-weight: 600;
-  font-size: clamp(0.85rem, 1.5vw, 1rem);
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+  letter-spacing: 0.01em;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal; /* Allow wrapping */
-  word-break: break-word; /* Prevent overflow on small screens */
+  white-space: normal;
+  word-break: break-word;
 }
 
 .chore-right {
   display: flex;
-  gap: var(--space-xs);
+  gap: 0.4rem;
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -551,7 +538,7 @@ const friendlyDueDate = (due_date) => {
   }
   
   .chore-title {
-    font-size: 0.95rem;
+    font-size: 1rem;
     width: 100%;
     margin-bottom: var(--space-xxs);
   }
@@ -562,7 +549,7 @@ const friendlyDueDate = (due_date) => {
   }
   
   .chore-card {
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
   }
   
   .form-header, .form-body, .form-footer {
@@ -587,32 +574,39 @@ const friendlyDueDate = (due_date) => {
 }
 
 .chore-due {
-  font-size: 0.8rem; /* Smaller font size */
-  padding: 0.1em 0.4em; /* Reduced padding */
-  border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.85rem;
+  padding: 0.2em 0.65em;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   line-height: 1.4;
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
 }
 
 .chore-interval {
-  font-size: 0.8rem; /* Smaller font size */
-  opacity: 0.9;
-  background: rgba(0, 0, 0, 0.15);
-  padding: 0.1em 0.4em; /* Reduced padding */
-  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.2em 0.8em;
+  border-radius: 12px;
   line-height: 1.4;
+  color: var(--color-text);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  min-width: 38px;
+  text-align: center;
 }
 
 .chore-overdue {
-  font-weight: 700;
-  color: #fff;
-  background: rgba(255, 0, 0, 0.2);
+  font-weight: 800;
+  color: #8d1f1f;
+  background: rgba(255, 162, 150, 0.3);
 }
 
 .edit-chore-form {
   background: var(--color-surface);
   padding: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   margin: var(--space-xs) 0;
   box-shadow: var(--shadow-lg);
   width: 100%;
@@ -650,7 +644,7 @@ const friendlyDueDate = (due_date) => {
 }
 
 .close-edit-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.06);
   color: var(--color-text);
   transform: none;
 }
@@ -731,7 +725,7 @@ const friendlyDueDate = (due_date) => {
 }
 
 .custom-checkbox-wrapper input[type="checkbox"]:focus + label .checkbox-icon {
-  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.3);
+  box-shadow: 0 0 0 2px rgba(47, 111, 111, 0.2);
 }
 
 .checkbox-text {
@@ -745,7 +739,7 @@ const friendlyDueDate = (due_date) => {
 
 .save-button {
   background: var(--color-primary);
-  color: white;
+  color: #fdfbf7;
   padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   border: none;
@@ -775,7 +769,7 @@ const friendlyDueDate = (due_date) => {
 
 .archive-button {
   background: var(--color-warning);
-  color: white;
+  color: #3b2b1a;
   padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   border: none;
@@ -793,28 +787,28 @@ const friendlyDueDate = (due_date) => {
 }
 
 /* Status Colors */
-.chore-card.overdue { background-color: var(--color-overdue); }
-.chore-card.due-today { background-color: var(--color-due-today); }
-.chore-card.due-tomorrow { background-color: var(--color-due-soon); }
-.chore-card.due-2-days { background-color: var(--color-due-2-days); }
-.chore-card.due-3-days { background-color: var(--color-due-3-days); }
-.chore-card.due-7-days { background-color: var(--color-due-7-days); }
-.chore-card.due-14-days { background-color: var(--color-due-14-days); }
-.chore-card.due-30-days { background-color: var(--color-due-30-days); }
-.chore-card.due-far-future { background-color: var(--color-due-far-future); }
-.chore-card.archived { background-color: var(--color-archived); }
+.chore-card.overdue { background: linear-gradient(135deg, #fde4e0, #f7b4ae); }
+.chore-card.due-today { background: linear-gradient(135deg, #fde8d9, #f6c7ae); }
+.chore-card.due-tomorrow { background: linear-gradient(135deg, #f8efdc, #f2ddba); }
+.chore-card.due-2-days { background: linear-gradient(135deg, #f6f2e4, #eee7c9); }
+.chore-card.due-3-days { background: linear-gradient(135deg, #eef3e9, #e2e6d2); }
+.chore-card.due-7-days { background: linear-gradient(135deg, #e8f4ec, #d3ead8); }
+.chore-card.due-14-days { background: linear-gradient(135deg, #e5f4ef, #c6e7dc); }
+.chore-card.due-30-days { background: linear-gradient(135deg, #def2ed, #b7e1d7); }
+.chore-card.due-far-future { background: linear-gradient(135deg, #d5f1ed, #a4dcd3); }
+.chore-card.archived { background: linear-gradient(135deg, #eef0f3, #d6d8dc); }
 
 /* Add done today state */
 .chore-card.done-today {
   position: relative;
-  opacity: 0.6;
-  filter: grayscale(40%);
+  opacity: 0.72;
+  filter: saturate(0.85);
   pointer-events: none;
 }
 
 .chore-card.done-today .chore-content {
   text-decoration: line-through;
-  text-decoration-color: rgba(255, 255, 255, 0.6);
+  text-decoration-color: rgba(31, 45, 44, 0.45);
 }
 
 .chore-card.done-today::after {
@@ -823,110 +817,27 @@ const friendlyDueDate = (due_date) => {
   top: 50%;
   right: var(--space-md);
   transform: translateY(-50%);
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 0.2em 0.6em;
-  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.75);
+  padding: 0.25em 0.65em;
+  border-radius: 14px;
   pointer-events: none;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* Add private chore state */
 .chore-card.private-chore {
-  border-left: 4px solid #ffb300;
-  background: linear-gradient(90deg, #232323 90%, #ffb30022 100%);
-}
-
-/* Visual hint for swipable cards - refined */
-@media (min-width: 768px) {
-  .chore-card:not(.done-today)::before,
-  .chore-card:not(.done-today)::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 8px;
-    background-color: rgba(255, 255, 255, 0.15);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s ease, background-color 0.3s ease;
-  }
-  
-  .chore-card:not(.done-today)::before {
-    left: 0;
-    border-radius: var(--radius-md) 0 0 var(--radius-md);
-    background-image: linear-gradient(to right, transparent, #4CAF50);
-  }
-  
-  .chore-card:not(.done-today):hover::before {
-    opacity: 1;
-  }
-  
-  .chore-card:not(.done-today)::after {
-    right: 0;
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
-    background-image: linear-gradient(to left, transparent, #FF9800);
-  }
-  
-  .chore-card:not(.done-today):hover::after {
-    opacity: 1;
-  }
-  
-  /* Add swipe hint icon on hover */
-  .chore-card:not(.done-today):hover::before {
-    content: '⟸'; /* Left arrow for done action */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.2rem;
-    width: 24px;
-  }
-  
-  .chore-card:not(.done-today):hover::after {
-    content: '⟹'; /* Right arrow for edit action */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 1.2rem;
-    width: 24px;
-  }
+  border-left: 4px solid #e1b85f;
+  background: linear-gradient(90deg, rgba(255, 230, 180, 0.45), transparent 60%);
 }
 
 /* Visual hint for mobile swipe */
 @media (max-width: 767px) {
-  .chore-card:not(.done-today):not(.edit-mode):active::before {
-    content: '⟺';
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1.2rem;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s forwards;
-    pointer-events: none;
-    z-index: 10;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  /* Make the returning animation more pronounced */
   .chore-card.returning {
     transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   
-  /* Add resistance effect to swiping */
   .chore-card.swiping {
     transition: transform 0.1s cubic-bezier(0.1, 0.7, 0.7, 1);
   }
@@ -961,7 +872,7 @@ const friendlyDueDate = (due_date) => {
 /* Add pulsing animation for action buttons */
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  50% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
 
@@ -983,9 +894,9 @@ const friendlyDueDate = (due_date) => {
 .chore-card.archived-view {
   opacity: 0.85;
   position: relative;
-  pointer-events: none; /* Disable interactions */
-  overflow: hidden; /* Ensure the overlay stays contained */
-  margin-bottom: 0; /* Remove the default margin when in archived view */
+  pointer-events: none;
+  overflow: hidden;
+  margin-bottom: 0;
 }
 
 .chore-card.archived-view::before {
@@ -995,7 +906,7 @@ const friendlyDueDate = (due_date) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(60, 60, 60, 0.2);
+  background-color: rgba(214, 216, 220, 0.4);
   z-index: 10;
 }
 </style>

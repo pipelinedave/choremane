@@ -101,12 +101,12 @@ const loadingTimeout = ref(null); // For debouncing
 const filter = ref('all');
 const searchQuery = ref('');
 const pills = [
-  { label: 'All', value: 'all', color: '#3d3d3d' }, // Darker than surface-light
+  { label: 'All', value: 'all', color: 'rgba(31, 45, 44, 0.08)' },
   { label: 'Overdue', value: 'overdue', color: 'var(--color-overdue)' },
   { label: 'Due Today', value: 'today', color: 'var(--color-due-today)' },
   { label: 'Due Tomorrow', value: 'tomorrow', color: 'var(--color-due-soon)' },
   { label: 'Due This Week', value: 'thisWeek', color: 'var(--color-due-7-days)' },
-  { label: 'Later', value: 'upcoming', color: '#4db6ac' }, // Using the due-far-future teal color
+  { label: 'Later', value: 'upcoming', color: 'var(--color-due-far-future)' },
 ];
 // Keep filters and counts in sync by deriving both from the same bucketed set
 const bucketedChores = computed(() => bucketChores(choreStore.sortedByUrgency));
@@ -266,73 +266,106 @@ const addNewChore = () => {
 
 <style scoped>
 .chore-list {
-  padding: var(--space-xs); /* Reduced padding */
-  background-color: #121212;
-  max-width: 1200px;
-  margin: 0 auto;
-  color: rgba(255, 255, 255, 0.95);
-  position: relative; /* Needed for absolute positioning of scroll-to-top button */
-  min-height: 80vh; /* Ensure we have space even when few chores */
+  padding: var(--space-lg) var(--space-md);
+  max-width: 880px;
+  margin: 0 auto 120px;
+  color: var(--color-text);
+  position: relative;
 }
 
-/* Enhance text styling for headers */
-h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+.filter-pills {
+  display: flex;
+  gap: 0.75rem;
+  margin: var(--space-lg) auto var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0.65rem 0.9rem;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(16px);
+}
+
+.pill {
+  position: relative;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 0.5em 1.4em 0.5em 2.4em;
+  font-size: 0.95em;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+  outline: none;
+  margin-bottom: 0.2rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(12px);
 }
 
-.log-section {
-  margin-top: 2rem;
-  background: #1a1a1a;
-  padding: 1rem;
-  border-radius: 10px;
+.pill .pill-count {
+  position: absolute;
+  left: 0.55em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--color-text);
+  font-size: 0.8em;
+  font-weight: 700;
+  border-radius: 50%;
+  width: 1.6em;
+  height: 1.6em;
+  min-width: 1.6em;
+  box-shadow: var(--shadow-sm);
 }
 
-.log-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+.pill:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.log-section ul {
-  list-style: none;
-  padding: 0;
+.pill.active {
+  color: #0f1b1a !important;
+  font-weight: 700;
+  box-shadow: var(--shadow-lg);
+  filter: brightness(1.05);
 }
 
-.log-section li {
-  padding: 0.5rem 0.8rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.9rem;
-  line-height: 1.4;
+.pill.active .pill-count {
+  background: rgba(255, 255, 255, 0.7);
+  color: #102321;
 }
 
-.log-section li strong {
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  margin-right: 0.5em;
+@media (max-width: 576px) {
+  .filter-pills {
+    justify-content: center;
+    padding-bottom: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .pill {
+    font-size: 0.9em;
+    padding: 0.35em 1em 0.35em 2.1em;
+    white-space: nowrap;
+  }
+  
+  .pill .pill-count {
+    font-size: 0.78em;
+    width: 1.5em;
+    height: 1.5em;
+  }
 }
 
 .chore-cards {
-  display: grid;
-  gap: var(--space-xxs);
-  grid-template-columns: 1fr; /* Base is single column */
-  padding: var(--space-xxs);
-}
-
-@media (min-width: 768px) {
-  .chore-cards {
-    grid-template-columns: repeat(2, 1fr); /* Two columns on tablets */
-    gap: var(--space-xs);
-  }
-}
-
-@media (min-width: 1200px) {
-  .chore-cards {
-    grid-template-columns: repeat(3, 1fr); /* Three columns on larger screens */
-    gap: var(--space-sm);
-  }
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 0 var(--space-xxs);
 }
 
 /* Transition Group Animations */
@@ -344,111 +377,29 @@ h2 {
   transform: translateY(-10px);
 }
 
-.filter-pills {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-  justify-content: center; /* Always centered regardless of screen size */
-  width: 100%; /* Take full width of parent */
-}
-
-.pill {
-  position: relative;
-  background: var(--color-surface-light);
-  color: var(--color-text);
-  border: none;
-  border-radius: 999px;
-  padding: 0.4em 1.2em 0.4em 2.2em;
-  font-size: 0.95em;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  outline: none;
-  margin-bottom: 0.3rem;
-  color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  display: flex;
-  align-items: center;
-}
-
-.pill .pill-count {
-  position: absolute;
-  left: 0.5em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
-  color: white;
-  font-size: 0.8em;
-  font-weight: 600;
-  border-radius: 50%;
-  width: 1.6em;
-  height: 1.6em;
-  min-width: 1.6em;
-}
-
-.pill:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-}
-
-@media (max-width: 576px) {
-  .filter-pills {
-    justify-content: center; /* Keep centered on small screens too */
-    padding-bottom: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .pill {
-    font-size: 0.85em;
-    padding: 0.3em 0.9em 0.3em 2em;
-    white-space: nowrap;
-  }
-  
-  .pill .pill-count {
-    font-size: 0.75em;
-    width: 1.5em;
-    height: 1.5em;
-  }
-}
-
-.pill.active {
-  /* Override background with custom background from the pill when active, but add white text */
-  color: #fff !important;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.pill.active .pill-count {
-  background: rgba(255, 255, 255, 0.25);
-  color: rgba(0, 0, 0, 0.8);
-}
-
 /* Add styling for scroll to top button */
 .scroll-to-top-button {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background-color: rgba(74, 85, 104, 0.9);
-  color: white;
-  border: none;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 9999; /* Very high z-index to ensure it's above all content */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
   transition: background-color 0.2s, transform 0.2s;
+  backdrop-filter: blur(12px);
 }
 
 .scroll-to-top-button:hover {
-  background-color: rgba(74, 85, 104, 1);
+  background: rgba(255, 255, 255, 0.95);
   transform: translateY(-2px);
 }
 
@@ -463,33 +414,33 @@ h2 {
   align-items: center;
   justify-content: center;
   padding: 1rem 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
-  height: 90px; /* Increased fixed height to prevent layout shifts */
-  margin-bottom: 20px; /* Increased margin for more space */
+  height: 90px;
+  margin-bottom: 20px;
   opacity: 1;
-  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+  transition: opacity 0.4s ease, visibility 0.4s ease;
   visibility: visible;
 }
 
 /* Hidden state that maintains layout */
 .loading-indicator-hidden {
-  height: 90px; /* Same height as visible state */
+  height: 90px;
   visibility: hidden;
   opacity: 0;
-  margin-bottom: 20px; /* Same margin as visible state */
-  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+  margin-bottom: 20px;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
 .loading-spinner {
   width: 30px;
   height: 30px;
   margin-bottom: 0.5rem;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  border-top-color: #fff;
+  border-top-color: var(--color-primary);
   animation: spin 1s ease-in-out infinite;
-  flex-shrink: 0; /* Prevent spinner from shrinking */
+  flex-shrink: 0;
 }
 
 @keyframes spin {
@@ -497,11 +448,11 @@ h2 {
 }
 
 .load-more-trigger {
-  height: 100px; /* Increase height to create more buffer room */
+  height: 100px;
   margin-top: 20px;
   margin-bottom: 20px;
-  visibility: hidden; /* Hide it but keep it in the layout */
-  width: 100%; /* Ensure it takes full width */
+  visibility: hidden;
+  width: 100%;
   display: block;
   position: relative;
 }
