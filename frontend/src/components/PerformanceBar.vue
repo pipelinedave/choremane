@@ -44,7 +44,7 @@ const textColor = computed(() => {
   align-items: center;
   gap: 12px;
   width: 100%;
-  margin: 0 0 20px 0;
+  margin: 0 0 var(--space-md) 0;
   padding: 0;
 }
 
