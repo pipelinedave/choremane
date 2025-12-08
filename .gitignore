@@ -3,6 +3,9 @@ node_modules/
 npm-debug.log*
 yarn-error.log
 
+# Python
+.venv/
+
 # VS Code files
 .vscode/
 *.code-workspace
