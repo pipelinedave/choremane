@@ -215,7 +215,7 @@ const filteredChores = computed(() => {
 });
 
 const pillsWithCounts = computed(() => {
-  const counts = bucketedChores.value.counts;
+  const counts = choreStore.totalCounts;
   return pills.map(pill => ({
     ...pill,
     count: counts[pill.value] || 0,
