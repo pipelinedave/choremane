@@ -46,10 +46,10 @@
     <ArchivedChores v-if="showArchivedChores" @close="toggleArchivedChores" />
     
     <!-- About Modal Dialog -->
-    <div v-if="showAboutModal && versionInfo" class="modal-overlay" role="dialog" aria-modal="true" aria-label="About ChoreMane" @click.self="toggleAboutModal">
+    <div v-if="showAboutModal && versionInfo" class="modal-overlay" role="dialog" aria-modal="true" aria-label="About Choremane" @click.self="toggleAboutModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>About ChoreMane</h2>
+          <h2>About Choremane</h2>
         </div>
         <div class="modal-body">
           <div class="about-info">
