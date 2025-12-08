@@ -18,7 +18,7 @@
     <transition-group name="list" tag="div" class="chore-cards">
       <ChoreCard
         v-for="(chore, index) in filteredChores"
-        :key="`chore-${chore.id}-${index}`"
+        :key="chore.id"
         :chore="chore"
         @markAsDone="markAsDone"
         @archiveChore="archiveChore"

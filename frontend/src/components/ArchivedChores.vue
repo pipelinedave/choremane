@@ -14,7 +14,7 @@
             message="Archived chores will appear here once you archive them from your active chores list."
           />
           <div v-else class="chore-cards-archived">
-            <div v-for="(chore, index) in archivedChores" :key="`archived-chore-${chore.id}-${index}`" class="archived-chore-container">
+            <div v-for="(chore, index) in archivedChores" :key="chore.id" class="archived-chore-container">
               <ChoreCard
                 :chore="chore"
                 :isArchivedView="true"
