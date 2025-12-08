@@ -225,7 +225,7 @@ const unarchiveChore = async (choreId) => {
 
 <style scoped>
 .archived-chores-modal {
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Space Grotesk', 'Manrope', sans-serif;
 }
 
 .modal-overlay {
@@ -234,98 +234,129 @@ const unarchiveChore = async (choreId) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(31, 45, 44, 0.4); /* Darkened surface color for overlay */
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .modal-content {
   width: 90%;
   max-width: 600px;
-  max-height: 80vh;
-  background-color: #1e1e1e;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  max-height: 85vh;
+  background: var(--color-background); /* Use app background */
+  background-image: 
+    radial-gradient(120% 160% at 10% 10%, rgba(253, 232, 213, 0.5) 0%, rgba(253, 232, 213, 0) 45%),
+    radial-gradient(90% 120% at 90% 20%, rgba(189, 233, 221, 0.5) 0%, rgba(189, 233, 221, 0) 52%);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  animation: slideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .modal-header {
-  padding: 1rem;
-  border-bottom: 1px solid #333;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid var(--color-surface-lighter);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 500;
+  font-weight: 700;
+  color: var(--color-text);
 }
 
 .close-button {
-  background: none;
+  background: transparent;
   border: none;
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 1.2rem;
   cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
 .close-button:hover {
-  color: #fff;
+  background-color: var(--color-surface-lighter);
+  color: var(--color-text);
 }
 
 .modal-body {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   overflow-y: auto;
   flex-grow: 1;
-  max-height: 60vh; /* Limit height to prevent oversized modal */
-  position: relative; /* For positioning the scroll-to-top button */
+  position: relative;
+  /* Custom Scrollbar for the modal */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-lighter) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modal-body::-webkit-scrollbar-thumb {
+  background-color: var(--color-surface-lighter);
+  border-radius: 20px;
 }
 
 .no-archived {
   text-align: center;
-  padding: 2rem;
-  color: #777;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
 }
 
 .chore-cards-archived {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* Reduced gap between items */
+  gap: var(--space-xs);
 }
 
 .archived-chore-container {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: stretch;
+  gap: var(--space-xs);
   position: relative;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-xs);
 }
 
 .archived-chore-container :deep(.chore-card) {
-  width: calc(100% - 40px);
+  flex: 1;
+  width: auto; /* Let flex handle width */
   margin-bottom: 0;
 }
 
 .unarchive-button {
-  background-color: #4a5568;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  background-color: var(--color-surface-light);
+  color: var(--color-text);
+  border: 1px solid var(--color-surface-lighter);
+  border-radius: var(--radius-md); /* Match card radius roughly but for small button */
+  width: 48px;
+  min-width: 48px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s, transform 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  margin-top: 2px; /* Slight alignment fix if needed */
 }
 
 /* Add animation for the unarchive button */
@@ -337,118 +368,140 @@ const unarchiveChore = async (choreId) => {
 
 .unarchive-button:active {
   animation: pulse-button 0.3s;
-  background-color: #4CAF50; /* Change color during animation */
+  background-color: var(--color-primary); 
+  color: white;
+  border-color: var(--color-primary);
 }
 
 .unarchive-button:hover {
-  background-color: #647182;
-  transform: scale(1.05);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  color: var(--color-primary);
 }
 
 .unarchive-button i {
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .modal-footer {
-  padding: 1rem;
-  border-top: 1px solid #333;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-surface-lighter);
   display: flex;
   justify-content: flex-end;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
 }
 
 .neutral-button {
-  padding: 0.5rem 1rem;
-  background-color: #4d4d4d;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  padding: 0.6rem 1.2rem;
+  background-color: var(--color-surface-light);
+  color: var(--color-text);
+  border: 1px solid var(--color-surface-lighter);
+  border-radius: var(--radius-md);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: background-color 0.2s;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .neutral-button:hover {
-  background-color: #5a5a5a;
+  background-color: var(--color-surface);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Add styling for scroll to top button */
+/* Scroll to top button */
 .scroll-to-top-button {
-  position: absolute;
+  position: sticky;
   bottom: 20px;
-  right: 20px;
-  width: 36px;
-  height: 36px;
+  left: 100%; /* Align to right */
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: rgba(74, 85, 104, 0.8);
-  color: white;
+  background-color: var(--color-primary);
+  color: #fff;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1000; /* Higher z-index to ensure it's above all content */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  transition: background-color 0.2s, transform 0.2s;
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s;
+  opacity: 0.9;
 }
 
 .scroll-to-top-button:hover {
-  background-color: rgba(74, 85, 104, 1);
+  background-color: var(--color-primary-hover);
   transform: translateY(-2px);
+  opacity: 1;
 }
 
 .scroll-to-top-button i {
   font-size: 1rem;
 }
 
-/* Add styling for infinite scroll loading indicator */
+/* Loading indicator */
 .loading-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1rem 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
-  height: 80px; /* Fixed height to prevent layout shifts */
-  margin-bottom: 20px; /* Increased margin for more space */
+  height: 80px;
+  margin-bottom: 20px;
   opacity: 1;
-  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+  transition: opacity 0.4s ease, visibility 0.4s ease;
   visibility: visible;
 }
 
-/* Hidden state that maintains layout */
 .loading-indicator-hidden {
-  height: 80px; /* Same height as visible state */
+  height: 80px;
   visibility: hidden;
   opacity: 0;
-  margin-bottom: 20px; /* Same margin as visible state */
-  transition: opacity 0.4s ease, visibility 0.4s ease; /* Smoother transition */
+  margin-bottom: 20px;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
 .loading-spinner {
   width: 24px;
   height: 24px;
   margin-bottom: 0.5rem;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid var(--color-surface-lighter);
   border-radius: 50%;
-  border-top-color: #fff;
+  border-top-color: var(--color-primary);
   animation: spin 1s ease-in-out infinite;
-  flex-shrink: 0; /* Prevent spinner from shrinking */
+  flex-shrink: 0;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .load-more-trigger {
-  height: 100px; /* Increase height to create more buffer room */
-  margin-top: 20px;
-  margin-bottom: 20px;
-  visibility: hidden; /* Hide it but keep it in the layout */
-  width: 100%; /* Ensure it takes full width */
+  height: 60px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  visibility: hidden;
+  width: 100%;
   display: block;
-  position: relative;
 }
 </style>
