@@ -1,5 +1,6 @@
 ﻿<template>
   <div class="chore-list" ref="choreListContainer">
+    <PerformanceBar :score="choreStore.householdHealth" />
     <div class="filter-pills">
       <button
         v-for="pill in pillsWithCounts"
@@ -87,6 +88,7 @@ import { useChoreStore } from '@/store/choreStore';
 import { bucketChores } from '@/utils/choreBuckets';
 import ChoreCard from './ChoreCard.vue';
 import EmptyState from './EmptyState.vue';
+import PerformanceBar from './PerformanceBar.vue';
 
 const choreStore = useChoreStore();
 const choreListContainer = ref(null);
@@ -103,9 +105,9 @@ const searchQuery = ref('');
 const pills = [
   { label: 'All', value: 'all', color: 'rgba(31, 45, 44, 0.08)' },
   { label: 'Overdue', value: 'overdue', color: 'var(--color-overdue)' },
-  { label: 'Due Today', value: 'today', color: 'var(--color-due-today)' },
-  { label: 'Due Tomorrow', value: 'tomorrow', color: 'var(--color-due-soon)' },
-  { label: 'Due This Week', value: 'thisWeek', color: 'var(--color-due-7-days)' },
+  { label: 'Today', value: 'today', color: 'var(--color-due-today)' },
+  { label: 'Tomorrow', value: 'tomorrow', color: 'var(--color-due-soon)' },
+  { label: 'This Week', value: 'thisWeek', color: 'var(--color-due-7-days)' },
   { label: 'Later', value: 'upcoming', color: 'var(--color-due-far-future)' },
 ];
 // Keep filters and counts in sync by deriving both from the same bucketed set
@@ -266,7 +268,7 @@ const addNewChore = () => {
 
 <style scoped>
 .chore-list {
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-md);
   max-width: 880px;
   margin: 0 auto 120px;
   color: var(--color-text);
@@ -276,7 +278,7 @@ const addNewChore = () => {
 .filter-pills {
   display: flex;
   gap: 0.75rem;
-  margin: var(--space-lg) auto var(--space-md);
+  margin: 0 auto var(--space-md);
   flex-wrap: wrap;
   justify-content: center;
   padding: 0.65rem 0.9rem;
