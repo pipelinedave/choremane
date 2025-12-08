@@ -14,6 +14,20 @@ export const useChoreStore = defineStore('chores', () => {
   const pageSize = ref(10); // Number of items per page
   const hasMoreChores = ref(true); // Whether there are more chores to load
   const hasMoreArchivedChores = ref(true); // Whether there are more archived chores to load
+
+
+  // New state for total counts from server
+  const totalCounts = ref({
+    all: 0,
+    overdue: 0,
+    today: 0,
+    tomorrow: 0,
+    thisWeek: 0,
+    upcoming: 0
+  });
+
+  // Calculate local bucket counts for fallback/optimistic updates if needed
+  // But primarily we will use totalCounts from server
   const choreCounts = computed(() => bucketChores(chores.value).counts);
   const editingChoreId = ref(null);
 
@@ -72,15 +86,27 @@ export const useChoreStore = defineStore('chores', () => {
     return today.getTime() === lastDone.getTime();
   };
 
+  const fetchChoreCounts = async () => {
+    try {
+      const response = await api.get('/chores/count');
+      totalCounts.value = response.data;
+    } catch (err) {
+      console.error('Failed to fetch chore counts:', err);
+      // Don't set global error state here to avoid disrupting main UI if just counts fail
+    }
+  };
+
   const fetchChores = async (page = 1) => {
     if (page === 1) {
       // Reset for first page load
       chores.value = [];
       hasMoreChores.value = true;
+      // Also fetch counts on initial load
+      fetchChoreCounts();
     }
-    
+
     if (!hasMoreChores.value && page > 1) return;
-    
+
     loading.value = true;
     error.value = null;
     try {
@@ -91,12 +117,12 @@ export const useChoreStore = defineStore('chores', () => {
           limit: pageSize.value
         }
       });
-      
+
       const newChores = response.data.map(chore => ({
         ...chore,
         disabled: isChoreDisabledToday(chore)
       }));
-      
+
       // Append new chores to existing ones for infinite scrolling
       if (page === 1) {
         chores.value = newChores;
@@ -106,12 +132,12 @@ export const useChoreStore = defineStore('chores', () => {
         const uniqueNewChores = newChores.filter(chore => !existingIds.has(chore.id));
         chores.value = [...chores.value, ...uniqueNewChores];
       }
-      
+
       // Check if there are more chores to load
       if (newChores.length < pageSize.value) {
         hasMoreChores.value = false;
       }
-      
+
     } catch (err) {
       error.value = 'Failed to fetch chores. Please try again later.';
       console.error('Failed to fetch chores:', err);
@@ -119,16 +145,16 @@ export const useChoreStore = defineStore('chores', () => {
       loading.value = false;
     }
   };
-  
+
   const fetchArchivedChores = async (page = 1) => {
     if (page === 1) {
       // Reset for first page load
       archivedChores.value = [];
       hasMoreArchivedChores.value = true;
     }
-    
+
     if (!hasMoreArchivedChores.value && page > 1) return;
-    
+
     loading.value = true;
     error.value = null;
     try {
@@ -139,12 +165,12 @@ export const useChoreStore = defineStore('chores', () => {
           limit: pageSize.value
         }
       });
-      
+
       const newArchivedChores = archivedResponse.data.map(chore => ({
         ...chore,
         disabled: isChoreDisabledToday(chore)
       }));
-      
+
       // Append new archived chores to existing ones for infinite scrolling
       if (page === 1) {
         archivedChores.value = newArchivedChores;
@@ -154,12 +180,12 @@ export const useChoreStore = defineStore('chores', () => {
         const uniqueNewArchivedChores = newArchivedChores.filter(chore => !existingIds.has(chore.id));
         archivedChores.value = [...archivedChores.value, ...uniqueNewArchivedChores];
       }
-      
+
       // Check if there are more archived chores to load
       if (newArchivedChores.length < pageSize.value) {
         hasMoreArchivedChores.value = false;
       }
-      
+
     } catch (err) {
       error.value = 'Failed to fetch archived chores. Please try again later.';
       console.error('Failed to fetch archived chores:', err);
@@ -190,6 +216,7 @@ export const useChoreStore = defineStore('chores', () => {
         };
       }
       await logStore.fetchLogs();
+      fetchChoreCounts(); // Refresh counts
 
       return response.data;
     } catch (err) {
@@ -214,6 +241,7 @@ export const useChoreStore = defineStore('chores', () => {
       chore.done = false;
       await logStore.fetchLogs();
       logStore.addLocalLogEntry(`${chore.name} undone`, 'undo');
+      fetchChoreCounts(); // Refresh counts
     }
   };
 
@@ -231,6 +259,7 @@ export const useChoreStore = defineStore('chores', () => {
       chores.value.push(createdChore);
       const logStore = useLogStore();
       await logStore.fetchLogs();
+      fetchChoreCounts(); // Refresh counts
 
       return createdChore;
     } catch (error) {
@@ -260,6 +289,7 @@ export const useChoreStore = defineStore('chores', () => {
 
       const logStore = useLogStore();
       await logStore.fetchLogs();
+      fetchChoreCounts(); // Refresh counts
 
       return response.data;
     } catch (error) {
@@ -276,13 +306,14 @@ export const useChoreStore = defineStore('chores', () => {
         // Check if this chore already exists in archived chores to avoid duplicates
         const existsInArchived = archivedChores.value.some(c => c.id === choreId);
         if (!existsInArchived) {
-          archivedChores.value.push({...chores.value[index], archived: true}); // Add to archived chores
+          archivedChores.value.push({ ...chores.value[index], archived: true }); // Add to archived chores
         }
         chores.value.splice(index, 1); // Remove from active chores
       }
 
       const logStore = useLogStore();
       await logStore.fetchLogs();
+      fetchChoreCounts(); // Refresh counts
 
       return response.data;
     } catch (error) {
@@ -296,14 +327,14 @@ export const useChoreStore = defineStore('chores', () => {
     try {
       // Call the unarchive endpoint
       const response = await api.put(`/chores/${choreId}/unarchive`);
-      
+
       // Update local state by moving from archived to active
       const index = archivedChores.value.findIndex(c => c.id === choreId);
       if (index !== -1) {
         // Remove from archived chores
         const unarchived = { ...archivedChores.value[index], archived: false };
         archivedChores.value.splice(index, 1);
-        
+
         // Check if this chore already exists in active chores to avoid duplicates
         const existsInActive = chores.value.some(c => c.id === choreId);
         if (!existsInActive) {
@@ -314,6 +345,7 @@ export const useChoreStore = defineStore('chores', () => {
 
       const logStore = useLogStore();
       await logStore.fetchLogs();
+      fetchChoreCounts(); // Refresh counts
 
       return response.data;
     } catch (error) {
@@ -342,6 +374,8 @@ export const useChoreStore = defineStore('chores', () => {
     markChoreDone,
     undoChore,
     choreCounts,
+    totalCounts, // Export new state
+    fetchChoreCounts, // Export new method
     editingChoreId,
     setEditingChore,
     clearEditingChore
