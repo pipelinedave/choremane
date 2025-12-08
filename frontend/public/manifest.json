@@ -1,6 +1,6 @@
 ﻿{
-  "name": "ChoreMane",
-  "short_name": "ChoreMane",
+  "name": "Choremane",
+  "short_name": "Choremane",
   "description": "A simple chore management application",
   "start_url": "/",
   "display": "standalone",
