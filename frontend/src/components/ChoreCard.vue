@@ -1,109 +1,117 @@
 ﻿<template>
-  <div
-    class="chore-card"
-    :class="[
-      choreClass(chore),
-      {
-        'edit-mode': editMode,
-        'done-today': choreStore.isDoneToday(chore),
-        'private-chore': chore.is_private,
-        'archived-view': isArchivedView
-      }
-    ]"
-    :id="`chore-card-${chore.id}`"
-    ref="cardRef"
-    @dblclick="handleDblClick"
-    role="listitem"
-    tabindex="0"
-    :aria-label="chore.is_private ? `Private chore: ${chore.name}` : `Chore: ${chore.name}`"
-  >
-    <!-- Left swipe action (Edit) -->
-    <div class="swipe-action edit-action">
-      <button class="edit-button" @click="enterEditMode">
-        <i class="fas fa-edit"></i>
-      </button>
-    </div>
-    
-    <!-- Right swipe action (Mark as done) -->
-    <div class="swipe-action done-action">
-      <button class="done-button" @click="markDone">
+  <div class="chore-card-wrapper">
+    <!-- Swipe Background Layer (Gmail Style) -->
+    <div 
+      class="swipe-background"
+      :style="backgroundStyle"
+    >
+      <div class="action-icon icon-left" :style="leftIconStyle">
         <i class="fas fa-check"></i>
-      </button>
+      </div>
+      <div class="action-icon icon-right" :style="rightIconStyle">
+        <i class="fas fa-edit"></i>
+      </div>
     </div>
-    
-    <transition name="fade">
-      <div v-if="editMode" class="chore-edit">
-        <form @submit.prevent="saveChore" class="edit-chore-form">
-          <div class="form-header">
-            <h3>Edit Chore</h3>
-          </div>
-          
-          <div class="form-body">
-            <div class="form-group">
-              <label for="chore-name">Name</label>
-              <input id="chore-name" v-model="editableChore.name" type="text" placeholder="Chore Name" required />
+
+    <!-- Sliding Surface -->
+    <div
+      class="chore-card"
+      :style="{ transform: isSwiping || isReturning ? `translateX(${swipeOffset}px)` : '' }"
+      :class="[
+        choreClass(chore),
+        {
+          'edit-mode': editMode,
+          'done-today': choreStore.isDoneToday(chore),
+          'private-chore': chore.is_private,
+          'archived-view': isArchivedView,
+          'swiping': isSwiping,
+          'returning': isReturning
+        }
+      ]"
+      :id="`chore-card-${chore.id}`"
+      ref="cardRef"
+      @dblclick="handleDblClick"
+      @pointerdown="handlePointerDown"
+      @pointermove="handlePointerMove"
+      @pointerup="handlePointerUp"
+      @pointercancel="handlePointerCancel"
+      role="listitem"
+      tabindex="0"
+      :aria-label="chore.is_private ? `Private chore: ${chore.name}` : `Chore: ${chore.name}`"
+    >
+      <transition name="fade">
+        <div v-if="editMode" class="chore-edit">
+          <form @submit.prevent="saveChore" class="edit-chore-form">
+            <div class="form-header">
+              <h3>Edit Chore</h3>
+            </div>
+            
+            <div class="form-body">
+              <div class="form-group">
+                <label for="chore-name">Name</label>
+                <input id="chore-name" v-model="editableChore.name" type="text" placeholder="Chore Name" required />
+              </div>
+
+              <div class="form-group">
+                <label for="chore-due-date">Due Date</label>
+                <input id="chore-due-date" v-model="editableChore.due_date" type="date" required />
+              </div>
+
+              <div class="form-group">
+                <label for="chore-interval">Interval (days)</label>
+                <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
+              </div>
+
+              <div class="form-group custom-checkbox-wrapper">
+                <input type="checkbox" id="chore-private" v-model="editableChore.is_private" />
+                <label for="chore-private">
+                  <span class="checkbox-icon">
+                    <i v-if="editableChore.is_private" class="fas fa-check"></i>
+                  </span>
+                  <span class="checkbox-text">Private (only visible to me)</span>
+                </label>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="chore-due-date">Due Date</label>
-              <input id="chore-due-date" v-model="editableChore.due_date" type="date" required />
-            </div>
-
-            <div class="form-group">
-              <label for="chore-interval">Interval (days)</label>
-              <input id="chore-interval" v-model="editableChore.interval_days" type="number" required />
-            </div>
-
-            <div class="form-group custom-checkbox-wrapper">
-              <input type="checkbox" id="chore-private" v-model="editableChore.is_private" />
-              <label for="chore-private">
-                <span class="checkbox-icon">
-                  <i v-if="editableChore.is_private" class="fas fa-check"></i>
-                </span>
-                <span class="checkbox-text">Private (only visible to me)</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-footer">
-            <button v-if="!isArchivedView" type="button" class="archive-button" @click="archiveChore">
-              <i class="fas" :class="chore.archived ? 'fa-undo' : 'fa-archive'"></i> {{ chore.archived ? 'Unarchive' : 'Archive' }}
-            </button>
-            <div class="action-buttons">
-              <button type="button" class="cancel-button" @click="cancelEditMode">
-                <i class="fas fa-times"></i> Cancel
+            <div class="form-footer">
+              <button v-if="!isArchivedView" type="button" class="archive-button" @click="archiveChore">
+                <i class="fas" :class="chore.archived ? 'fa-undo' : 'fa-archive'"></i> {{ chore.archived ? 'Unarchive' : 'Archive' }}
               </button>
-              <button type="submit" class="save-button">
-                <i class="fas fa-save"></i> Save
-              </button>
+              <div class="action-buttons">
+                <button type="button" class="cancel-button" @click="cancelEditMode">
+                  <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="save-button">
+                  <i class="fas fa-save"></i> Save
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
-      </div>
-      <div v-else class="chore-content">
-        <span class="chore-title">
-          <span v-if="chore.is_private" title="Private chore" aria-label="Private chore" role="img">🔒</span>
-          {{ chore.name }}
-        </span>
-        <div class="chore-right">
-          <span
-            :class="{'chore-overdue': isOverdue(chore.due_date), 'chore-due': !isOverdue(chore.due_date)}"
-            class="chore-due"
-          >
-            {{ friendlyDueDate(chore.due_date) }}
-          </span>
-          <span class="chore-interval">
-            {{ chore.interval_days }}
-          </span>
+          </form>
         </div>
-      </div>
-    </transition>
+        <div v-else class="chore-content">
+          <span class="chore-title">
+            <span v-if="chore.is_private" title="Private chore" aria-label="Private chore" role="img">🔒</span>
+            {{ chore.name }}
+          </span>
+          <div class="chore-right">
+            <span
+              :class="{'chore-overdue': isOverdue(chore.due_date), 'chore-due': !isOverdue(chore.due_date)}"
+              class="chore-due"
+            >
+              {{ friendlyDueDate(chore.due_date) }}
+            </span>
+            <span class="chore-interval">
+              {{ chore.interval_days }}
+            </span>
+          </div>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import Hammer from 'hammerjs';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useChoreStore } from '@/store/choreStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -115,18 +123,63 @@ const authStore = useAuthStore();
 
 const editMode = ref(false);
 const editableChore = ref({ ...props.chore });
-let hammer = null;
-let isRevealingAction = false;
 const cardRef = ref(null);
-let scrollHandler = null;
-let returnTimer = null;
-let initialY = 0; // Track initial Y position for detecting vertical scrolls
-let isScrolling = false; // Flag to determine if user is scrolling
-const MIN_SWIPE_DISTANCE = 40; // Minimum distance in pixels before triggering swipe action
-const SCROLL_DETECTION_THRESHOLD = 15; // Pixel threshold to detect vertical scrolling
-const RETURN_ANIMATION_MS = 480;
-const MAX_RETURN_DISTANCE = 140;
+
+// Swipe constants
+const MIN_SWIPE_DISTANCE = 40;
+const SWIPE_THRESHOLD = 80;
 const MAX_RETURN_TILT = 8;
+const MAX_RETURN_DISTANCE = 140;
+const RETURN_ANIMATION_MS = 480;
+
+// Swipe State
+const isSwiping = ref(false);
+const isReturning = ref(false);
+const swipeOffset = ref(0);
+
+// Visual Computeds
+const swipeThresholdPct = computed(() => Math.min(1, Math.abs(swipeOffset.value) / SWIPE_THRESHOLD));
+
+const leftIconStyle = computed(() => {
+  // Left Icon (Done/Check) - Visible when dragging Right (offset > 0)
+  if (swipeOffset.value <= 0) return { opacity: 0, transform: 'scale(0.8)' };
+  const scale = 0.8 + (swipeThresholdPct.value * 0.4); // 0.8 -> 1.2
+  return {
+    opacity: Math.min(1, swipeThresholdPct.value * 1.5), // Fade in faster
+    transform: `scale(${scale})`
+  };
+});
+
+const rightIconStyle = computed(() => {
+  // Right Icon (Edit/Pencil) - Visible when dragging Left (offset < 0)
+  if (swipeOffset.value >= 0) return { opacity: 0, transform: 'scale(0.8)' };
+  const scale = 0.8 + (swipeThresholdPct.value * 0.4);
+  return {
+    opacity: Math.min(1, swipeThresholdPct.value * 1.5),
+    transform: `scale(${scale})`
+  };
+});
+
+const backgroundStyle = computed(() => {
+  if (swipeOffset.value === 0) return {};
+  // Use theme variables for colors
+  const colorDone = 'var(--color-primary)';   // Teal for Done
+  const colorEdit = 'var(--color-warning)';   // Amber for Edit
+  
+  return {
+    backgroundColor: swipeOffset.value > 0 ? colorDone : colorEdit
+  };
+});
+
+// Pointer tracking
+let startX = 0;
+let startY = 0;
+let currentX = 0;
+let isGestureActive = false;
+let isScrollLocked = false;
+let isSwipeLocked = false;
+
+const isEditModeActive = () => choreStore.editingChoreId === props.chore.id || editMode.value;
 
 watch(
   () => choreStore.editingChoreId,
@@ -154,8 +207,6 @@ watch(
   { deep: true }
 );
 
-const isEditModeActive = () => choreStore.editingChoreId === props.chore.id || editMode.value;
-
 const handleDblClick = () => {
   if (choreStore.isDoneToday(props.chore) || props.isArchivedView) return;
   enterEditMode();
@@ -175,188 +226,117 @@ const markDone = () => {
   emit('markAsDone', props.chore.id);
 };
 
-const resetSwipeState = (card) => {
-  if (returnTimer) {
-    clearTimeout(returnTimer);
-    returnTimer = null;
-  }
-  // Reset all swipe-related classes
-  card.classList.remove('swipe-left', 'swipe-right', 'swipe-reveal-left', 'swipe-reveal-right', 'swiping', 'returning');
-  // Reset inline style transform
-  card.style.transform = '';
-  card.style.removeProperty('--swipe-current-tilt');
-  card.style.removeProperty('--swipe-return-distance');
-  card.style.removeProperty('--swipe-return-tilt');
-  isRevealingAction = false;
-  isScrolling = false;
+/* --- Pointer Event Handlers for Swipe --- */
+
+const handlePointerDown = (e) => {
+  if (choreStore.isDoneToday(props.chore) || isEditModeActive() || props.isArchivedView) return;
+  if (!e.isPrimary) return;
+
+  isGestureActive = true;
+  isScrollLocked = false;
+  isSwipeLocked = false;
+  startX = e.clientX;
+  startY = e.clientY;
+  currentX = e.clientX;
+  isReturning.value = false;
+  e.target.setPointerCapture(e.pointerId);
 };
 
-const applySwipeTransform = (card, deltaX) => {
-  const clampedDistance = Math.max(-MAX_RETURN_DISTANCE, Math.min(MAX_RETURN_DISTANCE, deltaX));
-  const tilt = Math.max(-MAX_RETURN_TILT, Math.min(MAX_RETURN_TILT, clampedDistance / 14));
-  card.style.setProperty('--swipe-current-tilt', `${tilt}deg`);
-  card.style.transform = `translateX(${clampedDistance}px) rotate(${tilt}deg)`;
-  return { clampedDistance, tilt };
-};
+const handlePointerMove = (e) => {
+  if (!isGestureActive) return;
 
-const animateReturn = (card, deltaX) => {
-  const { clampedDistance, tilt } = applySwipeTransform(card, deltaX);
-  card.style.setProperty('--swipe-return-distance', `${clampedDistance}px`);
-  card.style.setProperty('--swipe-return-tilt', `${tilt}deg`);
-  card.classList.add('returning');
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
 
-  returnTimer = setTimeout(() => {
-    card.classList.remove('returning');
-    resetSwipeState(card);
-  }, RETURN_ANIMATION_MS);
-};
+  if (isScrollLocked) return;
 
-onMounted(() => {
-  const card = cardRef.value;
+  if (!isSwipeLocked) {
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    const DISTANCE_THRESHOLD = 5;
 
-  // Skip initializing Hammer.js for archived chores view
-  if (props.isArchivedView) {
-    return;
-  }
-  
-  // Initialize Hammer.js with horizontal swipes while preserving vertical scrolling
-  hammer = new Hammer(card, { touchAction: 'pan-y' });
-  hammer.get('pan').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 5 });
-  
-  // Pan start - capture initial position and reset state
-  hammer.on('panstart', (event) => {
-    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
-    
-    // Cancel any return animation before starting a fresh gesture
-    resetSwipeState(card);
-    
-    // Store initial Y position to detect scrolling direction
-    initialY = event.center.y;
-    isScrolling = false;
-    card.classList.add('swiping');
-  });
-  
-  // Handle panning to left (for edit)
-  hammer.on('panleft', (event) => {
-    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
-    
-    // Check if user is scrolling vertically
-    const verticalDistance = Math.abs(event.center.y - initialY);
-    if (verticalDistance > SCROLL_DETECTION_THRESHOLD) {
-      isScrolling = true;
-      resetSwipeState(card);
+    if (absDx < DISTANCE_THRESHOLD && absDy < DISTANCE_THRESHOLD) return;
+
+    if (absDy > absDx) {
+      isScrollLocked = true;
+      isGestureActive = false;
       return;
-    }
-    
-    // If not scrolling, handle horizontal swipe
-    if (!isScrolling) {
-      // Apply a transform effect to the card during panning
-      const translateX = Math.min(0, event.deltaX);
-      applySwipeTransform(card, translateX);
-      
-      // Only reveal action if swipe distance exceeds minimum threshold
-      if (Math.abs(event.deltaX) >= MIN_SWIPE_DISTANCE) {
-        card.classList.add('swipe-reveal-left');
-        isRevealingAction = true;
-      } else {
-        card.classList.remove('swipe-reveal-left');
-        isRevealingAction = false;
-      }
-    }
-  });
-  
-  // Handle panning to right (for done)
-  hammer.on('panright', (event) => {
-    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
-    
-    // Check if user is scrolling vertically
-    const verticalDistance = Math.abs(event.center.y - initialY);
-    if (verticalDistance > SCROLL_DETECTION_THRESHOLD) {
-      isScrolling = true;
-      resetSwipeState(card);
-      return;
-    }
-    
-    // If not scrolling, handle horizontal swipe
-    if (!isScrolling) {
-      // Apply a transform effect to the card during panning
-      const translateX = Math.max(0, event.deltaX);
-      applySwipeTransform(card, translateX);
-      
-      // Only reveal action if swipe distance exceeds minimum threshold
-      if (Math.abs(event.deltaX) >= MIN_SWIPE_DISTANCE) {
-        card.classList.add('swipe-reveal-right');
-        isRevealingAction = true;
-      } else {
-        card.classList.remove('swipe-reveal-right');
-        isRevealingAction = false;
-      }
-    }
-  });
-  
-  // Handle end of panning gesture
-  hammer.on('panend', (event) => {
-    if (choreStore.isDoneToday(props.chore) || isEditModeActive()) return;
-    
-    card.classList.remove('swiping');
-    
-    // If detected as a scroll, abort swipe action
-    if (isScrolling) {
-      resetSwipeState(card);
-      return;
-    }
-    
-    // Only trigger action if swipe was deliberate (exceeds threshold)
-    const swipeDistance = Math.abs(event.deltaX);
-    
-    if (isRevealingAction && swipeDistance >= MIN_SWIPE_DISTANCE) {
-      if (card.classList.contains('swipe-reveal-left')) {
-        // For left swipe (Edit)
-        card.classList.add('swipe-left');
-        setTimeout(() => {
-          enterEditMode();
-          resetSwipeState(card);
-        }, 300);
-      } else if (card.classList.contains('swipe-reveal-right')) {
-        // For right swipe (Done)
-        card.classList.add('swipe-right');
-        setTimeout(() => {
-          markDone();
-          resetSwipeState(card);
-        }, 300);
-      }
     } else {
-      // For short swipes, return to original position with animation
-      animateReturn(card, event.deltaX);
+      isSwipeLocked = true;
+      isSwiping.value = true;
     }
-  });
-  
-  // Add a handler for regular touch events to reset swipe state
-  // when the user starts scrolling
-  scrollHandler = () => {
-    if (!isEditModeActive() && card && isRevealingAction) {
-      resetSwipeState(card);
+  }
+
+  if (isSwipeLocked) {
+    if (e.cancelable) e.preventDefault();
+    currentX = e.clientX;
+    const rawOffset = currentX - startX;
+    // Limit dist? Gmail allows pulling quite far.
+    swipeOffset.value = Math.max(-MAX_RETURN_DISTANCE * 1.5, Math.min(MAX_RETURN_DISTANCE * 1.5, rawOffset));
+  }
+};
+
+const handlePointerUp = (e) => {
+  if (!isGestureActive) return;
+  endGesture();
+  e.target.releasePointerCapture(e.pointerId);
+};
+
+const handlePointerCancel = (e) => {
+  if (!isGestureActive) return;
+  endGesture();
+  e.target.releasePointerCapture(e.pointerId);
+};
+
+const endGesture = () => {
+    isGestureActive = false;
+    isSwiping.value = false;
+    
+    if (isSwipeLocked && Math.abs(swipeOffset.value) > SWIPE_THRESHOLD) {
+        if (swipeOffset.value < 0) {
+             // Dragged Left -> Edit (Orange)
+             triggerEdit(); 
+        } else {
+             // Dragged Right -> Done (Green)
+             triggerDone(); 
+        }
+    } else {
+        animateReturn();
     }
-  };
+    
+    isScrollLocked = false;
+    isSwipeLocked = false;
+};
 
-  document.addEventListener('scroll', scrollHandler, { passive: true });
-});
+const triggerEdit = () => {
+    enterEditMode(); // This will clear swipe UI immediately via reactivity usually
+    // Force reset to clean up
+    swipeOffset.value = 0;
+    isReturning.value = false;
+};
 
-onBeforeUnmount(() => {
-  if (hammer) {
-    hammer.destroy();
-    hammer = null;
-  }
+const triggerDone = () => {
+    markDone();
+    swipeOffset.value = 0;
+    isReturning.value = false;
+};
 
-  if (scrollHandler) {
-    document.removeEventListener('scroll', scrollHandler);
-  }
+const animateReturn = () => {
+    isReturning.value = true;
+    swipeOffset.value = 0;
+    setTimeout(() => {
+        isReturning.value = false;
+    }, RETURN_ANIMATION_MS);
+};
 
-  if (returnTimer) {
-    clearTimeout(returnTimer);
-    returnTimer = null;
-  }
-});
+const resetSwipeState = () => {
+    swipeOffset.value = 0;
+    isSwiping.value = false;
+    isReturning.value = false;
+    isGestureActive = false;
+    isScrollLocked = false;
+    isSwipeLocked = false;
+};
 
 const saveChore = async () => {
   try {
@@ -443,113 +423,88 @@ const friendlyDueDate = (due_date) => {
 </script>
 
 <style scoped>
+/* Wrapper for swipe context */
+.chore-card-wrapper {
+  position: relative;
+  /* maintain margins/padding logic of original if any external layout depended on it,
+     but here we just need to contain the card */
+  margin-bottom: var(--space-xxs);
+  border-radius: 24px; /* match card radius */
+  overflow: hidden; /* clip the background */
+  /* Remove direct interactions that might conflict */
+  touch-action: pan-y; 
+}
+
+/* The Background Layer (Colors + Icons) */
+.swipe-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease;
+  background-color: transparent; /* Default */
+}
+
+/* Icons on the background */
+.action-icon {
+  color: white; /* Icons always white on colored bg */
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+}
+
+/* The Surface Card */
 .chore-card {
+  position: relative;
+  z-index: 2; /* Sit on top */
   display: flex;
   flex-direction: column;
   padding: var(--space-sm) var(--space-lg);
   border-radius: 24px;
-  margin-bottom: var(--space-xxs);
+  /* margin-bottom handled by wrapper now */
   box-shadow: var(--shadow-md);
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), filter var(--transition-normal);
+  transition: box-shadow var(--transition-normal), filter var(--transition-normal);
+  background: var(--color-surface, #ffffff); /* Ensure background is opaque */
+  
+  /* Reset touch action here too */
   touch-action: pan-y;
   -ms-touch-action: pan-y;
   color: var(--color-text);
-  position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  will-change: transform, filter;
+  will-change: transform;
 }
 
-.chore-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  filter: saturate(1.02);
+/* Apply transform transition only when returning */
+.chore-card.returning {
+  transition: transform 0.3s var(--motion-spring);
 }
-
-/* Swipe Action Containers */
-.swipe-action {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 88px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s var(--motion-soft);
-  box-shadow: 0 0 20px rgba(31, 45, 44, 0.15);
-  z-index: 2;
-}
-
-.edit-action {
-  right: 0;
-  background: linear-gradient(135deg, #fde8d9, #f6c7ae);
-  transform: translateX(100%);
-}
-
-.done-action {
-  left: 0;
-  background: linear-gradient(135deg, #d5f1e5, #9edfc7);
-  transform: translateX(-100%);
-}
-
-/* Swipe Action Buttons */
-.done-button, .edit-button {
-  border: none;
-  background: transparent;
-  color: #0f1b1a;
-  font-size: 1.5rem;
-  cursor: pointer;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Reveal states */
-.chore-card.swipe-reveal-left .edit-action {
-  transform: translateX(0);
-}
-
-.chore-card.swipe-reveal-right .done-action {
-  transform: translateX(0);
-}
-
-/* Animation states */
-.chore-card.swipe-left {
-  transform: translateX(-100px);
-  opacity: 0.9;
-  transition: transform 0.32s var(--motion-emphasized), opacity 0.32s var(--motion-emphasized);
-}
-
-.chore-card.swipe-right {
-  transform: translateX(100px);
-  opacity: 0.9;
-  transition: transform 0.32s var(--motion-emphasized), opacity 0.32s var(--motion-emphasized);
-}
-
+/* When swiping, no transition on transform for 1:1 feel */
 .chore-card.swiping {
   transition: none;
   box-shadow: var(--shadow-lg);
-  filter: saturate(1.05);
 }
 
-.chore-card.returning {
-  animation: return-snap var(--swipe-return-duration) var(--motion-rubber), return-glow 380ms ease;
+.chore-card:hover {
+  /* Only hover effect if not swiping/returning to avoid jitter */
+  /* transform: translateY(-2px); We might want to disable vertical hover shift to avoid conflict? */ 
+  box-shadow: var(--shadow-lg);
 }
+/* Re-add hover transform only if we want it, but maybe safer without for now */
 
-.chore-card.returning::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 50%, var(--swipe-return-highlight) 0%, transparent 55%);
-  opacity: 0.12;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  animation: return-highlight var(--swipe-return-duration) ease;
-}
 
+/* Content specific interactions */
 .chore-content {
   display: flex;
   justify-content: space-between;
@@ -558,6 +513,11 @@ const friendlyDueDate = (due_date) => {
   min-height: 2.6rem;
   flex-wrap: wrap;
   z-index: 1;
+  pointer-events: none; /* Let clicks pass to card? No, buttons inside need events */
+}
+/* Re-enable pointer events for buttons if they exist */
+.chore-content * {
+  pointer-events: auto;
 }
 
 .chore-title {
