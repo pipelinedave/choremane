@@ -25,7 +25,7 @@ jobs:
       - name: Run linting
         run: |
           cd backend
-          ruff check . --select=F,E9,W9
+          ruff check . --select=F,E 2>&1
 
   test:
     runs-on: ubuntu-latest
