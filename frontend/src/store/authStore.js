@@ -17,16 +17,16 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated() {
       return !!this.token
     },
-    
+
     isTokenExpired() {
       if (!this.tokenExpiry) return true
       return new Date().getTime() > parseInt(this.tokenExpiry)
     },
-    
+
     userEmail() {
       return this.userProfile?.email || this.username
     },
-    
+
     displayName() {
       return this.userProfile?.name || this.userProfile?.email || this.username
     }
@@ -35,7 +35,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(authData) {
       const { token, id_token, refresh_token, expires_in } = authData
-      
+
       // Decode the ID token to get user information
       let userProfile = null
       if (id_token) {
@@ -45,10 +45,10 @@ export const useAuthStore = defineStore('auth', {
           console.error('Failed to decode ID token', error)
         }
       }
-      
+
       // Calculate token expiration
       const expiryTime = new Date().getTime() + expires_in * 1000
-      
+
       // Set state
       this.token = token
       this.idToken = id_token
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', {
       this.username = userProfile?.email || ''
       this.userProfile = userProfile
       this.tokenExpiry = expiryTime.toString()
-      
+
       // Store in localStorage
       localStorage.setItem('token', token)
       localStorage.setItem('idToken', id_token || '')
@@ -66,13 +66,13 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('username', this.username)
       localStorage.setItem('userProfile', JSON.stringify(userProfile))
       localStorage.setItem('tokenExpiry', expiryTime.toString())
-      
+
       return userProfile
     },
 
     async loginWithDex() {
       // Use the actual base URL without /api suffix
-      if (process.env.NODE_ENV === "development") {
+      if (import.meta.env.DEV) {
         console.log("Redirecting to DEX login in development mode")
         window.location.href = 'http://localhost:8090/auth/login'
       } else {
@@ -80,19 +80,19 @@ export const useAuthStore = defineStore('auth', {
         window.location.href = '/api/auth/login'
       }
     },
-    
+
     async refreshAccessToken() {
       if (!this.refreshToken) {
         console.error('No refresh token available')
         this.logout()
         return false
       }
-      
+
       try {
         const response = await api.post('/auth/refresh', {
           refresh_token: this.refreshToken
         })
-        
+
         if (response.data && response.data.access_token) {
           this.login({
             token: response.data.access_token,
@@ -106,7 +106,7 @@ export const useAuthStore = defineStore('auth', {
         console.error('Failed to refresh token', error)
         this.logout()
       }
-      
+
       return false
     },
 
@@ -118,7 +118,7 @@ export const useAuthStore = defineStore('auth', {
       this.username = null
       this.userProfile = null
       this.tokenExpiry = null
-      
+
       localStorage.removeItem('token')
       localStorage.removeItem('idToken')
       localStorage.removeItem('refreshToken')
