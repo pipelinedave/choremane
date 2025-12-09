@@ -2,8 +2,6 @@
 Tests for the chore counts endpoint.
 """
 
-from datetime import date, timedelta
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -66,7 +64,9 @@ class TestChoreCountsEndpoint:
         client = make_client()
 
         # Mock different counts for each query
-        counts = iter([10, 2, 3, 1, 2, 2])  # all, overdue, today, tomorrow, thisWeek, upcoming
+        counts = iter(
+            [10, 2, 3, 1, 2, 2]
+        )  # all, overdue, today, tomorrow, thisWeek, upcoming
 
         class DummyCursor:
             def execute(self, *args, **kwargs):

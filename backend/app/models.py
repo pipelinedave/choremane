@@ -1,5 +1,6 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Optional
+
 
 class Chore(BaseModel):
     id: Optional[int] = None
@@ -10,17 +11,22 @@ class Chore(BaseModel):
     done_by: Optional[str] = Field(default=None)
     archived: bool = Field(default=False)
     last_done: Optional[str] = None  # ISO date string of the last completion
-    owner_email: Optional[str] = None  # Email of the user who owns the chore (null for shared chores)
+    owner_email: Optional[str] = (
+        None  # Email of the user who owns the chore (null for shared chores)
+    )
     is_private: bool = Field(default=False)  # True if the chore is private to the owner
+
 
 class UndoRequest(BaseModel):
     log_id: int
+
 
 class User(BaseModel):
     email: str
     name: Optional[str] = None
     given_name: Optional[str] = None
     family_name: Optional[str] = None
+
 
 class Token(BaseModel):
     access_token: str

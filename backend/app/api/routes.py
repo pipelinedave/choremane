@@ -15,6 +15,7 @@ from app.api.household_health_endpoint import router as household_health_router
 api_router = APIRouter(prefix="/api")
 api_router.include_router(household_health_router)
 
+
 @api_router.options("/{path:path}")
 async def options_handler(path: str):
     return JSONResponse(content="OK", status_code=200)
@@ -26,9 +27,11 @@ def _to_iso_date(value):
         return value.isoformat()
     return value
 
+
 @api_router.post("/cors-test")
 def cors_test():
     return {"message": "CORS test successful"}
+
 
 @api_router.get("/status")
 def status_check():
@@ -38,10 +41,14 @@ def status_check():
         cur.execute("SELECT 1")
         cur.close()
         conn.close()
-        return {"status": "OK", "message": "Backend is healthy and database is reachable"}
+        return {
+            "status": "OK",
+            "message": "Backend is healthy and database is reachable",
+        }
     except Exception as e:
         logging.error(f"Health check failed: {str(e)}")
         return {"status": "ERROR", "message": "Backend or database connectivity issue"}
+
 
 @api_router.get("/logs")
 def get_logs(request: Request):
@@ -80,7 +87,9 @@ def get_logs(request: Request):
                 try:
                     return json.loads(raw_details)
                 except json.JSONDecodeError:
-                    logging.warning("Unable to decode action_details string; returning raw value")
+                    logging.warning(
+                        "Unable to decode action_details string; returning raw value"
+                    )
                     return raw_details
             return raw_details
 
@@ -105,21 +114,26 @@ def get_logs(request: Request):
         cur.close()
         conn.close()
 
+
 @api_router.get("/chores", response_model=List[Chore])
 def get_chores(request: Request, page: int = 1, limit: int = 10):
     """
     Fetch chores visible to the current user:
     - All shared chores (is_private = false)
     - Private chores owned by the user (is_private = true and owner_email = user)
-    
+
     Supports pagination with page and limit parameters.
     """
-    user_email = request.headers.get("X-User-Email")  # In production, extract from auth/session
-    logging.info(f"Fetching chores for user: {user_email}, page: {page}, limit: {limit}")
-    
+    user_email = request.headers.get(
+        "X-User-Email"
+    )  # In production, extract from auth/session
+    logging.info(
+        f"Fetching chores for user: {user_email}, page: {page}, limit: {limit}"
+    )
+
     # Calculate offset based on page and limit
     offset = (page - 1) * limit
-    
+
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -131,16 +145,28 @@ def get_chores(request: Request, page: int = 1, limit: int = 10):
             ORDER BY due_date ASC
             LIMIT %s OFFSET %s
             """,
-            (user_email, limit, offset)
+            (user_email, limit, offset),
         )
         rows = cur.fetchall()
-        columns = [desc[0] for desc in cur.description] if getattr(cur, "description", None) else []
+        columns = (
+            [desc[0] for desc in cur.description]
+            if getattr(cur, "description", None)
+            else []
+        )
 
         chores = []
         for row in rows:
             record = dict(zip(columns, row)) if columns else {}
-            chore_owner = record.get("owner_email") if record else (row[7] if len(row) > 7 else None)
-            is_private = record.get("is_private", False) if record else (row[8] if len(row) > 8 else False)
+            chore_owner = (
+                record.get("owner_email")
+                if record
+                else (row[7] if len(row) > 7 else None)
+            )
+            is_private = (
+                record.get("is_private", False)
+                if record
+                else (row[8] if len(row) > 8 else False)
+            )
 
             if is_private and chore_owner and chore_owner != user_email:
                 continue
@@ -149,12 +175,20 @@ def get_chores(request: Request, page: int = 1, limit: int = 10):
                 Chore(
                     id=record.get("id", row[0] if row else None),
                     name=record.get("name", row[1] if len(row) > 1 else None),
-                    interval_days=record.get("interval_days", row[2] if len(row) > 2 else None),
-                    due_date=str(_to_iso_date(record.get("due_date", row[3] if len(row) > 3 else ""))),
+                    interval_days=record.get(
+                        "interval_days", row[2] if len(row) > 2 else None
+                    ),
+                    due_date=str(
+                        _to_iso_date(
+                            record.get("due_date", row[3] if len(row) > 3 else "")
+                        )
+                    ),
                     done=record.get("done", row[4] if len(row) > 4 else False),
                     done_by=record.get("done_by", row[5] if len(row) > 5 else None),
                     archived=record.get("archived", row[6] if len(row) > 6 else False),
-                    last_done=_to_iso_date(record.get("last_done", row[9] if len(row) > 9 else None)),
+                    last_done=_to_iso_date(
+                        record.get("last_done", row[9] if len(row) > 9 else None)
+                    ),
                     owner_email=chore_owner,
                     is_private=is_private,
                 )
@@ -167,6 +201,7 @@ def get_chores(request: Request, page: int = 1, limit: int = 10):
         cur.close()
         conn.close()
 
+
 @api_router.post("/chores")
 def add_chore(chore: Chore, request: Request):
     user_email = request.headers.get("X-User-Email")
@@ -178,7 +213,13 @@ def add_chore(chore: Chore, request: Request):
             INSERT INTO chores (name, interval_days, due_date, archived, owner_email, is_private)
             VALUES (%s, %s, %s, FALSE, %s, %s) RETURNING id
             """,
-            (chore.name, chore.interval_days, chore.due_date, user_email if chore.is_private else None, chore.is_private)
+            (
+                chore.name,
+                chore.interval_days,
+                chore.due_date,
+                user_email if chore.is_private else None,
+                chore.is_private,
+            ),
         )
         chore_id = cur.fetchone()[0]
         conn.commit()
@@ -192,12 +233,16 @@ def add_chore(chore: Chore, request: Request):
         cur.close()
         conn.close()
 
+
 @api_router.post("/undo")
 def undo_action(undo_request: UndoRequest):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT action_type, action_details FROM chore_logs WHERE id = %s", (undo_request.log_id,))
+        cur.execute(
+            "SELECT action_type, action_details FROM chore_logs WHERE id = %s",
+            (undo_request.log_id,),
+        )
         log_entry = cur.fetchone()
         if not log_entry:
             raise HTTPException(status_code=404, detail="Log entry not found")
@@ -217,23 +262,40 @@ def undo_action(undo_request: UndoRequest):
                     action_details["previous_state"]["interval_days"],
                     action_details["previous_state"]["due_date"],
                     action_details["previous_state"]["id"],
-                )
+                ),
             )
         elif action_type == "archived":
-            cur.execute("UPDATE chores SET archived = FALSE WHERE id = %s", (action_details["id"],))
+            cur.execute(
+                "UPDATE chores SET archived = FALSE WHERE id = %s",
+                (action_details["id"],),
+            )
         elif action_type == "marked_done":
             original_chore_id = action_details["chore_id"]
-            original_due_date = action_details.get("previous_due_date", date.today().isoformat())
+            original_due_date = action_details.get(
+                "previous_due_date", date.today().isoformat()
+            )
             previous_last_done = action_details.get("previous_last_done")
             cur.execute(
                 "UPDATE chores SET done = FALSE, done_by = %s, due_date = %s, last_done = %s WHERE id = %s",
-                (None, original_due_date, previous_last_done, original_chore_id)
+                (None, original_due_date, previous_last_done, original_chore_id),
             )
         else:
-            raise HTTPException(status_code=400, detail="Undo not supported for this action type")
+            raise HTTPException(
+                status_code=400, detail="Undo not supported for this action type"
+            )
         conn.commit()
-        log_chore_id = action_details.get("id") or action_details.get("chore_id") or action_details.get("previous_state", {}).get("id")
-        log_action(log_chore_id, None, "undo", action_details={"action_type": action_type, "undone": True}, conn=conn)
+        log_chore_id = (
+            action_details.get("id")
+            or action_details.get("chore_id")
+            or action_details.get("previous_state", {}).get("id")
+        )
+        log_action(
+            log_chore_id,
+            None,
+            "undo",
+            action_details={"action_type": action_type, "undone": True},
+            conn=conn,
+        )
         return {"message": f"Action {action_type} undone successfully"}
     except HTTPException:
         conn.rollback()
@@ -245,6 +307,7 @@ def undo_action(undo_request: UndoRequest):
     finally:
         cur.close()
         conn.close()
+
 
 @api_router.put("/chores/{chore_id}")
 def update_chore(chore_id: int, updated_chore: Chore):
@@ -268,10 +331,20 @@ def update_chore(chore_id: int, updated_chore: Chore):
             UPDATE chores SET name = %s, interval_days = %s, due_date = %s
             WHERE id = %s
             """,
-            (updated_chore.name, updated_chore.interval_days, updated_chore.due_date, chore_id)
+            (
+                updated_chore.name,
+                updated_chore.interval_days,
+                updated_chore.due_date,
+                chore_id,
+            ),
         )
         conn.commit()
-        log_action(chore_id, None, "updated", action_details={"previous_state": previous_state_dict})
+        log_action(
+            chore_id,
+            None,
+            "updated",
+            action_details={"previous_state": previous_state_dict},
+        )
         return {"message": f"Chore {chore_id} updated successfully"}
     except HTTPException:
         conn.rollback()
@@ -284,6 +357,7 @@ def update_chore(chore_id: int, updated_chore: Chore):
         cur.close()
         conn.close()
 
+
 @api_router.put("/chores/{chore_id}/done")
 def mark_chore_done(chore_id: int, payload: dict):
     done_by = payload.get("done_by")
@@ -293,7 +367,10 @@ def mark_chore_done(chore_id: int, payload: dict):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT interval_days, due_date, last_done FROM chores WHERE id = %s", (chore_id,))
+        cur.execute(
+            "SELECT interval_days, due_date, last_done FROM chores WHERE id = %s",
+            (chore_id,),
+        )
         result = cur.fetchone()
         if not result:
             raise HTTPException(status_code=404, detail="Chore not found or incomplete")
@@ -325,7 +402,7 @@ def mark_chore_done(chore_id: int, payload: dict):
             SET done = TRUE, done_by = %s, due_date = %s, last_done = %s 
             WHERE id = %s
             """,
-            (done_by, new_due_date, today_date, chore_id)
+            (done_by, new_due_date, today_date, chore_id),
         )
         conn.commit()
         log_action(
@@ -357,6 +434,7 @@ def mark_chore_done(chore_id: int, payload: dict):
         cur.close()
         conn.close()
 
+
 @api_router.put("/chores/{chore_id}/archive")
 def archive_chore(chore_id: int):
     conn = get_db_connection()
@@ -378,6 +456,7 @@ def archive_chore(chore_id: int):
     finally:
         cur.close()
         conn.close()
+
 
 @api_router.put("/chores/{chore_id}/unarchive")
 def unarchive_chore(chore_id: int):
@@ -401,6 +480,7 @@ def unarchive_chore(chore_id: int):
         cur.close()
         conn.close()
 
+
 @api_router.get("/chores/archived", response_model=List[Chore])
 def get_archived_chores(request: Request):
     """
@@ -408,7 +488,9 @@ def get_archived_chores(request: Request):
     - All shared archived chores (is_private = false, archived = true)
     - Private archived chores owned by the user (is_private = true, archived = true, and owner_email = user)
     """
-    user_email = request.headers.get("X-User-Email")  # In production, extract from auth/session
+    user_email = request.headers.get(
+        "X-User-Email"
+    )  # In production, extract from auth/session
     logging.info(f"Fetching archived chores for user: {user_email}")
     conn = get_db_connection()
     cur = conn.cursor()
@@ -420,7 +502,7 @@ def get_archived_chores(request: Request):
             WHERE archived = TRUE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
             ORDER BY due_date ASC
             """,
-            (user_email,)
+            (user_email,),
         )
         rows = cur.fetchall()
         chores = [
@@ -435,7 +517,8 @@ def get_archived_chores(request: Request):
                 owner_email=row[7] if len(row) > 7 else None,
                 is_private=row[8] if len(row) > 8 else False,
                 last_done=_to_iso_date(row[9] if len(row) > 9 else None),
-            ) for row in rows
+            )
+            for row in rows
         ]
         return chores
     except Exception as e:
@@ -445,17 +528,20 @@ def get_archived_chores(request: Request):
         cur.close()
         conn.close()
 
+
 @api_router.get("/version")
 def get_version_info():
     import os
+
     version_tag = os.getenv("VERSION_TAG", "unknown")
     backend_image = os.getenv("BACKEND_IMAGE", "unknown")
     frontend_image = os.getenv("FRONTEND_IMAGE", "unknown")
     return {
         "version_tag": version_tag,
         "backend_image": backend_image,
-        "frontend_image": frontend_image
+        "frontend_image": frontend_image,
     }
+
 
 @api_router.post("/import")
 async def import_data(request: Request):
@@ -468,13 +554,15 @@ async def import_data(request: Request):
     try:
         import_data = await request.json()
         user_email = request.headers.get("X-User-Email")
-        
+
         if not import_data.get("chores"):
-            raise HTTPException(status_code=400, detail="No chores data found in the import file")
-        
+            raise HTTPException(
+                status_code=400, detail="No chores data found in the import file"
+            )
+
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         imported_chores = []
         for chore in import_data["chores"]:
             try:
@@ -491,18 +579,18 @@ async def import_data(request: Request):
                             WHERE id = %s
                             """,
                             (
-                                chore["name"], 
-                                chore["interval_days"], 
+                                chore["name"],
+                                chore["interval_days"],
                                 chore["due_date"],
                                 chore.get("is_private", False),
                                 user_email if chore.get("is_private", False) else None,
                                 chore.get("last_done"),
-                                chore["id"]
-                            )
+                                chore["id"],
+                            ),
                         )
                         imported_chores.append({"id": chore["id"], "status": "updated"})
                         continue
-                
+
                 # Insert as new chore
                 cur.execute(
                     """
@@ -510,14 +598,14 @@ async def import_data(request: Request):
                     VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
                     """,
                     (
-                        chore["name"], 
-                        chore["interval_days"], 
+                        chore["name"],
+                        chore["interval_days"],
                         chore["due_date"],
                         chore.get("archived", False),
                         user_email if chore.get("is_private", False) else None,
                         chore.get("is_private", False),
                         chore.get("last_done"),
-                    )
+                    ),
                 )
                 new_id = cur.fetchone()[0]
                 imported_chores.append({"id": new_id, "status": "created"})
@@ -534,13 +622,17 @@ async def import_data(request: Request):
                     try:
                         action_details = json.loads(action_details)
                     except json.JSONDecodeError:
-                        logging.warning("Received unparseable action_details string during import; storing raw value")
+                        logging.warning(
+                            "Received unparseable action_details string during import; storing raw value"
+                        )
                 done_at = log.get("done_at")
                 if done_at:
                     try:
                         done_at = datetime.fromisoformat(done_at)
                     except Exception:
-                        logging.warning(f"Invalid done_at format in imported log {log.get('id')}, using current time")
+                        logging.warning(
+                            f"Invalid done_at format in imported log {log.get('id')}, using current time"
+                        )
                         done_at = datetime.utcnow()
                 cur.execute(
                     """
@@ -555,11 +647,13 @@ async def import_data(request: Request):
                         json.dumps(action_details),
                     ),
                 )
-                imported_logs.append({"chore_id": log.get("chore_id"), "status": "created"})
+                imported_logs.append(
+                    {"chore_id": log.get("chore_id"), "status": "created"}
+                )
             except Exception as e:
                 logging.error(f"Error importing log entry {log.get('id')}: {e}")
                 # Continue with next log
-        
+
         conn.commit()
         log_action(
             None,
@@ -570,7 +664,7 @@ async def import_data(request: Request):
                 "imported_logs": len(imported_logs),
             },
         )
-        
+
         return {
             "message": "Import successful",
             "imported_chores": len(imported_chores),
@@ -585,16 +679,17 @@ async def import_data(request: Request):
         logging.error(f"Error during import: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to import data: {str(e)}")
 
+
 @api_router.get("/export")
 def export_data(request: Request):
     """
     Export all chores and logs for the current user.
     """
     user_email = request.headers.get("X-User-Email")
-    
+
     conn = get_db_connection()
     cur = conn.cursor()
-    
+
     try:
         # Get chores (visible to this user)
         cur.execute(
@@ -603,7 +698,7 @@ def export_data(request: Request):
             FROM chores
             WHERE is_private = FALSE OR (is_private = TRUE AND owner_email = %s)
             """,
-            (user_email,)
+            (user_email,),
         )
         chores = []
         for row in cur.fetchall():
@@ -614,7 +709,7 @@ def export_data(request: Request):
             if isinstance(chore.get("last_done"), (datetime, date)):
                 chore["last_done"] = chore["last_done"].isoformat()
             chores.append(chore)
-        
+
         # Get logs
         cur.execute(
             """
@@ -630,19 +725,22 @@ def export_data(request: Request):
             if isinstance(log["done_at"], (datetime, date)):
                 log["done_at"] = log["done_at"].isoformat()
             logs.append(log)
-            
-        log_action(None, user_email, "export", action_details={"chore_count": len(chores), "log_count": len(logs)})
-        
-        return {
-            "chores": chores,
-            "logs": logs
-        }
+
+        log_action(
+            None,
+            user_email,
+            "export",
+            action_details={"chore_count": len(chores), "log_count": len(logs)},
+        )
+
+        return {"chores": chores, "logs": logs}
     except Exception as e:
         logging.error(f"Error during export: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to export data: {str(e)}")
     finally:
         cur.close()
         conn.close()
+
 
 @api_router.get("/chores/count")
 def get_chore_counts(request: Request):
@@ -656,12 +754,12 @@ def get_chore_counts(request: Request):
     - upcoming: Chores due beyond next week
     """
     user_email = request.headers.get("X-User-Email")
-    
+
     # Get today's date for comparisons
     today = date.today()
     tomorrow = today + timedelta(days=1)
     next_week = today + timedelta(days=7)
-    
+
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -671,41 +769,41 @@ def get_chore_counts(request: Request):
             FROM chores 
             WHERE archived = FALSE AND (is_private = FALSE OR (is_private = TRUE AND owner_email = %s))
         """
-        
+
         # Total non-archived chores
         cur.execute(base_query, (user_email,))
         total_count = cur.fetchone()[0]
-        
+
         # Overdue chores
         cur.execute(base_query + " AND due_date < %s", (user_email, today))
         overdue_count = cur.fetchone()[0]
-        
+
         # Due today
         cur.execute(base_query + " AND due_date = %s", (user_email, today))
         today_count = cur.fetchone()[0]
-        
+
         # Due tomorrow
         cur.execute(base_query + " AND due_date = %s", (user_email, tomorrow))
         tomorrow_count = cur.fetchone()[0]
-        
+
         # Due this week (after tomorrow and up to a week from today)
         cur.execute(
-            base_query + " AND due_date > %s AND due_date <= %s", 
-            (user_email, tomorrow, next_week)
+            base_query + " AND due_date > %s AND due_date <= %s",
+            (user_email, tomorrow, next_week),
         )
         this_week_count = cur.fetchone()[0]
-        
+
         # Upcoming (beyond next week)
         cur.execute(base_query + " AND due_date > %s", (user_email, next_week))
         upcoming_count = cur.fetchone()[0]
-        
+
         return {
             "all": total_count,
             "overdue": overdue_count,
             "today": today_count,
             "tomorrow": tomorrow_count,
             "thisWeek": this_week_count,
-            "upcoming": upcoming_count
+            "upcoming": upcoming_count,
         }
     except Exception as e:
         logging.error(f"Error getting chore counts: {e}")

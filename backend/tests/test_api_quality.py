@@ -65,7 +65,9 @@ def test_mark_chore_done_updates_due_date_and_logs(monkeypatch):
     dummy_conn = DummyConn()
     monkeypatch.setattr("app.api.routes.get_db_connection", lambda: dummy_conn)
     log_calls = []
-    monkeypatch.setattr("app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k)))
+    monkeypatch.setattr(
+        "app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k))
+    )
 
     response = client.put("/api/chores/7/done", json={"done_by": "tester"})
 
@@ -127,7 +129,9 @@ def test_update_chore_uses_previous_state(monkeypatch):
     dummy_conn = DummyConn()
     monkeypatch.setattr("app.api.routes.get_db_connection", lambda: dummy_conn)
     log_calls = []
-    monkeypatch.setattr("app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k)))
+    monkeypatch.setattr(
+        "app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k))
+    )
 
     payload = {
         "name": "Updated",
@@ -187,7 +191,14 @@ def test_update_chore_not_found(monkeypatch):
 
     response = client.put(
         "/api/chores/99",
-        json={"name": "Missing", "interval_days": 1, "due_date": "2025-01-01", "done": False, "archived": False, "is_private": False},
+        json={
+            "name": "Missing",
+            "interval_days": 1,
+            "due_date": "2025-01-01",
+            "done": False,
+            "archived": False,
+            "is_private": False,
+        },
     )
 
     assert response.status_code == 404
@@ -273,7 +284,9 @@ def test_export_data_formats_dates(monkeypatch):
 
         def fetchall(self):
             if self.last_query == "chores":
-                return [(1, "Test", 3, due_date, False, None, False, None, False, last_done)]
+                return [
+                    (1, "Test", 3, due_date, False, None, False, None, False, last_done)
+                ]
             if self.last_query == "logs":
                 return [(10, 1, "tester", done_at, {"detail": "x"}, "done")]
             return []
@@ -294,7 +307,9 @@ def test_export_data_formats_dates(monkeypatch):
     dummy_conn = DummyConn()
     monkeypatch.setattr("app.api.routes.get_db_connection", lambda: dummy_conn)
     log_calls = []
-    monkeypatch.setattr("app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k)))
+    monkeypatch.setattr(
+        "app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k))
+    )
 
     response = client.get("/api/export", headers={"X-User-Email": "user@example.com"})
 
@@ -364,19 +379,41 @@ def test_import_data_creates_and_updates(monkeypatch):
     dummy_conn = DummyConn()
     monkeypatch.setattr("app.api.routes.get_db_connection", lambda: dummy_conn)
     log_calls = []
-    monkeypatch.setattr("app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k)))
+    monkeypatch.setattr(
+        "app.api.routes.log_action", lambda *a, **k: log_calls.append((a, k))
+    )
 
     payload = {
         "chores": [
-            {"id": 101, "name": "Existing", "interval_days": 3, "due_date": "2025-05-01", "is_private": True},
-            {"name": "New chore", "interval_days": 1, "due_date": "2025-05-02", "archived": False, "last_done": "2025-04-01"},
+            {
+                "id": 101,
+                "name": "Existing",
+                "interval_days": 3,
+                "due_date": "2025-05-01",
+                "is_private": True,
+            },
+            {
+                "name": "New chore",
+                "interval_days": 1,
+                "due_date": "2025-05-02",
+                "archived": False,
+                "last_done": "2025-04-01",
+            },
         ],
         "logs": [
-            {"chore_id": 101, "done_by": "tester", "done_at": "2025-04-01T00:00:00", "action_type": "marked_done", "action_details": {"x": 1}}
+            {
+                "chore_id": 101,
+                "done_by": "tester",
+                "done_at": "2025-04-01T00:00:00",
+                "action_type": "marked_done",
+                "action_details": {"x": 1},
+            }
         ],
     }
 
-    response = client.post("/api/import", json=payload, headers={"X-User-Email": "user@example.com"})
+    response = client.post(
+        "/api/import", json=payload, headers={"X-User-Email": "user@example.com"}
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -416,7 +453,9 @@ def test_get_chore_counts_returns_breakdown(monkeypatch):
 
     monkeypatch.setattr("app.api.routes.get_db_connection", lambda: DummyConn())
 
-    response = client.get("/api/chores/count", headers={"X-User-Email": "user@example.com"})
+    response = client.get(
+        "/api/chores/count", headers={"X-User-Email": "user@example.com"}
+    )
 
     assert response.status_code == 200
     counts = response.json()
@@ -443,7 +482,14 @@ def test_get_logs_parses_action_details(monkeypatch):
 
         def fetchall(self):
             return [
-                (1, None, "tester", log_time, json.dumps({"action": "json"}), "created"),
+                (
+                    1,
+                    None,
+                    "tester",
+                    log_time,
+                    json.dumps({"action": "json"}),
+                    "created",
+                ),
                 (2, None, "tester", log_time, "not-json", "created"),
             ]
 
@@ -473,5 +519,7 @@ def test_get_logs_parses_action_details(monkeypatch):
 
 def test_mcp_generate_requires_user_message(monkeypatch):
     client = make_client()
-    response = client.post("/mcp/generate", json={"messages": [{"role": "system", "content": "hello"}]})
+    response = client.post(
+        "/mcp/generate", json={"messages": [{"role": "system", "content": "hello"}]}
+    )
     assert response.status_code == 400

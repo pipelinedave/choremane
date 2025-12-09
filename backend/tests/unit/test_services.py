@@ -287,7 +287,9 @@ class TestLogAction:
         assert conn.committed is True
         assert len(conn.cursor().queries) > 0
 
-    def test_log_action_skips_import_export_without_chore_id(self, mock_db_connection, monkeypatch):
+    def test_log_action_skips_import_export_without_chore_id(
+        self, mock_db_connection, monkeypatch
+    ):
         """System-level actions like import/export should skip database logging."""
         conn = mock_db_connection()
         monkeypatch.setattr("app.utils.get_db_connection", lambda: conn)
