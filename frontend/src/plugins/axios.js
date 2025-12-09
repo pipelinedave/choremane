@@ -1,9 +1,8 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
 const baseURL = import.meta.env.DEV ? "http://localhost:8090/api" : "/api"
-console.log("baseURL: " + baseURL)
-console.log("import.meta.env.MODE: " + import.meta.env.MODE)
+
 const api = axios.create({
   baseURL,
   // Add timeout to prevent hanging requests
