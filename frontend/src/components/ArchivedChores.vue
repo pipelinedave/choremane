@@ -1,64 +1,41 @@
 <template>
   <div class="archived-chores-modal">
-    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Archived Chores" @click.self="$emit('close')">
+    <div class="modal-overlay" role="dialog" aria-modal="true" aria-label="Archived Chores"
+      @click.self="$emit('close')">
       <div class="modal-content">
         <div class="modal-header">
           <h2>Archived Chores</h2>
         </div>
         <div class="modal-body" ref="modalBody">
           <!-- Replace the no-archived div with EmptyState -->
-          <EmptyState 
-            v-if="archivedChores.length === 0" 
-            type="archived" 
-            title="No archived chores" 
-            message="Archived chores will appear here once you archive them from your active chores list."
-          />
+          <EmptyState v-if="archivedChores.length === 0" type="archived" title="No archived chores"
+            message="Archived chores will appear here once you archive them from your active chores list." />
           <div v-else class="chore-cards-archived">
             <div v-for="(chore, index) in archivedChores" :key="chore.id" class="archived-chore-container">
-              <ChoreCard
-                :chore="chore"
-                :isArchivedView="true"
-                @markAsDone="markAsDone"
-                @updateChore="updateChore"
-                @archiveChore="unarchiveChore"
-              />
-              <button 
-                class="unarchive-button" 
-                @click="unarchiveChore(chore.id)" 
-                aria-label="Unarchive chore"
-                title="Unarchive chore"
-              >
+              <ChoreCard :chore="chore" :isArchivedView="true" @markAsDone="markAsDone" @updateChore="updateChore"
+                @archiveChore="unarchiveChore" />
+              <button class="unarchive-button" @click="unarchiveChore(chore.id)" aria-label="Unarchive chore"
+                title="Unarchive chore">
                 <i class="fas fa-undo"></i>
               </button>
             </div>
           </div>
           <!-- Loading indicator that shows when loading more chores -->
-          <div 
-            :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
-            aria-hidden="!isLoading && !choreStore.loading"
-          >
+          <div :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
+            aria-hidden="!isLoading && !choreStore.loading">
             <div v-if="isLoading || choreStore.loading" class="loading-spinner"></div>
             <span v-if="isLoading || choreStore.loading">Loading chores...</span>
           </div>
           <!-- Element for intersection observer to detect when user scrolls to bottom -->
           <div ref="loadMoreTrigger" class="load-more-trigger"></div>
           <!-- Scroll to top button -->
-          <button 
-            v-show="showScrollToTop" 
-            class="scroll-to-top-button" 
-            @click="scrollToTop"
-            aria-label="Scroll to top"
-          >
+          <button v-show="showScrollToTop" class="scroll-to-top-button" @click="scrollToTop" aria-label="Scroll to top">
             <i class="fas fa-arrow-up"></i>
           </button>
         </div>
         <div class="modal-footer">
-          <button
-            type="button"
-            class="neutral-button"
-            @click="$emit('close')"
-            aria-label="Close archived chores dialog"
-          >
+          <button type="button" class="neutral-button" @click="$emit('close')"
+            aria-label="Close archived chores dialog">
             Close
           </button>
         </div>
@@ -113,10 +90,10 @@ const scrollToTop = () => {
 onMounted(async () => {
   // Initial fetch of archived chores
   await choreStore.fetchArchivedChores(1);
-  
+
   // Set up intersection observer for infinite scrolling
   setupIntersectionObserver();
-  
+
   // Add scroll event listener for scroll-to-top button
   if (modalBody.value) {
     modalBody.value.addEventListener('scroll', handleScroll);
@@ -145,7 +122,7 @@ const setupIntersectionObserver = () => {
     if (observer.value) {
       observer.value.disconnect();
     }
-    
+
     // Create a new observer
     observer.value = new IntersectionObserver((entries) => {
       const entry = entries[0];
@@ -158,7 +135,7 @@ const setupIntersectionObserver = () => {
       rootMargin: '150px', // Increased margin to load more before reaching the end
       threshold: 0.1 // Trigger when at least 10% of the element is visible
     });
-    
+
     // Start observing the trigger element
     observer.value.observe(loadMoreTrigger.value);
   }
@@ -168,21 +145,21 @@ const setupIntersectionObserver = () => {
 const loadMoreArchivedChores = async () => {
   // Prevent multiple concurrent loading requests
   if (isLoading.value || !choreStore.hasMoreArchivedChores) return;
-  
+
   // Set local loading state to prevent multiple triggers
   isLoading.value = true;
-  
+
   // Clear any existing timeout
   if (loadingTimeout.value) {
     clearTimeout(loadingTimeout.value);
   }
-  
+
   // Debounce the loading operation with a 400ms delay to prevent rapid re-triggering
   loadingTimeout.value = setTimeout(async () => {
     try {
       currentPage.value++;
       await choreStore.fetchArchivedChores(currentPage.value);
-      
+
       // Re-setup observer after content changes
       nextTick(() => {
         setupIntersectionObserver();
@@ -234,21 +211,25 @@ const unarchiveChore = async (choreId) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(31, 45, 44, 0.4); /* Darkened surface color for overlay */
+  background-color: rgba(31, 45, 44, 0.4);
+  /* Darkened surface color for overlay */
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease-out;
+  overscroll-behavior: contain;
+  overflow: auto;
 }
 
 .modal-content {
   width: 90%;
   max-width: 600px;
   max-height: 85vh;
-  background: var(--color-background); /* Use app background */
-  background-image: 
+  background: var(--color-background);
+  /* Use app background */
+  background-image:
     radial-gradient(120% 160% at 10% 10%, rgba(253, 232, 213, 0.5) 0%, rgba(253, 232, 213, 0) 45%),
     radial-gradient(90% 120% at 90% 20%, rgba(189, 233, 221, 0.5) 0%, rgba(189, 233, 221, 0) 52%);
   border-radius: var(--radius-lg);
@@ -301,6 +282,8 @@ const unarchiveChore = async (choreId) => {
   overflow-y: auto;
   flex-grow: 1;
   position: relative;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   /* Custom Scrollbar for the modal */
   scrollbar-width: thin;
   scrollbar-color: var(--color-surface-lighter) transparent;
@@ -309,9 +292,11 @@ const unarchiveChore = async (choreId) => {
 .modal-body::-webkit-scrollbar {
   width: 6px;
 }
+
 .modal-body::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .modal-body::-webkit-scrollbar-thumb {
   background-color: var(--color-surface-lighter);
   border-radius: 20px;
@@ -339,7 +324,8 @@ const unarchiveChore = async (choreId) => {
 
 .archived-chore-container :deep(.chore-card) {
   flex: 1;
-  width: auto; /* Let flex handle width */
+  width: auto;
+  /* Let flex handle width */
   margin-bottom: 0;
 }
 
@@ -347,7 +333,8 @@ const unarchiveChore = async (choreId) => {
   background-color: var(--color-surface-light);
   color: var(--color-text);
   border: 1px solid var(--color-surface-lighter);
-  border-radius: var(--radius-md); /* Match card radius roughly but for small button */
+  border-radius: var(--radius-md);
+  /* Match card radius roughly but for small button */
   width: 48px;
   min-width: 48px;
   cursor: pointer;
@@ -356,19 +343,28 @@ const unarchiveChore = async (choreId) => {
   justify-content: center;
   transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
-  margin-top: 2px; /* Slight alignment fix if needed */
+  margin-top: 2px;
+  /* Slight alignment fix if needed */
 }
 
 /* Add animation for the unarchive button */
 @keyframes pulse-button {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .unarchive-button:active {
   animation: pulse-button 0.3s;
-  background-color: var(--color-primary); 
+  background-color: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
 }
@@ -420,7 +416,8 @@ const unarchiveChore = async (choreId) => {
 .scroll-to-top-button {
   position: sticky;
   bottom: 20px;
-  left: 100%; /* Align to right */
+  left: 100%;
+  /* Align to right */
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -483,17 +480,31 @@ const unarchiveChore = async (choreId) => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .load-more-trigger {

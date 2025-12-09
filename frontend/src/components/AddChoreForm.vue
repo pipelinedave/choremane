@@ -99,14 +99,19 @@ const onCancel = () => {
 <style scoped>
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
   backdrop-filter: blur(2px);
+  overscroll-behavior: contain;
+  overflow: auto;
 }
 
 .modal-content {
@@ -243,11 +248,11 @@ const onCancel = () => {
   transition: background-color var(--transition-fast);
 }
 
-.custom-checkbox-wrapper input[type="checkbox"]:checked + label .checkbox-icon {
+.custom-checkbox-wrapper input[type="checkbox"]:checked+label .checkbox-icon {
   background: var(--color-primary);
 }
 
-.custom-checkbox-wrapper input[type="checkbox"]:focus + label .checkbox-icon {
+.custom-checkbox-wrapper input[type="checkbox"]:focus+label .checkbox-icon {
   box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.3);
 }
 
@@ -296,16 +301,19 @@ const onCancel = () => {
   .modal-content {
     max-width: 95%;
   }
-  
-  .modal-header, .modal-body, .modal-footer {
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
     padding: 1rem;
   }
-  
+
   .modal-footer {
     flex-direction: column-reverse;
   }
-  
-  .submit-button, .cancel-button {
+
+  .submit-button,
+  .cancel-button {
     width: 100%;
   }
 }
