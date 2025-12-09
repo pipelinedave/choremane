@@ -9,7 +9,7 @@ import { fetchVersionInfo } from '@/utils/version'
 import { useChoreStore } from '@/store/choreStore'
 
 // Add version check to handle data migrations on app updates
-const APP_VERSION = '1.0.0'; // Update this when making breaking changes to storage
+const APP_VERSION = '1.0.1'; // Bump to force cache busting on deploys with new assets
 const STORAGE_VERSION_KEY = 'choremane_storage_version';
 
 // Checks if local storage version matches current app version and performs migration if needed
