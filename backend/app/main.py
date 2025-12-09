@@ -1,19 +1,21 @@
 ﻿import logging
 import os
-from fastapi import FastAPI, Request, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi_mcp import FastApiMCP
-from starlette.middleware.sessions import SessionMiddleware
-from authlib.integrations.starlette_client import OAuth, OAuthError
-import httpx
 
-from app.api.routes import api_router
-from app.api.mcp_routes import router as mcp_router
+from authlib.integrations.starlette_client import OAuth, OAuthError
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi_mcp import FastApiMCP
+import httpx
+from starlette.middleware.sessions import SessionMiddleware
+
 from app.api.auth_routes import auth_router
-from app.database import get_db_connection
+from app.api.mcp_routes import router as mcp_router
+from app.api.routes import api_router
 from app.auth import get_current_user
+from app.database import get_db_connection
 from app.models import User
+from app.mock_auth import mock_login, mock_login_page, mock_callback, mock_refresh
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -189,9 +191,6 @@ app.add_middleware(
 app.include_router(api_router)
 app.include_router(mcp_router)
 app.include_router(auth_router)
-
-# Import mock auth
-from app.mock_auth import mock_login, mock_login_page, mock_callback, mock_refresh
 
 # Add route for mock login page 
 @app.get("/auth/mock-login-page")
@@ -410,9 +409,14 @@ async def auth_callback(request: Request):
         # Check for essential keys in token_data needed for the redirect URL (access_token, expires_in)
         # We will use original_id_token_string for the id_token part.
         missing_keys_for_redirect = []
-        if 'access_token' not in token_data: missing_keys_for_redirect.append('access_token')
-        if 'expires_in' not in token_data: missing_keys_for_redirect.append('expires_in')
-        if not original_id_token_string: missing_keys_for_redirect.append('original_id_token_string (was None or empty)')
+        if "access_token" not in token_data:
+            missing_keys_for_redirect.append("access_token")
+        if "expires_in" not in token_data:
+            missing_keys_for_redirect.append("expires_in")
+        if not original_id_token_string:
+            missing_keys_for_redirect.append(
+                "original_id_token_string (was None or empty)"
+            )
 
 
         if missing_keys_for_redirect:

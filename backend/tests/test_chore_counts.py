@@ -2,8 +2,6 @@
 Tests for the chore counts endpoint.
 """
 
-from datetime import date, timedelta
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
