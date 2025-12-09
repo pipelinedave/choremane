@@ -1,24 +1,23 @@
-import logging
+﻿import logging
 import os
-from fastapi import FastAPI, Request, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi_mcp import FastApiMCP
-from starlette.middleware.sessions import SessionMiddleware
+
 from authlib.integrations.starlette_client import OAuth, OAuthError
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi_mcp import FastApiMCP
 import httpx
+from starlette.middleware.sessions import SessionMiddleware
 
-from app.api.routes import api_router
-from app.api.mcp_routes import router as mcp_router
 from app.api.auth_routes import auth_router
-from app.database import get_db_connection
+from app.api.mcp_routes import router as mcp_router
+from app.api.routes import api_router
 from app.auth import get_current_user
+from app.database import get_db_connection
 from app.models import User
+from app.mock_auth import mock_login, mock_login_page, mock_callback, mock_refresh
 
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def run_migrations():
     """Run database migrations on startup"""
@@ -73,7 +72,7 @@ def run_migrations():
             WHERE table_name = 'chore_logs' AND column_name = 'chore_id'
         """)
         result = cur.fetchone()
-        if result and result[0] == "NO":  # If NOT NULL constraint exists
+        if result and result[0] == 'NO':  # If NOT NULL constraint exists
             logging.info("Applying migration: Allow NULL for chore_id in chore_logs")
             cur.execute("ALTER TABLE chore_logs ALTER COLUMN chore_id DROP NOT NULL")
             conn.commit()
@@ -129,7 +128,6 @@ def run_migrations():
         if conn:
             conn.close()
 
-
 # Run migrations on startup
 run_migrations()
 
@@ -140,19 +138,17 @@ is_prod_env = os.getenv("ENV", "production").lower() == "production"
 session_secret = os.getenv("SESSION_SECRET", "supersecret")
 
 app.add_middleware(
-    SessionMiddleware,
+    SessionMiddleware, 
     secret_key=session_secret,
     # Set secure cookies in production to prevent session issues
-    https_only=is_prod_env,
+    https_only=is_prod_env,  
     # Longer max_age in production to prevent premature session expiry
-    max_age=3600 if is_prod_env else 1800,
+    max_age=3600 if is_prod_env else 1800,  
     # Use SameSite=Lax to ensure cookies work with redirects
-    same_site="lax",
+    same_site="lax"  
 )
 
-logging.info(
-    f"Session middleware configured with https_only={is_prod_env}, expires in {3600 if is_prod_env else 1800}s"
-)
+logging.info(f"Session middleware configured with https_only={is_prod_env}, expires in {3600 if is_prod_env else 1800}s")
 
 # Configure OAuth client
 oauth = OAuth()
@@ -168,11 +164,11 @@ if not USE_MOCK_AUTH:
             client_id=os.getenv("OAUTH_CLIENT_ID", "choremane"),
             client_secret=os.getenv("OAUTH_CLIENT_SECRET", "choremane-secret"),
             server_metadata_url=f"{DEX_ISSUER_URL}/.well-known/openid-configuration",
-            client_kwargs={"scope": "openid email profile"},
+            client_kwargs={
+                "scope": "openid email profile"
+            }
         )
-        logging.info(
-            f"OAuth client registered: client_id={os.getenv('OAUTH_CLIENT_ID', 'choremane')}"
-        )
+        logging.info(f"OAuth client registered: client_id={os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
         logging.info(f"DEX issuer URL: {DEX_ISSUER_URL}")
     except Exception as e:
         logging.error(f"Error registering OAuth client: {e}")
@@ -196,21 +192,15 @@ app.include_router(api_router)
 app.include_router(mcp_router)
 app.include_router(auth_router)
 
-# Import mock auth
-from app.mock_auth import mock_login, mock_login_page, mock_callback, mock_refresh
-
-
-# Add route for mock login page
+# Add route for mock login page 
 @app.get("/auth/mock-login-page")
 async def mock_login_page_route(request: Request):
     return await mock_login_page(request)
-
 
 # Add route for mock callback
 @app.post("/auth/mock-callback")
 async def mock_callback_route(request: Request):
     return await mock_callback(request)
-
 
 # OAuth login route - support both /auth/login and /api/auth/login paths
 @app.get("/auth/login")
@@ -218,58 +208,45 @@ async def mock_callback_route(request: Request):
 async def login(request: Request):
     if USE_MOCK_AUTH:
         return await mock_login(request)
-
+    
     # Determine if request is using HTTP or HTTPS (respect proxies)
     forwarded_proto = request.headers.get("x-forwarded-proto", "")
-    is_https = (
-        request.url.scheme == "https"
-        or forwarded_proto.split(",")[0].strip() == "https"
-    )
+    is_https = request.url.scheme == "https" or forwarded_proto.split(",")[0].strip() == "https"
     scheme = "https" if is_https else "http"
 
     # Keep callback on the same host that initiated the login to avoid session loss across domains
-    host = (
-        request.headers.get("x-forwarded-host")
-        or request.headers.get("host")
-        or request.url.hostname
-    )
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.hostname
     redirect_base = f"{scheme}://{host}"
     redirect_uri = f"{redirect_base}/api/auth/callback"
-
+    
     logging.info(f"Request scheme: {request.url.scheme}")
-    logging.info(
-        f"X-Forwarded-Proto: {request.headers.get('x-forwarded-proto', 'not set')}"
-    )
-    logging.info(
-        f"X-Forwarded-Host: {request.headers.get('x-forwarded-host', 'not set')}"
-    )
+    logging.info(f"X-Forwarded-Proto: {request.headers.get('x-forwarded-proto', 'not set')}")
+    logging.info(f"X-Forwarded-Host: {request.headers.get('x-forwarded-host', 'not set')}")
     logging.info(f"Host header: {request.headers.get('host', 'not set')}")
     logging.info(f"Using scheme: {scheme}")
     logging.info(f"Login redirect base (host): {redirect_base}")
     logging.info(f"Login redirect URI: {redirect_uri}")
     logging.info(f"DEX_ISSUER_URL: {DEX_ISSUER_URL}")
     logging.info(f"OAUTH_CLIENT_ID: {os.getenv('OAUTH_CLIENT_ID', 'choremane')}")
-
+    
     # Generate and store a custom nonce in the session for verification later
     # This provides a fallback if the Authlib nonce mechanism fails
     import secrets
-
     custom_nonce = secrets.token_hex(16)
-    request.session["custom_dex_nonce"] = custom_nonce
+    request.session['custom_dex_nonce'] = custom_nonce
     logging.info(f"Generated and stored custom nonce in session: {custom_nonce[:5]}...")
-
+    
     # Log session details before redirecting
     logging.info(f"Session contents before authorize_redirect: {dict(request.session)}")
-
+    
     return await oauth.dex.authorize_redirect(request, redirect_uri)
-
 
 # OAuth callback route - support both /auth/callback and /api/auth/callback paths
 @app.get("/auth/callback")
 @app.get("/api/auth/callback")
 async def auth_callback(request: Request):
-    token_data = None  # Initialize to ensure it's available in except blocks
-    original_id_token_string = None  # To store id_token before parsing
+    token_data = None # Initialize to ensure it's available in except blocks
+    original_id_token_string = None # To store id_token before parsing
     try:
         if USE_MOCK_AUTH:
             # This shouldn't be called in mock mode, but just in case
@@ -282,21 +259,15 @@ async def auth_callback(request: Request):
             logging.error(f"OAuth error during authorize_access_token: {oauth_err}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication failed: OAuth state validation error",
+                detail="Authentication failed: OAuth state validation error"
             )
-        logging.info(
-            f"Received token object from Dex (before parse_id_token): {token_data}"
-        )
+        logging.info(f"Received token object from Dex (before parse_id_token): {token_data}")
 
-        if "id_token" not in token_data:
-            logging.error(
-                f"CRITICAL: 'id_token' missing from token_data received from Dex: {token_data}"
-            )
+        if 'id_token' not in token_data:
+            logging.error(f"CRITICAL: 'id_token' missing from token_data received from Dex: {token_data}")
             raise KeyError("'id_token' not found in initial token response from Dex")
-
-        original_id_token_string = token_data[
-            "id_token"
-        ]  # Store it before it's potentially removed/modified
+        
+        original_id_token_string = token_data['id_token'] # Store it before it's potentially removed/modified
 
         # logging.info("Attempting to parse id_token...") # OLD LOG AND CALL
         # user_info = await oauth.dex.parse_id_token(request, token_data) # OLD CALL
@@ -307,52 +278,32 @@ async def auth_callback(request: Request):
 
         # Debug session contents to see what's available
         logging.info(f"Session contents: {dict(request.session)}")
-
-        nonce = request.session.get(
-            "__dex_nonce__"
-        )  # Retrieve nonce from session; 'dex' is the client name.
-        logging.info(
-            f"Retrieved nonce from session: {'Present' if nonce else 'MISSING'}"
-        )
-
+        
+        nonce = request.session.get('__dex_nonce__') # Retrieve nonce from session; 'dex' is the client name.
+        logging.info(f"Retrieved nonce from session: {'Present' if nonce else 'MISSING'}")
+        
         # Check for our custom nonce as a fallback
-        custom_nonce = request.session.get("custom_dex_nonce")
+        custom_nonce = request.session.get('custom_dex_nonce')
         logging.info(f"Custom nonce found: {'Present' if custom_nonce else 'MISSING'}")
-
+        
         if not nonce:
-            logging.error(
-                "CRITICAL: Standard nonce not found in session for OIDC callback."
-            )
-            possible_nonce_keys = [
-                k for k in request.session.keys() if "nonce" in k.lower()
-            ]
+            logging.error("CRITICAL: Standard nonce not found in session for OIDC callback.")
+            possible_nonce_keys = [k for k in request.session.keys() if 'nonce' in k.lower()]
             if possible_nonce_keys:
-                logging.info(
-                    f"However, found possible alternative nonce keys: {possible_nonce_keys}"
-                )
-
+                logging.info(f"However, found possible alternative nonce keys: {possible_nonce_keys}")
+            
             # We did not send custom_nonce to Dex, so do not enforce it as a validator
             if custom_nonce:
-                logging.info(
-                    "Custom nonce present for debugging, but skipping nonce validation to avoid false mismatch"
-                )
+                logging.info("Custom nonce present for debugging, but skipping nonce validation to avoid false mismatch")
             nonce = None
 
         try:
             # Log additional metadata about the OAuth client before decoding
-            logging.info(
-                f"DEX client metadata: {oauth.dex.server_metadata if hasattr(oauth.dex, 'server_metadata') else 'Not available'}"
-            )
-
+            logging.info(f"DEX client metadata: {oauth.dex.server_metadata if hasattr(oauth.dex, 'server_metadata') else 'Not available'}")
+            
             # Check for JWKS URI availability which is required for token verification
-            jwks_uri = (
-                oauth.dex.server_metadata.get("jwks_uri")
-                if hasattr(oauth.dex, "server_metadata")
-                else None
-            )
-            logging.info(
-                f"JWKS URI available: {'Yes - ' + jwks_uri if jwks_uri else 'No'}"
-            )
+            jwks_uri = oauth.dex.server_metadata.get('jwks_uri') if hasattr(oauth.dex, 'server_metadata') else None
+            logging.info(f"JWKS URI available: {'Yes - ' + jwks_uri if jwks_uri else 'No'}")
 
             # Fetch JWKS to validate the token
             if not jwks_uri:
@@ -363,14 +314,8 @@ async def auth_callback(request: Request):
                 jwks = jwks_response.json()
 
             claims_options = {
-                "iss": {
-                    "essential": True,
-                    "value": oauth.dex.server_metadata.get("issuer"),
-                },
-                "aud": {
-                    "essential": True,
-                    "value": os.getenv("OAUTH_CLIENT_ID", "choremane"),
-                },
+                "iss": {"essential": True, "value": oauth.dex.server_metadata.get('issuer')},
+                "aud": {"essential": True, "value": os.getenv("OAUTH_CLIENT_ID", "choremane")},
                 "exp": {"essential": True},
             }
             if nonce:
@@ -379,41 +324,33 @@ async def auth_callback(request: Request):
             from authlib.jose import jwt
 
             user_info = jwt.decode(
-                original_id_token_string, jwks, claims_options=claims_options
+                original_id_token_string,
+                jwks,
+                claims_options=claims_options
             )
             user_info.validate()  # Raises if claims invalid
 
             logging.info("Successfully decoded and validated ID token with JWKS")
         except Exception as e_decode:
-            logging.error(
-                f"Error during ID token validation: {type(e_decode).__name__} - {str(e_decode)}"
-            )
-            error_attrs = [
-                attr
-                for attr in dir(e_decode)
-                if not attr.startswith("_") and not callable(getattr(e_decode, attr))
-            ]
+            logging.error(f"Error during ID token validation: {type(e_decode).__name__} - {str(e_decode)}")
+            error_attrs = [attr for attr in dir(e_decode) if not attr.startswith('_') and not callable(getattr(e_decode, attr))]
             if error_attrs:
                 logging.error(f"Additional error attributes: {', '.join(error_attrs)}")
                 for attr in error_attrs:
                     logging.error(f"  {attr}: {getattr(e_decode, attr)}")
-
+            
             if original_id_token_string:
-                token_preview = (
-                    original_id_token_string[:20] + "..."
-                    if len(original_id_token_string) > 20
-                    else original_id_token_string
-                )
+                token_preview = original_id_token_string[:20] + "..." if len(original_id_token_string) > 20 else original_id_token_string
                 logging.error(f"Token preview (first 20 chars): {token_preview}")
-
+                
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Authentication failed: ID token processing error - {type(e_decode).__name__}: {str(e_decode)}",
+                detail=f"Authentication failed: ID token processing error - {type(e_decode).__name__}: {str(e_decode)}"
             ) from e_decode
 
         logging.info(f"Successfully decoded id_token. User info claims: {user_info}")
         logging.info(f"Token object state: {token_data}")
-
+        
         # Save user info to database
         conn = get_db_connection()
         cur = conn.cursor()
@@ -433,8 +370,8 @@ async def auth_callback(request: Request):
                     user_info["email"],
                     user_info.get("name", ""),
                     user_info.get("given_name", ""),
-                    user_info.get("family_name", ""),
-                ),
+                    user_info.get("family_name", "")
+                )
             )
             conn.commit()
         except Exception as e_db:
@@ -443,22 +380,11 @@ async def auth_callback(request: Request):
         finally:
             cur.close()
             conn.close()
-
+        
         # Return tokens to frontend
         forwarded_proto = request.headers.get("x-forwarded-proto", "")
-        scheme = (
-            "https"
-            if (
-                request.url.scheme == "https"
-                or forwarded_proto.split(",")[0].strip() == "https"
-            )
-            else "http"
-        )
-        request_host = (
-            request.headers.get("x-forwarded-host")
-            or request.headers.get("host")
-            or request.url.hostname
-        )
+        scheme = "https" if (request.url.scheme == "https" or forwarded_proto.split(",")[0].strip() == "https") else "http"
+        request_host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.hostname
         request_base_url = f"{scheme}://{request_host}"
 
         env_frontend_url = os.getenv("FRONTEND_URL")
@@ -472,14 +398,14 @@ async def auth_callback(request: Request):
             frontend_url = request_base_url if env_host_mismatch else env_frontend_url
         else:
             frontend_url = request_base_url
-
+        
         # Ensure HTTPS in production
         in_production = os.getenv("ENV", "production").lower() != "development"
         if in_production and frontend_url.startswith("http://"):
             frontend_url = "https://" + frontend_url[7:]
-
+            
         logging.info("Attempting to construct redirect_url...")
-
+        
         # Check for essential keys in token_data needed for the redirect URL (access_token, expires_in)
         # We will use original_id_token_string for the id_token part.
         missing_keys_for_redirect = []
@@ -492,6 +418,7 @@ async def auth_callback(request: Request):
                 "original_id_token_string (was None or empty)"
             )
 
+
         if missing_keys_for_redirect:
             logging.error(
                 f"Keys missing before redirect_url construction: {', '.join(missing_keys_for_redirect)}. "
@@ -502,61 +429,43 @@ async def auth_callback(request: Request):
 
         # Use the original_id_token_string that we saved.
         redirect_url = f"{frontend_url}/auth-callback?token={token_data['access_token']}&id_token={original_id_token_string}&expires_in={token_data['expires_in']}"
-
-        if "refresh_token" in token_data:  # refresh_token is optional
+        
+        if 'refresh_token' in token_data: # refresh_token is optional
             redirect_url += f"&refresh_token={token_data['refresh_token']}"
-
-        logging.info(
-            f"Redirecting to: {frontend_url}/auth-callback (params will be in browser)"
-        )
-
+        
+        logging.info(f"Redirecting to: {frontend_url}/auth-callback (params will be in browser)")
+        
         return RedirectResponse(url=redirect_url)
     except KeyError as ke:
         logging.error(f"Auth callback error: Caught KeyError: {ke}")
         logging.error(f"Details: Key '{ke}' was not found.")
         if token_data is not None:
-            logging.error(
-                f"Token_data object state when KeyError occurred: {token_data}"
-            )
+            logging.error(f"Token_data object state when KeyError occurred: {token_data}")
         if original_id_token_string is not None:
-            logging.error(
-                f"Original id_token string state: {'present and not empty' if original_id_token_string else 'empty or None'}"
-            )
+            logging.error(f"Original id_token string state: {'present and not empty' if original_id_token_string else 'empty or None'}")
         else:
-            logging.error(
-                "Original id_token string was None (meaning it was likely missing from initial Dex response)."
-            )
+            logging.error("Original id_token string was None (meaning it was likely missing from initial Dex response).")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": f"Authentication failed: Key Error - {ke}"},
+            content={"detail": f"Authentication failed: Key Error - {ke}"}
         )
     except Exception as e:
-        logging.error(
-            f"Auth callback error: Caught generic Exception: {type(e).__name__} - {e}"
-        )
+        logging.error(f"Auth callback error: Caught generic Exception: {type(e).__name__} - {e}")
         if token_data is not None:
-            logging.error(
-                f"Token_data object state at time of generic exception: {token_data}"
-            )
+             logging.error(f"Token_data object state at time of generic exception: {token_data}")
         else:
-            logging.error(
-                "Token_data object not available at time of generic exception (was None or not assigned)."
-            )
+             logging.error("Token_data object not available at time of generic exception (was None or not assigned).")
         if original_id_token_string is not None:
-            logging.error(
-                f"Original id_token string state: {'present and not empty' if original_id_token_string else 'empty or None'}"
-            )
+            logging.error(f"Original id_token string state: {'present and not empty' if original_id_token_string else 'empty or None'}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Authentication failed due to an unexpected error."},
+            content={"detail": "Authentication failed due to an unexpected error."}
         )
-
 
 @app.get("/auth/user", response_model=User)
 @app.get("/api/auth/user", response_model=User)
 async def get_user(current_user: User = Depends(get_current_user)):
     return current_user
-
 
 # Add proxy route for the /api/auth/refresh path
 @app.post("/api/auth/refresh")
@@ -565,51 +474,50 @@ async def api_auth_refresh(request: Request):
     try:
         payload = await request.json()
         refresh_token = payload.get("refresh_token")
-
+        
         if not refresh_token:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Refresh token is required",
+                detail="Refresh token is required"
             )
-
+        
         # Use mock refresh in development mode
-        if USE_MOCK_AUTH and "mock_refresh" in globals():
+        if USE_MOCK_AUTH and 'mock_refresh' in globals():
             logging.info("Using mock token refresh")
             return await mock_refresh(refresh_token)
-
+        
         # Get Dex configuration
         client_id = os.getenv("OAUTH_CLIENT_ID", "choremane")
         client_secret = os.getenv("OAUTH_CLIENT_SECRET", "choremane-secret")
         token_url = f"{os.getenv('DEX_ISSUER_URL', 'https://dex.stillon.top')}/token"
-
+        
         # Prepare the token request
         data = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "client_id": client_id,
-            "client_secret": client_secret,
+            "client_secret": client_secret
         }
-
+        
         # Make the token request to Dex
         async with httpx.AsyncClient() as client:
             response = await client.post(token_url, data=data)
-
+            
             if response.status_code != 200:
                 logging.error(f"Failed to refresh token: {response.text}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Failed to refresh token",
+                    detail="Failed to refresh token"
                 )
-
+            
             # Return the new tokens
             return response.json()
     except Exception as e:
         logging.error(f"Token refresh error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Token refresh failed: {str(e)}",
+            detail=f"Token refresh failed: {str(e)}"
         )
-
 
 # Add diagnostic endpoint for session testing
 @app.get("/api/auth/session-test")
@@ -618,19 +526,17 @@ async def session_test(request: Request):
     Test endpoint to verify session functionality.
     Each call increments a counter stored in the session.
     """
-    counter = request.session.get("test_counter", 0)
+    counter = request.session.get('test_counter', 0)
     counter += 1
-    request.session["test_counter"] = counter
-
+    request.session['test_counter'] = counter
+    
     return {
         "counter": counter,
-        "session_id": str(request.session.get("session_id", "unknown")),
+        "session_id": str(request.session.get('session_id', 'unknown')),
         "session_contents": dict(request.session),
         "cookies": request.cookies,
-        "secure_context": request.url.scheme == "https"
-        or request.headers.get("x-forwarded-proto") == "https",
+        "secure_context": request.url.scheme == "https" or request.headers.get('x-forwarded-proto') == "https"
     }
-
 
 # Initialize and mount FastAPI-MCP
 mcp = FastApiMCP(app)

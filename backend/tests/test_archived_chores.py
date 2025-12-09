@@ -65,30 +65,8 @@ class TestArchivedChoresEndpoint:
             def fetchall(self):
                 # id, name, interval_days, due_date, done, done_by, archived, owner_email, is_private, last_done
                 return [
-                    (
-                        1,
-                        "Archived Chore 1",
-                        7,
-                        today,
-                        False,
-                        None,
-                        True,
-                        None,
-                        False,
-                        None,
-                    ),
-                    (
-                        2,
-                        "Archived Chore 2",
-                        14,
-                        today,
-                        True,
-                        "user@example.com",
-                        True,
-                        "user@example.com",
-                        True,
-                        today,
-                    ),
+                    (1, "Archived Chore 1", 7, today, False, None, True, None, False, None),
+                    (2, "Archived Chore 2", 14, today, True, "user@example.com", True, "user@example.com", True, today),
                 ]
 
             def close(self):

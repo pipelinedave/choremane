@@ -64,9 +64,7 @@ class TestChoreCountsEndpoint:
         client = make_client()
 
         # Mock different counts for each query
-        counts = iter(
-            [10, 2, 3, 1, 2, 2]
-        )  # all, overdue, today, tomorrow, thisWeek, upcoming
+        counts = iter([10, 2, 3, 1, 2, 2])  # all, overdue, today, tomorrow, thisWeek, upcoming
 
         class DummyCursor:
             def execute(self, *args, **kwargs):

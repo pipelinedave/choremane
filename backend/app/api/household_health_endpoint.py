@@ -41,9 +41,7 @@ def get_household_health(request: Request) -> Dict[str, int]:
 
     except Exception as e:
         logging.error(f"Error calculating household health: {e}")
-        raise HTTPException(
-            status_code=500, detail="Failed to calculate household health"
-        )
+        raise HTTPException(status_code=500, detail="Failed to calculate household health")
     finally:
         cur.close()
         conn.close()

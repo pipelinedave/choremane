@@ -113,9 +113,7 @@ def calculate_household_health_score(
 
         try:
             normalized_due_date = normalize_due_date(due_date)
-            score = calculate_single_chore_score(
-                normalized_due_date, interval_days, now
-            )
+            score = calculate_single_chore_score(normalized_due_date, interval_days, now)
             total_score += score
             active_chore_count += 1
         except (ValueError, TypeError):
