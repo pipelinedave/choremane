@@ -178,8 +178,10 @@ function setupChoreNotificationScheduler() {
 }
 
 const app = createApp(App)
-app.use(router)
+// Ensure Pinia is installed before the router so stores are available
+// to router guards and any modules that import stores during setup.
 app.use(createPinia())
+app.use(router)
 
 // Verify storage version before mounting the app
 verifyStorageVersion().then(() => {
