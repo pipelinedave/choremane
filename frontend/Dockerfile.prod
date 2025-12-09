@@ -8,6 +8,8 @@ RUN npm install
 
 ENV NODE_ENV=production
 
+COPY index.html ./
+COPY vite.config.js ./
 COPY src/ src/
 COPY public/ public/
 
