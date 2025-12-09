@@ -17,34 +17,38 @@ const normalizeDetails = (rawDetails) => {
   return rawDetails;
 };
 
-const choreLabel = (details, entry) => {
+const getChoreLabel = (details, entry) => {
   if (details?.name) return details.name;
   if (details?.previous_state?.name) return details.previous_state.name;
-  if (entry?.chore_id) return `Chore #${entry.chore_id}`;
-  return 'Chore';
+  // For undo entries, try to get the original chore name from nested details
+  if (details?.action_type && details?.undone) {
+    // This is an undo entry - return null to hide it
+    return null;
+  }
+  if (entry?.chore_id) return null; // Will be filtered out
+  return null;
 };
 
-const buildMessage = (action, details, entry) => {
-  const label = choreLabel(details, entry);
+const getActionDescription = (action, details, entry) => {
   switch (action) {
     case 'marked_done':
-      return `${label} marked done${entry?.done_by ? ` by ${entry.done_by}` : ''}`;
+      return 'marked done';
     case 'created':
-      return `Created ${label}`;
+      return 'created';
     case 'updated':
-      return `Updated ${label}`;
+      return 'updated';
     case 'archived':
-      return `Archived ${label}`;
+      return 'archived';
     case 'unarchived':
-      return `Unarchived ${label}`;
+      return 'restored';
     case 'undo':
-      return `Undid ${details?.action_type || 'previous action'}`;
+      return null; // Hide undo entries
     case 'import':
-      return `Imported data (${details?.imported_chores?.length || 0} chores, ${details?.imported_logs || 0} logs)`;
+      return `imported (${details?.imported_chores?.length || 0} chores)`;
     case 'export':
-      return `Exported data (${details?.chore_count || 0} chores, ${details?.log_count || 0} logs)`;
+      return `exported (${details?.chore_count || 0} chores)`;
     default:
-      return `${label}: ${action || 'Activity recorded'}`;
+      return action || 'activity';
   }
 };
 
@@ -52,14 +56,23 @@ const normalizeEntry = (entry) => {
   const details = normalizeDetails(entry?.action_details || entry?.details);
   const action = entry?.action_type || details?.action_type || null;
   const timestamp = entry?.done_at || new Date().toISOString();
+  const choreName = getChoreLabel(details, entry);
+  const actionDescription = getActionDescription(action, details, entry);
+  const user = entry?.done_by || null;
+
   return {
     id: entry?.id || `local-${Date.now()}`,
     action,
-    message: buildMessage(action, details, entry),
+    choreName,
+    actionDescription,
+    user,
     timestamp,
     raw: entry,
+    // Hide undo entries and entries without chore names
+    isHidden: action === 'undo' || (!choreName && action !== 'import' && action !== 'export'),
   };
 };
+
 
 export const useLogStore = defineStore('logs', () => {
   const logEntries = ref([]);

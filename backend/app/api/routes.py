@@ -206,7 +206,7 @@ def undo_action(undo_request: UndoRequest):
             action_details = json.loads(action_details)
         logging.info(f"Undoing action: {action_type} with details: {action_details}")
         if action_type == "created":
-            cur.execute("DELETE FROM chores WHERE id = %s", (action_details["id"],))
+            cur.execute("UPDATE chores SET archived = TRUE WHERE id = %s", (action_details["id"],))
         elif action_type == "updated":
             cur.execute(
                 """

@@ -1,13 +1,12 @@
 ﻿<template>
   <div id="app">
     <ErrorBoundary>
-      <!-- Only show Header when authenticated; Log is temporarily disabled -->
+      <!-- Only show Header and LogOverlay when authenticated -->
       <template v-if="isAuthenticated">
         <Header @addChore="handleAddChore" />
+        <LogOverlay />
       </template>
       <router-view></router-view>
-      <!-- AI Assistant button hidden temporarily -->
-      <!-- <CopilotButton /> -->
       <VersionChecker />
     </ErrorBoundary>
   </div>
@@ -24,6 +23,7 @@ import { useChoreStore } from '@/store/choreStore'
 // import CopilotButton from '@/components/CopilotButton.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import VersionChecker from '@/components/VersionChecker.vue'
+import LogOverlay from '@/components/LogOverlay.vue'
 import { useAuthStore } from '@/store/authStore'
 
 const versionInfo = ref(null)
@@ -38,21 +38,21 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 async function checkVersionConsistency() {
   try {
     const storedVersionInfo = localStorage.getItem('appVersionInfo');
-    
+
     if (versionInfo.value && storedVersionInfo) {
       const parsedStoredVersion = JSON.parse(storedVersionInfo);
-      
+
       // If the backend or frontend image has changed, we may need to reset storage
       if (parsedStoredVersion.backend_image !== versionInfo.value.backend_image ||
-          parsedStoredVersion.frontend_image !== versionInfo.value.frontend_image) {
-        
+        parsedStoredVersion.frontend_image !== versionInfo.value.frontend_image) {
+
         console.log('Version mismatch detected:', {
           stored: parsedStoredVersion,
           current: versionInfo.value
         });
-        
+
         isVersionMismatch.value = true;
-        
+
         // Dispatch custom event instead of showing blocking dialog
         window.dispatchEvent(new CustomEvent('choremane:data-migration-needed', {
           detail: {
@@ -62,7 +62,7 @@ async function checkVersionConsistency() {
         }));
       }
     }
-    
+
     // Store current version info for future comparisons
     if (versionInfo.value) {
       localStorage.setItem('appVersionInfo', JSON.stringify(versionInfo.value));
@@ -78,22 +78,22 @@ async function resetLocalStorage() {
   const token = localStorage.getItem('token');
   const userColor = localStorage.getItem('userColor');
   const username = localStorage.getItem('username');
-  
+
   // Clear all localStorage except specific items we want to preserve
   const itemsToPreserve = ['choremane_storage_version', 'token', 'userColor', 'username'];
-  
+
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!itemsToPreserve.includes(key)) {
       localStorage.removeItem(key);
     }
   }
-  
+
   // Restore auth data if it was present
   if (token) localStorage.setItem('token', token);
   if (userColor) localStorage.setItem('userColor', userColor);
   if (username) localStorage.setItem('username', username);
-  
+
   console.log('Local storage has been reset (preserving auth data)');
 }
 
@@ -103,7 +103,7 @@ onMounted(async () => {
     // Trigger the add chore form by calling the header's button action
     handleAddChore();
   });
-  
+
   // Check if we need to clean up version data to fix persistent notification issues
   const persistentVersionFix = async () => {
     try {
@@ -111,7 +111,7 @@ onMounted(async () => {
       const versionLoadCount = localStorage.getItem('version_load_count') || '0';
       const currentCount = parseInt(versionLoadCount, 10) + 1;
       localStorage.setItem('version_load_count', currentCount.toString());
-      
+
       // If the app has been loaded more than 3 times and we still have a version issue
       if (currentCount > 3 && localStorage.getItem('version_cleanup_performed') !== 'true') {
         // Perform an automatic cleanup
@@ -123,11 +123,11 @@ onMounted(async () => {
           'DISMISS_UNTIL_NEXT_VERSION_KEY',
           'appVersionInfo'
         ];
-        
+
         keysToRemove.forEach(key => {
           localStorage.removeItem(key);
         });
-        
+
         // Mark this cleanup as performed
         localStorage.setItem('version_cleanup_performed', 'true');
       }
@@ -135,14 +135,14 @@ onMounted(async () => {
       console.error('Error in persistent version fix:', error);
     }
   };
-  
+
   await persistentVersionFix();
-  
+
   // Continue with normal app initialization
   try {
     const response = await api.get('version')
     versionInfo.value = response.data
-    
+
     // After getting version info, check consistency
     await checkVersionConsistency();
   } catch (error) {
@@ -211,6 +211,7 @@ const handleAddChore = async (newChore) => {
   color: var(--color-link);
   margin: 0 var(--spacing-sm);
 }
+
 .version-banner a:hover {
   text-decoration: underline;
 }
