@@ -63,6 +63,9 @@ const checkForUpdates = async () => {
     
     // Get current version info from server
     const newVersion = await fetchVersionInfo();
+    if (!newVersion) {
+      return;
+    }
     
     // Get stored version info from localStorage
     let storedVersionInfo = null;
@@ -131,6 +134,9 @@ const reloadApp = async () => {
   try {
     // Get the latest version info before reloading
     const latestVersion = await fetchVersionInfo();
+    if (latestVersion) {
+      localStorage.setItem(VERSION_STORAGE_KEY, JSON.stringify(latestVersion));
+    }
     
     // Update stored version to prevent showing notification again after reload
     localStorage.setItem(VERSION_STORAGE_KEY, JSON.stringify(latestVersion));
@@ -169,6 +175,10 @@ const dismissUpdate = async () => {
   try {
     // Get current version to store as dismissed
     const currentVersion = await fetchVersionInfo();
+    if (!currentVersion) {
+      showUpdateNotice.value = false;
+      return;
+    }
     
     // Store the complete version object as dismissed
     const dismissedVersionJson = JSON.stringify({
@@ -221,7 +231,9 @@ const resetLocalStorage = async () => {
   // Store current version info for future comparisons
   try {
     const currentVersionData = await fetchVersionInfo();
-    localStorage.setItem('appVersionInfo', JSON.stringify(currentVersionData));
+    if (currentVersionData) {
+      localStorage.setItem('appVersionInfo', JSON.stringify(currentVersionData));
+    }
   } catch (error) {
     console.error('Error updating version info after reset:', error);
   }

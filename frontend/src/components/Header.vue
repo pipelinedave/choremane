@@ -104,10 +104,9 @@ const toggleAboutModal = () => {
 }
 
 onMounted(async () => {
-  try {
-    versionInfo.value = await fetchVersionInfo()
-  } catch (error) {
-    console.error('Failed to fetch version info:', error)
+  const info = await fetchVersionInfo()
+  if (info) {
+    versionInfo.value = info
   }
 })
 
