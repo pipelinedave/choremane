@@ -5,7 +5,8 @@ import router from './router'
 import { createPinia } from 'pinia'
 import './assets/shared.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
-import api from '@/plugins/axios'
+import { fetchVersionInfo } from '@/utils/version'
+import { useChoreStore } from '@/store/choreStore'
 
 // Add version check to handle data migrations on app updates
 const APP_VERSION = '1.0.0'; // Update this when making breaking changes to storage
@@ -20,8 +21,8 @@ async function verifyStorageVersion() {
     
     try {
       // Fetch version info from backend to confirm redeployment
-      const versionResponse = await api.get('version');
-      console.log('Backend version info:', versionResponse.data);
+      const versionInfo = await fetchVersionInfo();
+      console.log('Backend version info:', versionInfo);
       
       // Perform migration based on version changes
       await migrateStorage(storedVersion, APP_VERSION);
@@ -199,29 +200,20 @@ if ('serviceWorker' in navigator) {
     // Record page load time immediately to prevent refresh loops
     sessionStorage.setItem('last_page_refresh', Date.now().toString());
     
-    let versionParam;
+    let versionParam = APP_VERSION;
     try {
-      // Try to get backend version info first, if available
       const storedVersionInfo = localStorage.getItem('appVersionInfo');
       if (storedVersionInfo) {
         const parsed = JSON.parse(storedVersionInfo);
-        // Use a hash of the version info for a stable identifier that changes only on real version changes
-        versionParam = `${parsed.version_tag}-${parsed.frontend_image.split(':')[1] || 'latest'}`;
-      } else {
-        // Try to get fresh version info from the API
-        try {
-          const versionResponse = await api.get('version');
-          const versionData = versionResponse.data;
-          // Cache this info for future use
-          localStorage.setItem('appVersionInfo', JSON.stringify(versionData));
-          versionParam = `${versionData.version_tag}-${versionData.frontend_image.split(':')[1] || 'latest'}`;
-        } catch (apiError) {
-          console.error('Could not fetch version info from API:', apiError);
-          // Fall back to APP_VERSION
-          versionParam = APP_VERSION;
+        if (parsed?.version_tag && parsed?.frontend_image) {
+          versionParam = `${parsed.version_tag}-${parsed.frontend_image.split(':')[1] || 'latest'}`;
         }
-        // Fall back to APP_VERSION if no backend version info is available
-        versionParam = APP_VERSION;
+      }
+
+      if (!storedVersionInfo || versionParam === APP_VERSION) {
+        const versionData = await fetchVersionInfo();
+        localStorage.setItem('appVersionInfo', JSON.stringify(versionData));
+        versionParam = `${versionData.version_tag}-${versionData.frontend_image.split(':')[1] || 'latest'}`;
       }
     } catch (error) {
       console.error('Error generating version parameter for service worker:', error);

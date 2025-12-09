@@ -14,8 +14,6 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from '@/plugins/axios'
-import api from '@/plugins/axios'
 import Header from '@/components/Header.vue'
 import ChoreList from '@/components/ChoreList.vue'
 import { useChoreStore } from '@/store/choreStore'
@@ -25,6 +23,7 @@ import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import VersionChecker from '@/components/VersionChecker.vue'
 import LogOverlay from '@/components/LogOverlay.vue'
 import { useAuthStore } from '@/store/authStore'
+import { fetchVersionInfo } from '@/utils/version'
 
 const versionInfo = ref(null)
 const choreStore = useChoreStore()
@@ -140,8 +139,7 @@ onMounted(async () => {
 
   // Continue with normal app initialization
   try {
-    const response = await api.get('version')
-    versionInfo.value = response.data
+    versionInfo.value = await fetchVersionInfo()
 
     // After getting version info, check consistency
     await checkVersionConsistency();

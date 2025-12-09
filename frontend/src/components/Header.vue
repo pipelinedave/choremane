@@ -85,12 +85,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import axios from '@/plugins/axios'
-import api from '@/plugins/axios'
 import AddChoreForm from '@/components/AddChoreForm.vue'
 import NotificationSettings from '@/components/NotificationSettings.vue'
 import ImportExport from '@/components/ImportExport.vue'
 import ArchivedChores from '@/components/ArchivedChores.vue'
+import { fetchVersionInfo } from '@/utils/version'
 
 const showBanner = ref(false)
 const showAboutModal = ref(false)
@@ -106,8 +105,7 @@ const toggleAboutModal = () => {
 
 onMounted(async () => {
   try {
-    const response = await api.get('version')
-    versionInfo.value = response.data
+    versionInfo.value = await fetchVersionInfo()
   } catch (error) {
     console.error('Failed to fetch version info:', error)
   }
