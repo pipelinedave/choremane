@@ -1,36 +1,35 @@
 ﻿<template>
   <div class="chore-list" ref="choreListContainer">
-    <div class="filter-pills">
-      <button
-        v-for="pill in pillsWithCounts"
-        :key="pill.value"
-        :class="['pill', { active: filter === pill.value }]"
-        :style="{ 'background-color': pill.color }"
-        @click="filter = pill.value"
-        :aria-label="pill.label"
-      >
-        <span class="pill-count">{{ pill.count }}</span>
-        {{ pill.label }}
-      </button>
+    <PerformanceBar :score="choreStore.householdHealth" />
+
+    <div class="filter-row" :class="{ 'has-filter': filter !== 'all' }">
+      <!-- Clear Filters Button (fixed on left) -->
+      <transition name="fade">
+        <button v-if="filter !== 'all'" class="pill clear-filter-fixed" @click="clearFilters"
+          aria-label="Clear filters">
+          <i class="fas fa-times"></i>
+        </button>
+      </transition>
+
+      <div class="filter-pills" ref="pillsContainer">
+        <button v-for="pill in pillsWithCounts" :key="pill.value" ref="pillRefs"
+          :class="['pill', { active: filter === pill.value }]" :style="{ 'background-color': pill.color }"
+          @click="selectFilter(pill.value)" :aria-label="pill.label">
+          <span class="pill-count">{{ pill.count }}</span>
+          {{ pill.label }}
+        </button>
+      </div>
     </div>
-    
+
     <!-- Transition group for chore cards -->
     <transition-group name="list" tag="div" class="chore-cards">
-      <ChoreCard
-        v-for="(chore, index) in filteredChores"
-        :key="`chore-${chore.id}-${index}`"
-        :chore="chore"
-        @markAsDone="markAsDone"
-        @archiveChore="archiveChore"
-        @updateChore="updateChore"
-      />
+      <ChoreCard v-for="(chore, index) in filteredChores" :key="chore.id" :chore="chore" @markAsDone="markAsDone"
+        @archiveChore="archiveChore" @updateChore="updateChore" />
     </transition-group>
 
     <!-- Loading indicator that shows when loading more chores -->
-    <div 
-      :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
-      aria-hidden="!isLoading && !choreStore.loading"
-    >
+    <div :class="(isLoading || choreStore.loading) ? 'loading-indicator' : 'loading-indicator-hidden'"
+      aria-hidden="!isLoading && !choreStore.loading">
       <div v-if="isLoading || choreStore.loading" class="loading-spinner"></div>
       <span v-if="isLoading || choreStore.loading">Loading chores...</span>
     </div>
@@ -39,43 +38,21 @@
     <div ref="loadMoreTrigger" class="load-more-trigger"></div>
 
     <!-- Empty States -->
-    <EmptyState 
-      v-if="filteredChores.length === 0 && searchQuery" 
-      type="search" 
-      title="No matching chores found" 
-      message="Try adjusting your search terms or clear the search to see all chores."
-      buttonText="Clear Search"
-      buttonIcon="fas fa-times"
-      @action="clearSearch"
-    />
-    
-    <EmptyState 
-      v-else-if="filteredChores.length === 0 && filter !== 'all'" 
-      type="filtered" 
-      title="No chores match your filter" 
-      message="Try selecting a different filter or clear all filters to see all your chores."
-      buttonText="Clear Filters"
-      buttonIcon="fas fa-filter"
-      @action="clearFilters"
-    />
-    
-    <EmptyState 
-      v-else-if="choreStore.sortedByUrgency.length === 0" 
-      type="chores" 
-      title="No chores yet" 
-      message="Add your first chore to get started managing your tasks."
-      buttonText="Add New Chore" 
-      buttonIcon="fas fa-plus"
-      @action="addNewChore"
-    />
-    
+    <EmptyState v-if="filteredChores.length === 0 && searchQuery" type="search" title="No matching chores found"
+      message="Try adjusting your search terms or clear the search to see all chores." buttonText="Clear Search"
+      buttonIcon="fas fa-times" @action="clearSearch" />
+
+    <EmptyState v-else-if="filteredChores.length === 0 && filter !== 'all'" type="filtered"
+      title="No chores match your filter"
+      message="Try selecting a different filter or clear all filters to see all your chores." buttonText="Clear Filters"
+      buttonIcon="fas fa-filter" @action="clearFilters" />
+
+    <EmptyState v-else-if="choreStore.sortedByUrgency.length === 0" type="chores" title="No chores yet"
+      message="Add your first chore to get started managing your tasks." buttonText="Add New Chore"
+      buttonIcon="fas fa-plus" @action="addNewChore" />
+
     <!-- Scroll to top button -->
-    <button 
-      v-show="showScrollToTop" 
-      class="scroll-to-top-button" 
-      @click="scrollToTop"
-      aria-label="Scroll to top"
-    >
+    <button v-show="showScrollToTop" class="scroll-to-top-button" @click="scrollToTop" aria-label="Scroll to top">
       <i class="fas fa-arrow-up"></i>
     </button>
   </div>
@@ -100,8 +77,10 @@ const loadingTimeout = ref(null); // For debouncing
 // Reactive states
 const filter = ref('all');
 const searchQuery = ref('');
+const pillsContainer = ref(null);
+const pillRefs = ref([]);
 const pills = [
-  { label: 'All', value: 'all', color: 'rgba(31, 45, 44, 0.08)' },
+  // 'All' removed as per new design
   { label: 'Overdue', value: 'overdue', color: 'var(--color-overdue)' },
   { label: 'Due Today', value: 'today', color: 'var(--color-due-today)' },
   { label: 'Due Tomorrow', value: 'tomorrow', color: 'var(--color-due-soon)' },
@@ -118,6 +97,26 @@ const handleScroll = () => {
   }
 };
 
+const selectFilter = (value) => {
+  filter.value = value;
+  scrollToActivePill(value);
+};
+
+const scrollToActivePill = (value) => {
+  nextTick(() => {
+    if (!pillRefs.value || pillRefs.value.length === 0) return;
+
+    const index = pills.findIndex(p => p.value === value);
+    if (index !== -1 && pillRefs.value[index]) {
+      pillRefs.value[index].scrollIntoView({
+        behavior: 'smooth',
+        inline: 'start',
+        block: 'nearest'
+      });
+    }
+  });
+};
+
 // Scroll back to top function
 const scrollToTop = () => {
   window.scrollTo({
@@ -130,10 +129,10 @@ const scrollToTop = () => {
 onMounted(async () => {
   // Initial fetch
   await choreStore.fetchChores(1);
-  
+
   // Set up intersection observer for infinite scrolling
   setupIntersectionObserver();
-  
+
   // Add scroll event listener for scroll-to-top button
   window.addEventListener('scroll', handleScroll);
 });
@@ -158,7 +157,7 @@ const setupIntersectionObserver = () => {
     if (observer.value) {
       observer.value.disconnect();
     }
-    
+
     // Create a new observer
     observer.value = new IntersectionObserver((entries) => {
       const entry = entries[0];
@@ -171,7 +170,7 @@ const setupIntersectionObserver = () => {
       rootMargin: '150px', // Increased margin to load more before reaching the end
       threshold: 0.1 // Trigger when at least 10% of the element is visible
     });
-    
+
     // Start observing the trigger element
     observer.value.observe(loadMoreTrigger.value);
   }
@@ -181,21 +180,21 @@ const setupIntersectionObserver = () => {
 const loadMoreChores = async () => {
   // Prevent multiple concurrent loading requests
   if (isLoading.value || !choreStore.hasMoreChores) return;
-  
+
   // Set local loading state to prevent multiple triggers
   isLoading.value = true;
-  
+
   // Clear any existing timeout
   if (loadingTimeout.value) {
     clearTimeout(loadingTimeout.value);
   }
-  
+
   // Debounce the loading operation with a 400ms delay to prevent rapid re-triggering
   loadingTimeout.value = setTimeout(async () => {
     try {
       currentPage.value++;
       await choreStore.fetchChores(currentPage.value);
-      
+
       // Re-setup observer after content changes
       nextTick(() => {
         setupIntersectionObserver();
@@ -255,6 +254,13 @@ const clearSearch = () => {
 
 const clearFilters = () => {
   filter.value = 'all';
+  // Scroll container back to start
+  if (pillsContainer.value) {
+    pillsContainer.value.scrollTo({
+      left: 0,
+      behavior: 'smooth'
+    });
+  }
 };
 
 const addNewChore = () => {
@@ -273,17 +279,80 @@ const addNewChore = () => {
   position: relative;
 }
 
+.filter-row {
+  display: flex;
+  align-items: center;
+  margin: 0 -20px var(--space-md);
+  /* Negative margin to stretch full width on mobile */
+  position: relative;
+}
+
+.clear-filter-fixed {
+  margin-left: 1.25rem;
+  /* Match side padding */
+  margin-right: 0.75rem;
+  /* Gap between button and list */
+  padding: 0;
+  width: 2.6em;
+  /* Slightly larger to be an easier target */
+  height: 2.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  z-index: 2;
+  backdrop-filter: blur(12px);
+}
+
+.clear-filter-fixed:hover {
+  background: #fff;
+  color: var(--color-error);
+  border-color: var(--color-error);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+.clear-filter-fixed i {
+  font-size: 1.1em;
+}
+
 .filter-pills {
   display: flex;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE 10+ */
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  padding-right: 1.25rem;
+  /* End padding */
+  padding-left: 1.25rem;
+  /* Default start padding */
+  padding-top: 0.5rem;
+  /* Space for shadow */
+  padding-bottom: 0.5rem;
+  align-items: center;
   gap: 0.75rem;
-  margin: var(--space-lg) auto var(--space-md);
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 0.65rem 0.9rem;
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(16px);
+  transition: padding-left 0.3s ease;
+}
+
+/* Adjust padding when filter is active (X button present) */
+.filter-row.has-filter .filter-pills {
+  padding-left: 0;
+}
+
+/* Hide scrollbar for Chrome/Safari/Opera */
+.filter-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .pill {
@@ -296,13 +365,13 @@ const addNewChore = () => {
   font-size: 0.95em;
   font-weight: 600;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast), background-color 0.2s;
   outline: none;
-  margin-bottom: 0.2rem;
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   backdrop-filter: blur(12px);
+  flex-shrink: 0;
 }
 
 .pill .pill-count {
@@ -339,21 +408,31 @@ const addNewChore = () => {
   color: #102321;
 }
 
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateX(-10px);
+  margin-right: 0;
+  /* Collapse gap */
+}
+
 @media (max-width: 576px) {
-  .filter-pills {
-    justify-content: center;
-    padding-bottom: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
+  .clear-filter-fixed {
+    width: 2.3em;
+    height: 2.3em;
   }
-  
+
   .pill {
     font-size: 0.9em;
     padding: 0.35em 1em 0.35em 2.1em;
-    white-space: nowrap;
   }
-  
+
   .pill .pill-count {
     font-size: 0.78em;
     width: 1.5em;
@@ -378,7 +457,8 @@ const addNewChore = () => {
   position: relative;
 }
 
-.list-enter-from, .list-leave-to {
+.list-enter-from,
+.list-leave-to {
   opacity: 0;
   transform: translateY(14px) scale(0.98);
 }
@@ -447,6 +527,7 @@ const addNewChore = () => {
     opacity: 0;
     transform: translateY(12px) scale(0.98);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -458,6 +539,7 @@ const addNewChore = () => {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translateY(-10px) scale(0.98);
@@ -476,7 +558,9 @@ const addNewChore = () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .load-more-trigger {
