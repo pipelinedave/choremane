@@ -13,7 +13,7 @@ from app.api.mcp_routes import router as mcp_router
 from app.api.auth_routes import auth_router
 from app.database import get_db_connection
 from app.auth import get_current_user
-from app.models import User, Token
+from app.models import User
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 

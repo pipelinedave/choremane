@@ -1,7 +1,6 @@
 import json
 from datetime import date, datetime, timedelta
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

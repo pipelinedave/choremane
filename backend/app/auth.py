@@ -2,15 +2,12 @@
 import os
 import json
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+from typing import Dict, List
 
 import jwt
 from jwt.algorithms import RSAAlgorithm
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from authlib.integrations.starlette_client import OAuth, OAuthError
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import RedirectResponse
 import httpx
 
 from app.models import User

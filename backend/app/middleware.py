@@ -1,5 +1,5 @@
 """Authentication middleware for FastAPI."""
-from fastapi import Depends, FastAPI, Request, HTTPException, status
+from fastapi import Depends, Request, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.auth import verify_token
 from app.models import User

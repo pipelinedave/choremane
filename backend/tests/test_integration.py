@@ -1,5 +1,4 @@
 ﻿import os
-import pytest
 import psycopg2
 from fastapi.testclient import TestClient
 from app.main import app

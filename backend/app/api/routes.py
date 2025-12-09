@@ -3,18 +3,13 @@ import logging
 from datetime import datetime, timedelta, date
 
 from fastapi import APIRouter, HTTPException, Request
-import json
-import logging
-from datetime import datetime, timedelta, date
 
-from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from typing import List
 
 from app.database import get_db_connection
 from app.models import Chore, UndoRequest
 from app.utils import log_action
-from app.api.mcp_routes import router as mcp_router
 from app.api.household_health_endpoint import router as household_health_router
 
 api_router = APIRouter(prefix="/api")

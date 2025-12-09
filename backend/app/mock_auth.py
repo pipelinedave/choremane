@@ -8,10 +8,9 @@ import os
 import logging
 import secrets
 import time
-from datetime import datetime, timedelta
 import jwt
-from fastapi import Request, Response, HTTPException, status
-from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
+from fastapi import Request, HTTPException
+from fastapi.responses import RedirectResponse, HTMLResponse
 
 # Create a mock private key for local token signing
 MOCK_PRIVATE_KEY = secrets.token_hex(32)

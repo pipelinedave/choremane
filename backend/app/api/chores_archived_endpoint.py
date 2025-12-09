@@ -1,9 +1,6 @@
-import json
 import logging
-from datetime import datetime, timedelta, date
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import HTTPException, Request
 from typing import List
 
 from app.database import get_db_connection

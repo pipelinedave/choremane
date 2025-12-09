@@ -1,13 +1,10 @@
-import json
 import logging
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
-from typing import List, Dict
+from fastapi import HTTPException, Request
+from typing import Dict
 
 from app.database import get_db_connection
-from app.models import Chore
 from app.api.routes import api_router
 
 
