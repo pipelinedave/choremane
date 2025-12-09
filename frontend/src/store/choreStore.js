@@ -26,76 +26,13 @@ export const useChoreStore = defineStore('chores', () => {
     upcoming: 0
   });
 
+  const householdHealth = ref(100);
+
   // Calculate local bucket counts for fallback/optimistic updates if needed
   // But primarily we will use totalCounts from server
   const choreCounts = computed(() => bucketChores(chores.value).counts);
   const editingChoreId = ref(null);
 
-  const householdHealth = computed(() => {
-    if (chores.value.length === 0) return 100;
-
-    let totalScore = 0;
-    let activeChoreCount = 0;
-    const now = new Date();
-    // Normalize now to midnight for day-level granularity if desired, 
-    // but for progress bars, real-time "now" might differ slightly. 
-    // Let's stick to real-time for 'freshness' feel or normalize for stability.
-    // Given the prompt "how due chores are", using real timestamps is fine.
-
-    chores.value.forEach(chore => {
-      // Skip undefined intervals or chores that shouldn't affect score (optional: maybe skip paused/archived which are already filtered out of 'chores' usually)
-      if (!chore.interval_days || chore.interval_days <= 0) {
-        return;
-      }
-
-      activeChoreCount++;
-
-      const dueDate = new Date(chore.due_date);
-      const intervalMs = chore.interval_days * 24 * 60 * 60 * 1000;
-
-      // Calculate time difference
-      // Positive diff = Overdue by diff ms
-      // Negative diff = Due in diff ms (future)
-      const diffMs = now.getTime() - dueDate.getTime();
-
-      let score = 100;
-
-      if (diffMs > 0) {
-        // OVERDUE
-        // Calculate overdue ratio: how many intervals has it been overdue?
-        const overdueRatio = diffMs / intervalMs;
-        // Decay from 80 to 0.
-        // If 1 full interval overdue (ratio 1.0), score becomes 0.
-        // Formula: 80 - (overdueRatio * 80)
-        score = Math.max(0, 80 - (overdueRatio * 80));
-      } else {
-        // NOT OVERDUE (Fresh to Standard)
-        // diffMs is negative. 
-        // Time elapsed since "start" (roughly) = intervalMs + diffMs (since diffMs is negative remainder)
-        // Actually simpler: 
-        // Fraction elapsed =  1 - (Time Until Due / Interval)
-        const timeUntilDue = -diffMs;
-        const fractionElapsed = 1 - (timeUntilDue / intervalMs);
-
-        // Clamp fraction for safety (e.g. if due date is way in future due to edit)
-        const safeFraction = Math.max(0, Math.min(1, fractionElapsed));
-
-        if (safeFraction <= 0.5) {
-          // Fresh Zone
-          score = 100;
-        } else {
-          // Standard Zone (0.5 to 1.0) -> Decays 100 to 80
-          // Mapping: 0.5 -> 100, 1.0 -> 80
-          // Slope = (80 - 100) / (1.0 - 0.5) = -20 / 0.5 = -40
-          score = 100 + ((safeFraction - 0.5) * -40);
-        }
-      }
-
-      totalScore += score;
-    });
-
-    return activeChoreCount === 0 ? 100 : Math.round(totalScore / activeChoreCount);
-  });
 
   const setEditingChore = (choreId) => {
     editingChoreId.value = choreId;
@@ -152,10 +89,21 @@ export const useChoreStore = defineStore('chores', () => {
     return today.getTime() === lastDone.getTime();
   };
 
+  const fetchHouseholdHealth = async () => {
+    try {
+      const response = await api.get('/chores/household-health');
+      householdHealth.value = response.data.score;
+    } catch (err) {
+      console.error('Failed to fetch household health:', err);
+    }
+  };
+
   const fetchChoreCounts = async () => {
     try {
       const response = await api.get('/chores/count');
       totalCounts.value = response.data;
+      // Fetch health score whenever counts are updated
+      fetchHouseholdHealth();
     } catch (err) {
       console.error('Failed to fetch chore counts:', err);
       // Don't set global error state here to avoid disrupting main UI if just counts fail
@@ -441,6 +389,7 @@ export const useChoreStore = defineStore('chores', () => {
     undoChore,
     choreCounts,
     householdHealth,
+    fetchHouseholdHealth,
     totalCounts, // Export new state
     fetchChoreCounts, // Export new method
     editingChoreId,
