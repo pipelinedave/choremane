@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from datetime import datetime, date, timedelta
 import json
-import pytest
 from app.api.routes import api_router
 
 app = FastAPI()
@@ -118,7 +117,6 @@ def test_get_chores(monkeypatch):
     assert len(data) == 2
 
 def test_get_version_info(monkeypatch):
-    import os
     monkeypatch.setenv("VERSION_TAG", "v1.2.3")
     monkeypatch.setenv("BACKEND_IMAGE", "backend:latest")
     monkeypatch.setenv("FRONTEND_IMAGE", "frontend:latest")
