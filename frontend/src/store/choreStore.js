@@ -14,8 +14,25 @@ export const useChoreStore = defineStore('chores', () => {
   const pageSize = ref(10); // Number of items per page
   const hasMoreChores = ref(true); // Whether there are more chores to load
   const hasMoreArchivedChores = ref(true); // Whether there are more archived chores to load
+
+
+  // New state for total counts from server
+  const totalCounts = ref({
+    all: 0,
+    overdue: 0,
+    today: 0,
+    tomorrow: 0,
+    thisWeek: 0,
+    upcoming: 0
+  });
+
+  const householdHealth = ref(100);
+
+  // Calculate local bucket counts for fallback/optimistic updates if needed
+  // But primarily we will use totalCounts from server
   const choreCounts = computed(() => bucketChores(chores.value).counts);
   const editingChoreId = ref(null);
+
 
   const setEditingChore = (choreId) => {
     editingChoreId.value = choreId;
@@ -70,6 +87,27 @@ export const useChoreStore = defineStore('chores', () => {
     lastDone.setHours(0, 0, 0, 0);
 
     return today.getTime() === lastDone.getTime();
+  };
+
+  const fetchHouseholdHealth = async () => {
+    try {
+      const response = await api.get('/chores/household-health');
+      householdHealth.value = response.data.score;
+    } catch (err) {
+      console.error('Failed to fetch household health:', err);
+    }
+  };
+
+  const fetchChoreCounts = async () => {
+    try {
+      const response = await api.get('/chores/count');
+      totalCounts.value = response.data;
+      // Fetch health score whenever counts are updated
+      fetchHouseholdHealth();
+    } catch (err) {
+      console.error('Failed to fetch chore counts:', err);
+      // Don't set global error state here to avoid disrupting main UI if just counts fail
+    }
   };
 
   const fetchChores = async (page = 1) => {
@@ -342,6 +380,10 @@ export const useChoreStore = defineStore('chores', () => {
     markChoreDone,
     undoChore,
     choreCounts,
+    householdHealth,
+    fetchHouseholdHealth,
+    totalCounts, // Export new state
+    fetchChoreCounts, // Export new method
     editingChoreId,
     setEditingChore,
     clearEditingChore
