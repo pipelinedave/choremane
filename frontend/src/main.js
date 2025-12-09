@@ -9,7 +9,8 @@ import { fetchVersionInfo } from '@/utils/version'
 import { useChoreStore } from '@/store/choreStore'
 
 // Add version check to handle data migrations on app updates
-const APP_VERSION = '1.0.1'; // Bump to force cache busting on deploys with new assets
+const APP_VERSION = '1.0.2'; // Bump to force cache busting on deploys with new assets
+const ENABLE_SERVICE_WORKER = import.meta.env.VITE_ENABLE_SERVICE_WORKER === 'true'
 const STORAGE_VERSION_KEY = 'choremane_storage_version';
 
 // Checks if local storage version matches current app version and performs migration if needed
@@ -22,7 +23,9 @@ async function verifyStorageVersion() {
     try {
       // Fetch version info from backend to confirm redeployment
       const versionInfo = await fetchVersionInfo();
-      console.log('Backend version info:', versionInfo);
+      if (versionInfo) {
+        console.log('Backend version info:', versionInfo);
+      }
       
       // Perform migration based on version changes
       await migrateStorage(storedVersion, APP_VERSION);
@@ -195,7 +198,7 @@ verifyStorageVersion().then(() => {
   setupChoreNotificationScheduler();
 });
 
-if ('serviceWorker' in navigator) {
+if (ENABLE_SERVICE_WORKER && 'serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     // Record page load time immediately to prevent refresh loops
     sessionStorage.setItem('last_page_refresh', Date.now().toString());
@@ -212,8 +215,10 @@ if ('serviceWorker' in navigator) {
 
       if (!storedVersionInfo || versionParam === APP_VERSION) {
         const versionData = await fetchVersionInfo();
-        localStorage.setItem('appVersionInfo', JSON.stringify(versionData));
-        versionParam = `${versionData.version_tag}-${versionData.frontend_image.split(':')[1] || 'latest'}`;
+        if (versionData) {
+          localStorage.setItem('appVersionInfo', JSON.stringify(versionData));
+          versionParam = `${versionData.version_tag}-${versionData.frontend_image.split(':')[1] || 'latest'}`;
+        }
       }
     } catch (error) {
       console.error('Error generating version parameter for service worker:', error);

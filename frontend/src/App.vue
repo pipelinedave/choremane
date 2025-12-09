@@ -138,13 +138,10 @@ onMounted(async () => {
   await persistentVersionFix();
 
   // Continue with normal app initialization
-  try {
-    versionInfo.value = await fetchVersionInfo()
-
-    // After getting version info, check consistency
-    await checkVersionConsistency();
-  } catch (error) {
-    console.error('Failed to fetch version info:', error)
+  const fetched = await fetchVersionInfo()
+  if (fetched) {
+    versionInfo.value = fetched
+    await checkVersionConsistency()
   }
 })
 
