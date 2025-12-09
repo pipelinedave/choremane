@@ -8,7 +8,8 @@ const hasVersionFields = (payload) =>
   'frontend_image' in payload
 
 export async function fetchVersionInfo() {
-  const response = await api.get('/version')
+  // Do not prefix with a leading slash so Axios baseURL (/api) is preserved in production
+  const response = await api.get('version')
   const payload = response.data
 
   if (!hasVersionFields(payload)) {
