@@ -5,17 +5,17 @@ Choremane is a Progressive Web App (PWA) designed to simplify household chore ma
 ## Features
 
 - 📅 **Smart Chore Scheduling** - Automatically assigns due dates based on intervals
-- 🔒 **Authentication** - Login with GitHub and Google via Dex
+- 🔒 **Authentication** - Dex login with optional mock auth for local development
 - 🎨 **Customizable UI** - Material You design with dynamic theming
 - 📱 **PWA Support** - Installable on mobile and desktop for quick access
-- 🔄 **Swipe Actions** - Swipe gestures using Hammer.js for intuitive interactions
-- 📊 **Log System** - Tracks all actions with undo capability
-- 🚀 **CI/CD Workflow** - GitOps with GitHub Actions and ArgoCD
+- 🎮 **Gesture Controls** - Native pointer-driven swipe actions on chore cards
+- 🎯 **Chore Filter Pills** - Overhauled pills with API-driven counts for overdue, today, upcoming, and custom views
+- 🔐 **Private Chores** - User-scoped chores stay hidden from the shared household list unless explicitly shared
+- 🧭 **Household Health** - Backend-calculated score rendered as a performance bar in the chore list
+- 🧾 **Activity Log Overlay** - Persistent chore log with inline undo/archive controls
 - ☁️ **Cloud-Synced** - PostgreSQL backend with FastAPI
 - 🔔 **Push Notifications** - Configurable daily reminders
-- 🎯 **Smart Filtering** - Filter chores by overdue, today, and upcoming
-- 🔐 **Private Chores** - User-specific private chore support
-- 🔄 **Offline Support** - Full functionality without internet
+- 🔄 **Offline Support** - Version-aware service worker with cache-busting
 
 ## Deployment
 
@@ -30,34 +30,48 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    cd choremane
    ```
 
-2. Using VS Code Tasks (recommended):
+2. Install dependencies:
+   - Backend (from `backend/`):
+
+     ```bash
+     python -m venv .venv
+     source .venv/bin/activate
+     pip install -r requirements.txt
+     ```
+
+   - Frontend (from `frontend/`):
+
+     ```bash
+     npm install
+     ```
+
+3. Using VS Code Tasks (recommended):
    - Open the project in VS Code
    - Press `Ctrl+Shift+P` and select `Tasks: Run Task`
    - Select `Start PostgreSQL` to start the database
    - Select `Run Backend Dev Server` to start the API server
    - Select `Run Frontend Dev Server` to start the UI
 
-   > **Note:** For local development, a mock authentication system is used by default (since May 2025)
-   > due to issues with the external Dex OIDC provider. This allows you to sign in with test credentials
-   > without requiring access to the production authentication service. See [AUTH_README.md](AUTH_README.md)
-   > for more details.
+   > **Note:** For local development, set `USE_MOCK_AUTH=true` to use the built-in mock login flow.
+   > This avoids Dex downtime while still exercising the full auth pipeline. See
+   > [AUTH_README.md](AUTH_README.md) for more details.
    >
    > If you encounter any authentication issues, check the backend logs for detailed information
    > and refer to the troubleshooting section in [AUTH_README.md](AUTH_README.md).
 
-3. Using VS Code Debugging:
+4. Using VS Code Debugging:
    - Open the Debug panel in VS Code (`Ctrl+Shift+D`)
    - Select `Full Stack Debug` from the dropdown
    - Click the green play button to start PostgreSQL, backend, and frontend with debugging
 
-4. Manual startup:
+5. Manual startup:
 
    ```bash
    # Terminal 1: Start PostgreSQL
    docker-compose up -d postgres
-   
+
    # Terminal 2: Run backend
-   cd /home/dave/src/choremane/backend
+   cd backend
    export OAUTH_CLIENT_ID=choremane
    export OAUTH_CLIENT_SECRET=choremane-secret
    export DEX_ISSUER_URL=https://dex.stillon.top
@@ -69,9 +83,9 @@ Choremane uses a GitOps workflow with ArgoCD managing deployments to a K3s clust
    export POSTGRES_USER=admin
    export POSTGRES_PASSWORD=password
    python -m uvicorn app.main:app --reload --port 8090
-   
-   # Terminal 3: Run frontend
-   cd /home/dave/src/choremane/frontend
+
+   # Terminal 3: Run frontend (Vite dev server with API proxy to port 8090)
+   cd frontend
    npm run serve
    ```
 
